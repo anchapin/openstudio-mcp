@@ -1,6 +1,6 @@
-# OpenStudio MCP Server
+# OpenStudio MCP
 
-A standalone server that provides OpenStudio CLI functionality through a standardized MCP (Model Context Protocol) interface. This server enables AI assistants to interact with OpenStudio's capabilities, allowing users to perform building energy modeling tasks through natural language requests.
+A standalone server that provides OpenStudio CLI functionality through a standardized MCP (Model Context Protocol) interface. This tool enables AI assistants to interact with OpenStudio's capabilities, allowing users to perform building energy modeling tasks through natural language requests.
 
 ## Prerequisites
 
@@ -13,8 +13,8 @@ A standalone server that provides OpenStudio CLI functionality through a standar
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-org/openstudio-mcp-server.git
-   cd openstudio-mcp-server
+   git clone https://github.com/anchapin/openstudio-mcp.git
+   cd openstudio-mcp
    ```
 
 2. Install dependencies:
@@ -31,7 +31,7 @@ A standalone server that provides OpenStudio CLI functionality through a standar
 
 ### Standalone Application
 
-The OpenStudio MCP Server can be installed as a standalone application:
+OpenStudio MCP can be installed as a standalone application:
 
 #### Windows
 ```powershell
@@ -47,7 +47,7 @@ For more details, see [Standalone Application Packaging](docs/standalone-packagi
 
 ### Docker Container
 
-The OpenStudio MCP Server can be run as a Docker container:
+OpenStudio MCP can be run as a Docker container:
 
 ```bash
 docker-compose up -d
@@ -97,7 +97,7 @@ npm run package:linux # Linux
 Build the Docker image:
 
 ```bash
-docker build -t openstudio-mcp-server .
+docker build -t openstudio-mcp .
 ```
 
 ## Testing
