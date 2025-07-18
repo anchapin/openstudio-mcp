@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  openstudio-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: openstudio-mcp-server:latest
+    container_name: openstudio-mcp-server
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./measures:/app/measures
+      - ./temp:/app/temp
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - OPENSTUDIO_CLI_PATH=/usr/local/openstudio-3.7.0/bin/openstudio
+      - BCL_MEASURES_DIR=/app/measures
+      - LOG_LEVEL=info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
