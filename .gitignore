@@ -1,0 +1,42 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+
+# Docker
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+
+# Build
+build/
+dist/
+
+# Misc
+.env
+.env.*
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
+
+# Coverage
+coverage/
+*.lcov
+
+# MCP
+mcp-data/
