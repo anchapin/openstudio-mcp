@@ -32,7 +32,6 @@ describe.skip('File Operations Integration', () => {
   });
   
   it('should create and read a file', async () => {
-    return 
     const filePath = path.join(testDir, 'test-file.txt');
     const content = 'Hello, world!';
     
@@ -50,7 +49,6 @@ describe.skip('File Operations Integration', () => {
   });
   
   it('should append to a file', async () => {
-    return 
     const filePath = path.join(testDir, 'append-test.txt');
     const initialContent = 'Initial content\n';
     const appendContent = 'Appended content';
@@ -69,7 +67,6 @@ describe.skip('File Operations Integration', () => {
   });
   
   it('should delete a file', async () => {
-    return 
     const filePath = path.join(testDir, 'delete-test.txt');
     
     // Create the file
@@ -86,7 +83,6 @@ describe.skip('File Operations Integration', () => {
   });
   
   it('should create and check directories', async () => {
-    return 
     const dirPath = path.join(testDir, 'test-dir');
     
     // Create the directory
@@ -100,7 +96,6 @@ describe.skip('File Operations Integration', () => {
   });
   
   it('should copy a file', async () => {
-    return 
     const sourcePath = path.join(testDir, 'source.txt');
     const destPath = path.join(testDir, 'dest.txt');
     const content = 'Copy me';
@@ -121,7 +116,6 @@ describe.skip('File Operations Integration', () => {
   });
   
   it('should handle file not found errors', async () => {
-    return 
     const nonExistentPath = path.join(testDir, 'non-existent.txt');
     
     // Try to read a non-existent file
@@ -132,7 +126,6 @@ describe.skip('File Operations Integration', () => {
   });
   
   it('should check if a file exists', async () => {
-    return 
     const filePath = path.join(testDir, 'exists-test.txt');
     
     // File should not exist initially

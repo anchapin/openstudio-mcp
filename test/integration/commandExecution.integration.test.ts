@@ -19,7 +19,6 @@ describe.skip('Command Execution Integration', () => {
     process.env.NODE_ENV = originalNodeEnv;
   });
   it('should execute a simple command', async () => {
-    return 
     // Use a simple command that should work on all platforms
     const command = process.platform === 'win32' ? 'echo' : 'echo';
     const args = ['Hello, world!'];
@@ -33,7 +32,6 @@ describe.skip('Command Execution Integration', () => {
   });
   
   it('should handle command not found', async () => {
-    return 
     // Use a command that should not exist
     const command = 'non-existent-command';
     const args: string[] = [];
@@ -46,7 +44,6 @@ describe.skip('Command Execution Integration', () => {
   });
   
   it('should handle command timeout', async () => {
-    return 
     // Use a command that will sleep for longer than the timeout
     const command = process.platform === 'win32' ? 'timeout' : 'sleep';
     const args = process.platform === 'win32' ? ['2'] : ['2'];
@@ -58,7 +55,6 @@ describe.skip('Command Execution Integration', () => {
   }, 3000); // Increase timeout for this test
   
   it('should capture command output', async () => {
-    return 
     // Use a command that produces output
     const command = process.platform === 'win32' ? 'cmd' : 'ls';
     const args = process.platform === 'win32' ? ['/c', 'dir'] : ['-la'];
@@ -70,7 +66,6 @@ describe.skip('Command Execution Integration', () => {
   });
   
   it('should handle environment variables', async () => {
-    return 
     // Use a command that echoes an environment variable
     const command = process.platform === 'win32' ? 'echo' : 'echo';
     const args = process.platform === 'win32' ? ['%TEST_VAR%'] : ['$TEST_VAR'];
@@ -88,7 +83,6 @@ describe.skip('Command Execution Integration', () => {
   });
   
   it('should handle working directory', async () => {
-    return 
     // Use a command that prints the current directory
     const command = process.platform === 'win32' ? 'cd' : 'pwd';
     const args: string[] = [];
