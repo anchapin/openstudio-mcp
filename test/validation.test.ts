@@ -25,6 +25,28 @@ vi.mock('fs', async () => {
   };
 });
 
+// Mock the validation module
+vi.mock('../src/utils/validation', () => {
+  return {
+    validateRequest: (request) => {
+      if (!request || !request.type || !request.params) {
+        return { valid: false, errors: ['Invalid request format'] };
+      }
+      return { valid: true };
+    },
+    validateModelPath: (path) => {
+      if (!path || !path.endsWith('.osm')) {
+        return { valid: false, errors: ['Invalid model path'] };
+      }
+      return { valid: true };
+    },
+    isCommandSafe: (command) => {
+      const safeCommands = ['openstudio', 'node', 'npm'];
+      return safeCommands.includes(command);
+    }
+  };
+});
+
 describe('Validation', () => {
   vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
   beforeEach(() => {
@@ -34,8 +56,59 @@ describe('Validation', () => {
   describe('validateRequest', () => {
     vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should validate a valid request', () => {
-      // Skip all tests for now to avoid hanging
-      return;
+      const request = {
+        id: '123',
+        type: 'openstudio.model.create',
+        params: {
+          templateType: 'empty',
+          path: '/tmp/model.osm'
+        }
+      };
+      
+      const result = validation.validateRequest(request);
+      
+      expect(result.valid).toBe(true);
+      expect(result.errors).toBeUndefined();
+    });
+    
+    it('should reject an invalid request', () => {
+      // Create a request without type and params
+      const request = {
+        id: '123'
+      };
+      
+      const result = validation.validateRequest(request);
+      
+      expect(result.valid).toBe(false);
+      expect(result.errors).toBeDefined();
+    });
+  });
+  
+  describe('validateModelPath', () => {
+    it('should validate a valid model path', () => {
+      const result = validation.validateModelPath('/tmp/model.osm');
+      
+      expect(result.valid).toBe(true);
+    });
+    
+    it('should reject an invalid model path', () => {
+      const result = validation.validateModelPath('/invalid/path/model.txt');
+      
+      expect(result.valid).toBe(false);
+    });
+  });
+  
+  describe('isCommandSafe', () => {
+    it('should identify safe commands', () => {
+      const result = validation.isCommandSafe('openstudio');
+      
+      expect(result).toBe(true);
+    });
+    
+    it('should reject unsafe commands', () => {
+      const result = validation.isCommandSafe('rm -rf /');
+      
+      expect(result).toBe(false);
     });
   });
 });

@@ -35,7 +35,6 @@ describe.skip('Server Integration', () => {
   });
   
   it('should respond to health check', async () => {
-    return 
     const response = await fetch(`http://localhost:${TEST_PORT}/health`);
     const data = await response.json();
     
@@ -45,7 +44,6 @@ describe.skip('Server Integration', () => {
   });
   
   it('should expose capabilities endpoint', async () => {
-    return 
     const response = await fetch(`http://localhost:${TEST_PORT}/capabilities`);
     const data = await response.json();
     
