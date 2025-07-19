@@ -5,54 +5,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import path from 'path';
 import os from 'os';
 
-// Mock fs module before importing the module that uses it
-vi.mock('fs', async () => {
-  const actual = await vi.importActual('fs');
-  return {
-    ...actual,
-    promises: {
-      access: vi.fn(),
-      stat: vi.fn(),
-      mkdir: vi.fn(),
-      readFile: vi.fn(),
-      writeFile: vi.fn(),
-      appendFile: vi.fn(),
-      unlink: vi.fn(),
-      readdir: vi.fn(),
-      rmdir: vi.fn(),
-      copyFile: vi.fn(),
-    },
-    existsSync: vi.fn(),
-    mkdirSync: vi.fn(),
-    readFileSync: vi.fn(),
-    writeFileSync: vi.fn(),
-    statSync: vi.fn(),
-    readdirSync: vi.fn(),
-    unlinkSync: vi.fn(),
-    rmdirSync: vi.fn(),
-    constants: { F_OK: 0 }
-  };
-});
-
-// Mock validation
-vi.mock('../src/utils/validation', () => ({
-  isPathSafe: vi.fn().mockReturnValue(true)
-}));
-
-// Mock logger
-vi.mock('../src/utils/logger', () => ({
-  default: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
-  }
-}));
 
 // Import after mocking
 import fs from 'fs';
 import { isPathSafe } from '../src/utils/validation';
-import fileOperations from '../src/utils/fileOperations';
+import fileOperations from '../src/services/fileOperations';
 
 describe('File Operations Module', () => {
   // Create a test directory for file operations
@@ -93,19 +50,19 @@ describe('File Operations Module', () => {
   
   describe('fileExists', () => {
     it('should return true for existing files', async () => {
-      fs.promises.access.mockResolvedValue(undefined);
-      
+      vi.mocked(fs.promises.access).mockResolvedValue(undefined);
+
       const result = await fileOperations.fileExists('/path/to/file.txt');
-      
+
       expect(result).toBe(true);
       expect(fs.promises.access).toHaveBeenCalledWith('/path/to/file.txt', fs.constants.F_OK);
     });
-    
+
     it('should return false for non-existent files', async () => {
-      fs.promises.access.mockRejectedValue(new Error('File not found'));
-      
+      vi.mocked(fs.promises.access).mockRejectedValue(new Error('File not found'));
+
       const result = await fileOperations.fileExists('/path/to/nonexistent.txt');
-      
+
       expect(result).toBe(false);
       expect(fs.promises.access).toHaveBeenCalledWith('/path/to/nonexistent.txt', fs.constants.F_OK);
     });

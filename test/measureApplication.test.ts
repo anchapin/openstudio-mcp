@@ -4,104 +4,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import path from 'path';
 
-// Mock logger first
-vi.mock('../src/utils/logger', () => ({
-  logger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
-  }
-}));
-
-// Mock dependencies before importing the module that uses them
-vi.mock('../src/utils/openStudioCommands', () => {
-  return {
-    default: {
-      applyMeasure: vi.fn().mockResolvedValue({
-        success: true,
-        output: 'Measure applied successfully',
-        data: {
-          modelPath: '/path/to/output.osm',
-          measurePath: '/test/measures/test-measure',
-          arguments: { arg1: 42 }
-        }
-      }),
-      listMeasures: vi.fn().mockResolvedValue({
-        success: true,
-        data: [
-          {
-            uuid: 'test-measure',
-            name: 'Test Measure',
-            arguments: [
-              {
-                name: 'required_arg',
-                required: true,
-                type: 'Double'
-              },
-              {
-                name: 'optional_arg',
-                required: false,
-                type: 'String'
-              }
-            ]
-          }
-        ]
-      })
-    }
-  };
-});
-
-vi.mock('../src/utils/measureManager', () => {
-  return {
-    default: {
-      getMeasuresDir: vi.fn().mockReturnValue('/test/measures'),
-      isMeasureInstalled: vi.fn().mockResolvedValue(true)
-    }
-  };
-});
-
-vi.mock('../src/utils/fileOperations', () => {
-  return {
-    default: {
-      fileExists: vi.fn().mockResolvedValue(true),
-      directoryExists: vi.fn().mockResolvedValue(true),
-      copyFile: vi.fn().mockResolvedValue(undefined),
-      deleteFile: vi.fn().mockResolvedValue(undefined)
-    }
-  };
-});
-
-vi.mock('../src/services/bclApiClient', () => {
-  const mockDownloadMeasure = vi.fn().mockResolvedValue(true);
-  const mockInstallMeasure = vi.fn().mockResolvedValue(true);
-  
-  return {
-    BCLApiClient: vi.fn().mockImplementation(() => ({
-      downloadMeasure: mockDownloadMeasure,
-      installMeasure: mockInstallMeasure
-    }))
-  };
-});
-
-// Mock config
-vi.mock('../src/config', () => ({
-  default: {
-    server: {
-      port: 3000
-    },
-    logging: {
-      level: 'info',
-      prettyPrint: false
-    }
-  }
-}));
-
 // Import after mocking
 import * as measureApplicationService from '../src/services/measureApplicationService';
 import openStudioCommands from '../src/utils/openStudioCommands';
-import measureManager from '../src/utils/measureManager';
-import fileOperations from '../src/utils/fileOperations';
+import measureManager from '../src/services/measureManager';
+import fileOperations from '../src/services/fileOperations';
 import { BCLApiClient } from '../src/services/bclApiClient';
 
 describe('Measure Application Service', () => {
