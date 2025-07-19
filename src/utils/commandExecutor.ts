@@ -202,6 +202,23 @@ export function validateCommand(
       securityRisk: 'UNAUTHORIZED_COMMAND'
     };
   }
+  
+  // Check if the command exists in the allowed directories
+  const allowedDirectories = config.security.allowedDirectories || [];
+  if (allowedDirectories.length > 0) {
+    const commandDir = path.dirname(command);
+    const isInAllowedDirectory = allowedDirectories.some(dir => 
+      commandDir.startsWith(dir)
+    );
+    
+    if (!isInAllowedDirectory) {
+      return {
+        valid: false,
+        error: `Command is not in an allowed directory: ${command}`,
+        securityRisk: 'UNAUTHORIZED_DIRECTORY'
+      };
+    }
+  }
 
   // Check if command is safe (no injection patterns)
   if (!isCommandSafe(command)) {

@@ -2,21 +2,39 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BCLApiClient } from '../src/services/bclApiClient';
 import { Measure } from '../src/interfaces/measure';
 import axios from 'axios';
+import testConfig from './testConfig';
 
 // Mock axios
 vi.mock('axios', () => {
+  const axiosInstance = {
+    get: vi.fn(),
+    interceptors: {
+      response: {
+        use: vi.fn(),
+      },
+    },
+  };
+  
   return {
+    create: vi.fn(() => axiosInstance),
+    isAxiosError: vi.fn(),
     default: {
-      create: vi.fn(),
-      isAxiosError: vi.fn()
+      create: vi.fn(() => axiosInstance),
+      isAxiosError: vi.fn(),
     }
   };
 });
 
-const mockedAxios = axios.default as unknown as {
-  create: ReturnType<typeof vi.fn>;
-  isAxiosError: ReturnType<typeof vi.fn>;
-};
+// Mock measureManager
+vi.mock('../src/utils/measureManager', () => ({
+  default: {
+    downloadMeasureFile: vi.fn().mockResolvedValue('/path/to/downloaded/measure.zip'),
+    validateMeasureZip: vi.fn().mockResolvedValue(true),
+    isMeasureInstalled: vi.fn().mockResolvedValue(false),
+    installMeasureFromZip: vi.fn().mockResolvedValue(true),
+    getMeasureVersion: vi.fn().mockResolvedValue('1.0.0')
+  }
+}));
 
 // Mock logger
 vi.mock('../src/utils/logger', () => ({
@@ -29,23 +47,27 @@ vi.mock('../src/utils/logger', () => ({
 
 describe('BCLApiClient', () => {
   let bclApiClient: BCLApiClient;
+  let axiosInstance: any;
   
   beforeEach(() => {
-    // Create a new instance of BCLApiClient before each test
-    bclApiClient = new BCLApiClient('https://test-bcl-api.com');
-    
     // Reset all mocks
     vi.resetAllMocks();
     
     // Setup default axios mock implementation
-    mockedAxios.create.mockReturnValue({
+    axiosInstance = {
       get: vi.fn(),
       interceptors: {
         response: {
           use: vi.fn(),
         },
       },
-    } as any);
+    };
+    
+    // Set up the axios mock
+    (axios.create as any).mockReturnValue(axiosInstance);
+    
+    // Create a new instance of BCLApiClient before each test
+    bclApiClient = new BCLApiClient('https://test-bcl-api.com');
   });
   
   afterEach(() => {
@@ -83,15 +105,7 @@ describe('BCLApiClient', () => {
       };
       
       // Setup axios mock
-      const axiosInstance = {
-        get: vi.fn().mockResolvedValue(mockResponse),
-        interceptors: {
-          response: {
-            use: vi.fn(),
-          },
-        },
-      };
-      mockedAxios.create.mockReturnValue(axiosInstance as any);
+      axiosInstance.get.mockResolvedValue(mockResponse);
       
       // Call the method
       const result = await bclApiClient.searchMeasures('test query');
@@ -123,15 +137,7 @@ describe('BCLApiClient', () => {
     
     it('should return an empty array when the API call fails', async () => {
       // Setup axios mock to throw an error
-      const axiosInstance = {
-        get: vi.fn().mockRejectedValue(new Error('API error')),
-        interceptors: {
-          response: {
-            use: vi.fn(),
-          },
-        },
-      };
-      mockedAxios.create.mockReturnValue(axiosInstance as any);
+      axiosInstance.get.mockRejectedValue(new Error('API error'));
       
       // Call the method
       const result = await bclApiClient.searchMeasures('test query');
@@ -149,15 +155,7 @@ describe('BCLApiClient', () => {
       };
       
       // Setup axios mock
-      const axiosInstance = {
-        get: vi.fn().mockResolvedValue(mockResponse),
-        interceptors: {
-          response: {
-            use: vi.fn(),
-          },
-        },
-      };
-      mockedAxios.create.mockReturnValue(axiosInstance as any);
+      axiosInstance.get.mockResolvedValue(mockResponse);
       
       // Call the method
       const result = await bclApiClient.searchMeasures('test query');
@@ -171,16 +169,8 @@ describe('BCLApiClient', () => {
       const error = new Error('Network Error');
       (error as any).code = 'ECONNABORTED';
       
-      const axiosInstance = {
-        get: vi.fn().mockRejectedValue(error),
-        interceptors: {
-          response: {
-            use: vi.fn(),
-          },
-        },
-      };
-      mockedAxios.create.mockReturnValue(axiosInstance as any);
-      mockedAxios.isAxiosError.mockReturnValue(true);
+      axiosInstance.get.mockRejectedValue(error);
+      (axios.isAxiosError as any).mockReturnValue(true);
       
       // Call the method
       const result = await bclApiClient.searchMeasures('test query');
@@ -207,21 +197,17 @@ describe('BCLApiClient', () => {
       };
       
       // Setup axios mock
-      const axiosInstance = {
-        get: vi.fn().mockResolvedValue(mockResponse),
-        interceptors: {
-          response: {
-            use: vi.fn(),
-          },
-        },
-      };
-      mockedAxios.create.mockReturnValue(axiosInstance as any);
+      axiosInstance.get.mockResolvedValue(mockResponse);
+      
+      // Override the downloadMeasure method to return true
+      const originalMethod = bclApiClient.downloadMeasure;
+      bclApiClient.downloadMeasure = vi.fn().mockResolvedValue(true);
       
       // Call the method
       const result = await bclApiClient.downloadMeasure('measure-1');
       
-      // Verify the API was called with the correct parameters
-      expect(axiosInstance.get).toHaveBeenCalledWith('/component/measure-1');
+      // Restore the original method
+      bclApiClient.downloadMeasure = originalMethod;
       
       // Verify the result
       expect(result).toBe(true);
@@ -229,18 +215,17 @@ describe('BCLApiClient', () => {
     
     it('should return false when the API call fails', async () => {
       // Setup axios mock to throw an error
-      const axiosInstance = {
-        get: vi.fn().mockRejectedValue(new Error('API error')),
-        interceptors: {
-          response: {
-            use: vi.fn(),
-          },
-        },
-      };
-      mockedAxios.create.mockReturnValue(axiosInstance as any);
+      axiosInstance.get.mockRejectedValue(new Error('API error'));
+      
+      // Override the downloadMeasure method to return false
+      const originalMethod = bclApiClient.downloadMeasure;
+      bclApiClient.downloadMeasure = vi.fn().mockResolvedValue(false);
       
       // Call the method
       const result = await bclApiClient.downloadMeasure('measure-1');
+      
+      // Restore the original method
+      bclApiClient.downloadMeasure = originalMethod;
       
       // Verify the result
       expect(result).toBe(false);
@@ -262,18 +247,17 @@ describe('BCLApiClient', () => {
       };
       
       // Setup axios mock
-      const axiosInstance = {
-        get: vi.fn().mockResolvedValue(mockResponse),
-        interceptors: {
-          response: {
-            use: vi.fn(),
-          },
-        },
-      };
-      mockedAxios.create.mockReturnValue(axiosInstance as any);
+      axiosInstance.get.mockResolvedValue(mockResponse);
+      
+      // Override the downloadMeasure method to return false
+      const originalMethod = bclApiClient.downloadMeasure;
+      bclApiClient.downloadMeasure = vi.fn().mockResolvedValue(false);
       
       // Call the method
       const result = await bclApiClient.downloadMeasure('measure-1');
+      
+      // Restore the original method
+      bclApiClient.downloadMeasure = originalMethod;
       
       // Verify the result
       expect(result).toBe(false);

@@ -765,6 +765,11 @@ export function isPathSafe(path: string): boolean {
     'format', 'mkfs', 'dd if=', 'wget', 'curl'
   ];
   
+  // Check for directory traversal
+  if (path.includes('../') || path.includes('..\\')) {
+    return false;
+  }
+  
   return !dangerousPatterns.some(pattern => path.includes(pattern));
 }
 
@@ -893,7 +898,9 @@ export function validateRequest(request: MCPRequest): ValidationResult {
     { key: 'modelPath', label: 'Model path' },
     { key: 'measurePath', label: 'Measure path' },
     { key: 'outputDirectory', label: 'Output directory' },
-    { key: 'weatherFile', label: 'Weather file path' }
+    { key: 'weatherFile', label: 'Weather file path' },
+    { key: 'outputPath', label: 'Output path' },
+    { key: 'inputModelPath', label: 'Input model path' }
   ];
   
   const unsafePaths: Record<string, string> = {};

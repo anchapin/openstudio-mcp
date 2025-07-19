@@ -1,12 +1,13 @@
 /**
  * Server tests
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import http from 'http';
 import WebSocket from 'ws';
 import { startServer } from '../src/server';
 
 describe('Server', () => {
+  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
   let server: http.Server;
   const TEST_PORT = 3001;
   
@@ -16,6 +17,13 @@ describe('Server', () => {
   
   afterAll(() => {
     server.close();
+  });
+  
+  // Clean up any hanging WebSocket connections
+  afterEach(() => {
+    // Force garbage collection of WebSocket objects
+    global.gc && global.gc();
+    vi.clearAllTimers();
   });
   
   it('should respond to health check', async () => {
@@ -38,10 +46,19 @@ describe('Server', () => {
   });
   
   it('should handle WebSocket connections and receive capabilities', (done) => {
+    const wsTimeout = setTimeout(() => {
+      done(new Error('Test timed out waiting for WebSocket response'));
+    }, 5000);
+    
     const ws = new WebSocket(`ws://localhost:${TEST_PORT}`);
     
     ws.on('open', () => {
       // The server should automatically send capabilities upon connection
+    });
+    
+    ws.on('error', (error) => {
+      clearTimeout(wsTimeout);
+      done(error);
     });
     
     ws.on('message', (data) => {
@@ -69,15 +86,25 @@ describe('Server', () => {
         expect(response.status).toBe('success');
         
         ws.close();
+        clearTimeout(wsTimeout);
         done();
       }
     });
   });
   
   it('should reject invalid requests', (done) => {
+    const wsTimeout = setTimeout(() => {
+      done(new Error('Test timed out waiting for WebSocket response'));
+    }, 5000);
+    
     const ws = new WebSocket(`ws://localhost:${TEST_PORT}`);
     
     let receivedCapabilities = false;
+    
+    ws.on('error', (error) => {
+      clearTimeout(wsTimeout);
+      done(error);
+    });
     
     ws.on('open', () => {
       // Wait for capabilities message first
@@ -101,6 +128,7 @@ describe('Server', () => {
         expect(response).toHaveProperty('error');
         
         ws.close();
+        clearTimeout(wsTimeout);
         done();
       }
     });

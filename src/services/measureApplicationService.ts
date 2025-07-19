@@ -709,16 +709,7 @@ export async function executeMeasureWorkflow(
 }
 
 // Export all functions as a default object
-export default {
-  validateMeasureForApplication,
-  applyMeasure,
-  applyMeasuresInSequence,
-  mapMeasureParameters,
-  downloadAndApplyMeasure,
-  executeMeasureWorkflow,
-  createWorkflowFromTemplate,
-  validateWorkflow
-};
+
 
 /**
  * Create a measure application workflow from a template
@@ -932,13 +923,3 @@ export async function validateWorkflow(
   }
 }
 
-export default {
-  validateMeasureForApplication,
-  applyMeasure,
-  applyMeasuresInSequence,
-  mapMeasureParameters,
-  downloadAndApplyMeasure,
-  executeMeasureWorkflow,
-  createWorkflowFromTemplate,
-  validateWorkflow
-};

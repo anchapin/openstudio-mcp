@@ -3,7 +3,7 @@
  */
 import express from 'express';
 import http from 'http';
-import WebSocket from 'ws';
+import * as WebSocket from 'ws';
 import { logger } from './utils';
 import config from './config';
 import { MCPServer } from './services/mcpServer';

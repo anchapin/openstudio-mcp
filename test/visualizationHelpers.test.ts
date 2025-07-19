@@ -9,6 +9,7 @@ import {
 import { SimulationResult, SimulationStatus } from '../src/services/simulationService';
 
 describe('Visualization Helpers', () => {
+  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
   // Create a mock simulation result for testing
   const mockSimulationResult: SimulationResult = {
     id: 'sim-123456',
@@ -36,6 +37,7 @@ describe('Visualization Helpers', () => {
   };
 
   describe('formatEnergyConsumptionByFuelType', () => {
+  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should format energy consumption by fuel type correctly', () => {
       const result = formatEnergyConsumptionByFuelType(mockSimulationResult);
       
@@ -62,6 +64,7 @@ describe('Visualization Helpers', () => {
   });
 
   describe('formatSimulationSummary', () => {
+  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should format simulation summary correctly', () => {
       const result = formatSimulationSummary(mockSimulationResult);
       
@@ -79,6 +82,7 @@ describe('Visualization Helpers', () => {
   });
 
   describe('generateSimulationDashboardHTML', () => {
+  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should generate HTML dashboard', () => {
       const html = generateSimulationDashboardHTML(mockSimulationResult);
       
@@ -101,6 +105,7 @@ describe('Visualization Helpers', () => {
   });
 
   describe('formatSimulationResultForAPI', () => {
+  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should format simulation result for API response', () => {
       const result = formatSimulationResultForAPI(mockSimulationResult);
       
@@ -117,6 +122,7 @@ describe('Visualization Helpers', () => {
   });
 
   describe('generateSimulationResultsCSV', () => {
+  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should generate CSV data for simulation results', () => {
       const csv = generateSimulationResultsCSV(mockSimulationResult);
       

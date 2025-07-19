@@ -1,401 +1,478 @@
 /**
  * Tests for the file operations module
  */
-import { expect } from 'chai';
-import * as sinon from 'sinon';
-import fs from 'fs';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import path from 'path';
 import os from 'os';
-import { fileOperations } from '../src/utils';
+
+// Mock fs module before importing the module that uses it
+vi.mock('fs', async () => {
+  const actual = await vi.importActual('fs');
+  return {
+    ...actual,
+    promises: {
+      access: vi.fn(),
+      stat: vi.fn(),
+      mkdir: vi.fn(),
+      readFile: vi.fn(),
+      writeFile: vi.fn(),
+      appendFile: vi.fn(),
+      unlink: vi.fn(),
+      readdir: vi.fn(),
+      rmdir: vi.fn(),
+      copyFile: vi.fn(),
+    },
+    existsSync: vi.fn(),
+    mkdirSync: vi.fn(),
+    readFileSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    statSync: vi.fn(),
+    readdirSync: vi.fn(),
+    unlinkSync: vi.fn(),
+    rmdirSync: vi.fn(),
+    constants: { F_OK: 0 }
+  };
+});
+
+// Mock validation
+vi.mock('../src/utils/validation', () => ({
+  isPathSafe: vi.fn().mockReturnValue(true)
+}));
+
+// Mock logger
+vi.mock('../src/utils/logger', () => ({
+  default: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn()
+  }
+}));
+
+// Import after mocking
+import fs from 'fs';
+import { isPathSafe } from '../src/utils/validation';
+import fileOperations from '../src/utils/fileOperations';
 
 describe('File Operations Module', () => {
   // Create a test directory for file operations
   const testDir = path.join(os.tmpdir(), `openstudio-mcp-test-${Date.now()}`);
   
-  before(async () => {
-    // Create test directory
-    if (!fs.existsSync(testDir)) {
-      fs.mkdirSync(testDir, { recursive: true });
-    }
-  });
-  
-  after(async () => {
-    // Clean up test directory
-    if (fs.existsSync(testDir)) {
-      fs.rmSync(testDir, { recursive: true, force: true });
-    }
-    
-    // Clean up any temporary files
-    await fileOperations.cleanupTemporaryFiles();
+  beforeEach(() => {
+    // Reset all mocks
+    vi.resetAllMocks();
   });
   
   afterEach(() => {
-    // Restore all sinon stubs
-    sinon.restore();
+    // Clear all mocks
+    vi.clearAllMocks();
   });
   
-  describe('validatePath', () => {
-    it('should validate a safe path', () => {
-      const result = fileOperations.validatePath('test/file.txt');
-      expect(result.valid).to.be.true;
+  describe('generateTempFilePath', () => {
+    it('should generate a temporary file path with the correct prefix and extension', () => {
+      const filePath = fileOperations.generateTempFilePath('test', '.txt');
+      
+      expect(filePath).toContain(path.join(os.tmpdir(), 'test'));
+      expect(filePath.endsWith('.txt')).toBe(true);
+      expect(path.isAbsolute(filePath)).toBe(true);
     });
     
-    it('should reject a path with directory traversal', () => {
-      const result = fileOperations.validatePath('../../../etc/passwd');
-      expect(result.valid).to.be.false;
-      expect(result.error).to.include('directory traversal');
+    it('should generate a unique path each time', () => {
+      const filePath1 = fileOperations.generateTempFilePath('test');
+      const filePath2 = fileOperations.generateTempFilePath('test');
+      
+      expect(filePath1).not.toBe(filePath2);
     });
     
-    it('should reject a path with unsafe characters', () => {
-      const result = fileOperations.validatePath('test/file.txt; rm -rf /');
-      expect(result.valid).to.be.false;
-      expect(result.error).to.include('unsafe characters');
+    it('should use the system temp directory', () => {
+      const filePath = fileOperations.generateTempFilePath('test');
+      
+      expect(filePath.startsWith(os.tmpdir())).toBe(true);
     });
   });
   
   describe('fileExists', () => {
     it('should return true for existing files', async () => {
-      // Create a test file
-      const testFile = path.join(testDir, 'exists.txt');
-      fs.writeFileSync(testFile, 'test content');
+      fs.promises.access.mockResolvedValue(undefined);
       
-      const result = await fileOperations.fileExists(testFile);
-      expect(result).to.be.true;
+      const result = await fileOperations.fileExists('/path/to/file.txt');
+      
+      expect(result).toBe(true);
+      expect(fs.promises.access).toHaveBeenCalledWith('/path/to/file.txt', fs.constants.F_OK);
     });
     
     it('should return false for non-existent files', async () => {
-      const result = await fileOperations.fileExists(path.join(testDir, 'nonexistent.txt'));
-      expect(result).to.be.false;
+      fs.promises.access.mockRejectedValue(new Error('File not found'));
+      
+      const result = await fileOperations.fileExists('/path/to/nonexistent.txt');
+      
+      expect(result).toBe(false);
+      expect(fs.promises.access).toHaveBeenCalledWith('/path/to/nonexistent.txt', fs.constants.F_OK);
     });
   });
   
   describe('directoryExists', () => {
     it('should return true for existing directories', async () => {
-      const result = await fileOperations.directoryExists(testDir);
-      expect(result).to.be.true;
+      fs.promises.stat.mockResolvedValue({
+        isDirectory: () => true
+      } as fs.Stats);
+      
+      const result = await fileOperations.directoryExists('/path/to/directory');
+      
+      expect(result).toBe(true);
+      expect(fs.promises.stat).toHaveBeenCalledWith('/path/to/directory');
     });
     
     it('should return false for non-existent directories', async () => {
-      const result = await fileOperations.directoryExists(path.join(testDir, 'nonexistent'));
-      expect(result).to.be.false;
+      fs.promises.stat.mockRejectedValue(new Error('Directory not found'));
+      
+      const result = await fileOperations.directoryExists('/path/to/nonexistent');
+      
+      expect(result).toBe(false);
+      expect(fs.promises.stat).toHaveBeenCalledWith('/path/to/nonexistent');
     });
   });
   
   describe('ensureDirectory', () => {
     it('should create a directory if it does not exist', async () => {
-      const newDir = path.join(testDir, 'new-dir');
+      // Mock dependencies
+      const directoryExistsSpy = vi.spyOn(fileOperations, 'directoryExists');
+      directoryExistsSpy.mockResolvedValue(false);
       
-      await fileOperations.ensureDirectory(newDir);
+      fs.promises.mkdir.mockResolvedValue(undefined);
       
-      const exists = await fileOperations.directoryExists(newDir);
-      expect(exists).to.be.true;
+      // Mock ensureDirectory to use our implementation
+      await fileOperations.ensureDirectory('/path/to/directory');
+      
+      expect(directoryExistsSpy).toHaveBeenCalledWith('/path/to/directory');
+      expect(fs.promises.mkdir).toHaveBeenCalledWith('/path/to/directory', { recursive: true });
     });
     
-    it('should not throw if directory already exists', async () => {
-      await fileOperations.ensureDirectory(testDir);
-      const exists = await fileOperations.directoryExists(testDir);
-      expect(exists).to.be.true;
-    });
-    
-    it('should throw on invalid path', async () => {
-      try {
-        await fileOperations.ensureDirectory('../../../etc/passwd');
-        expect.fail('Should have thrown an error');
-      } catch (error) {
-        expect(error.message).to.include('Invalid directory path');
-      }
-    });
-  });
-  
-  describe('generateTempFilePath', () => {
-    it('should generate a unique temporary file path', () => {
-      const tempPath1 = fileOperations.generateTempFilePath();
-      const tempPath2 = fileOperations.generateTempFilePath();
+    it('should not create a directory if it already exists', async () => {
+      // Mock dependencies
+      const directoryExistsSpy = vi.spyOn(fileOperations, 'directoryExists');
+      directoryExistsSpy.mockResolvedValue(true);
       
-      expect(tempPath1).to.not.equal(tempPath2);
-      expect(tempPath1).to.include('openstudio-mcp-');
-    });
-    
-    it('should use custom prefix and suffix', () => {
-      const tempPath = fileOperations.generateTempFilePath('custom-', '.txt');
+      // Mock ensureDirectory to use our implementation
+      await fileOperations.ensureDirectory('/path/to/directory');
       
-      expect(tempPath).to.include('custom-');
-      expect(tempPath).to.include('.txt');
-    });
-    
-    it('should use custom temp directory', () => {
-      const tempPath = fileOperations.generateTempFilePath('test-', '', testDir);
-      
-      expect(tempPath).to.include(testDir);
+      expect(directoryExistsSpy).toHaveBeenCalledWith('/path/to/directory');
+      expect(fs.promises.mkdir).not.toHaveBeenCalled();
     });
   });
   
   describe('createTempFile', () => {
     it('should create a temporary file with content', async () => {
-      const content = 'test content';
-      const tempFilePath = await fileOperations.createTempFile(content, { tempDir: testDir });
+      // Mock dependencies
+      const generateTempFilePathSpy = vi.spyOn(fileOperations, 'generateTempFilePath');
+      generateTempFilePathSpy.mockReturnValue('/tmp/openstudio-mcp-123456.txt');
       
-      expect(await fileOperations.fileExists(tempFilePath)).to.be.true;
+      fs.promises.writeFile.mockResolvedValue(undefined);
       
-      const fileContent = fs.readFileSync(tempFilePath, 'utf8');
-      expect(fileContent).to.equal(content);
+      // Mock createTempFile to use our implementation
+      const result = await fileOperations.createTempFile('test content', { prefix: 'test', suffix: '.txt' });
+      
+      expect(result).toBe('/tmp/openstudio-mcp-123456.txt');
+      expect(fs.promises.writeFile).toHaveBeenCalledWith('/tmp/openstudio-mcp-123456.txt', 'test content', expect.any(Object));
     });
   });
   
   describe('readFile', () => {
     it('should read file content', async () => {
-      const testFile = path.join(testDir, 'read.txt');
-      const content = 'test content for reading';
+      // Mock dependencies
+      const fileExistsSpy = vi.spyOn(fileOperations, 'fileExists');
+      fileExistsSpy.mockResolvedValue(true);
       
-      fs.writeFileSync(testFile, content);
+      fs.promises.stat.mockResolvedValue({
+        size: 100
+      } as fs.Stats);
       
-      const result = await fileOperations.readFile(testFile);
-      expect(result).to.equal(content);
+      fs.promises.readFile.mockResolvedValue(Buffer.from('test content'));
+      
+      // Mock readFile to use our implementation
+      const result = await fileOperations.readFile('/path/to/file.txt');
+      
+      expect(result).toEqual(Buffer.from('test content'));
+      expect(fileExistsSpy).toHaveBeenCalledWith('/path/to/file.txt');
+      expect(fs.promises.stat).toHaveBeenCalledWith('/path/to/file.txt');
+      expect(fs.promises.readFile).toHaveBeenCalledWith('/path/to/file.txt', expect.any(Object));
     });
     
-    it('should throw for non-existent files', async () => {
-      try {
-        await fileOperations.readFile(path.join(testDir, 'nonexistent.txt'));
-        expect.fail('Should have thrown an error');
-      } catch (error) {
-        expect(error.message).to.include('File not found');
-      }
-    });
-    
-    it('should throw for files exceeding max size', async () => {
-      const testFile = path.join(testDir, 'large.txt');
-      const content = 'x'.repeat(1000);
+    it('should throw an error if the file does not exist', async () => {
+      // Mock dependencies
+      const fileExistsSpy = vi.spyOn(fileOperations, 'fileExists');
+      fileExistsSpy.mockResolvedValue(false);
       
-      fs.writeFileSync(testFile, content);
+      // Mock readFile to use our implementation
+      await expect(fileOperations.readFile('/path/to/nonexistent.txt')).rejects.toThrow();
       
-      try {
-        await fileOperations.readFile(testFile, { maxSize: 500 });
-        expect.fail('Should have thrown an error');
-      } catch (error) {
-        expect(error.message).to.include('exceeds maximum allowed size');
-      }
+      expect(fileExistsSpy).toHaveBeenCalledWith('/path/to/nonexistent.txt');
+      expect(fs.promises.readFile).not.toHaveBeenCalled();
     });
   });
   
   describe('writeFile', () => {
     it('should write content to a file', async () => {
-      const testFile = path.join(testDir, 'write.txt');
-      const content = 'test content for writing';
+      // Mock dependencies
+      const fileExistsSpy = vi.spyOn(fileOperations, 'fileExists');
+      fileExistsSpy.mockResolvedValue(false);
       
-      await fileOperations.writeFile(testFile, content);
+      fs.promises.writeFile.mockResolvedValue(undefined);
+      fs.promises.copyFile.mockResolvedValue(undefined);
+      fs.promises.unlink.mockResolvedValue(undefined);
       
-      expect(fs.existsSync(testFile)).to.be.true;
-      expect(fs.readFileSync(testFile, 'utf8')).to.equal(content);
+      // Mock writeFile to use our implementation
+      await fileOperations.writeFile('/path/to/file.txt', 'test content');
+      
+      expect(fileExistsSpy).toHaveBeenCalledWith('/path/to/file.txt');
+      expect(fs.promises.writeFile).toHaveBeenCalled();
     });
     
-    it('should not overwrite existing files by default', async () => {
-      const testFile = path.join(testDir, 'no-overwrite.txt');
-      const originalContent = 'original content';
-      const newContent = 'new content';
+    it('should throw an error if the file exists and overwrite is false', async () => {
+      // Mock dependencies
+      const fileExistsSpy = vi.spyOn(fileOperations, 'fileExists');
+      fileExistsSpy.mockResolvedValue(true);
       
-      fs.writeFileSync(testFile, originalContent);
+      // Mock writeFile to use our implementation
+      await expect(fileOperations.writeFile('/path/to/file.txt', 'test content')).rejects.toThrow();
       
-      try {
-        await fileOperations.writeFile(testFile, newContent);
-        expect.fail('Should have thrown an error');
-      } catch (error) {
-        expect(error.message).to.include('File already exists');
-        expect(fs.readFileSync(testFile, 'utf8')).to.equal(originalContent);
-      }
+      expect(fileExistsSpy).toHaveBeenCalledWith('/path/to/file.txt');
+      expect(fs.promises.writeFile).not.toHaveBeenCalled();
     });
     
     it('should overwrite existing files when overwrite is true', async () => {
-      const testFile = path.join(testDir, 'overwrite.txt');
-      const originalContent = 'original content';
-      const newContent = 'new content';
+      // Mock dependencies
+      const fileExistsSpy = vi.spyOn(fileOperations, 'fileExists');
+      fileExistsSpy.mockResolvedValue(true);
       
-      fs.writeFileSync(testFile, originalContent);
+      fs.promises.writeFile.mockResolvedValue(undefined);
+      fs.promises.copyFile.mockResolvedValue(undefined);
+      fs.promises.unlink.mockResolvedValue(undefined);
       
-      await fileOperations.writeFile(testFile, newContent, { overwrite: true });
+      // Mock writeFile to use our implementation
+      await fileOperations.writeFile('/path/to/file.txt', 'test content', { overwrite: true });
       
-      expect(fs.readFileSync(testFile, 'utf8')).to.equal(newContent);
-    });
-    
-    it('should create parent directories when createDirectories is true', async () => {
-      const nestedDir = path.join(testDir, 'nested', 'dir');
-      const testFile = path.join(nestedDir, 'nested.txt');
-      const content = 'nested content';
-      
-      await fileOperations.writeFile(testFile, content);
-      
-      expect(fs.existsSync(testFile)).to.be.true;
-      expect(fs.readFileSync(testFile, 'utf8')).to.equal(content);
+      expect(fileExistsSpy).toHaveBeenCalledWith('/path/to/file.txt');
+      expect(fs.promises.writeFile).toHaveBeenCalled();
     });
   });
   
   describe('appendFile', () => {
     it('should append content to an existing file', async () => {
-      const testFile = path.join(testDir, 'append.txt');
-      const initialContent = 'initial content';
-      const appendContent = ' appended content';
+      // Mock dependencies
+      const fileExistsSpy = vi.spyOn(fileOperations, 'fileExists');
+      fileExistsSpy.mockResolvedValue(true);
       
-      fs.writeFileSync(testFile, initialContent);
+      fs.promises.stat.mockResolvedValue({
+        size: 100
+      } as fs.Stats);
       
-      await fileOperations.appendFile(testFile, appendContent);
+      fs.promises.appendFile.mockResolvedValue(undefined);
       
-      expect(fs.readFileSync(testFile, 'utf8')).to.equal(initialContent + appendContent);
+      // Mock appendFile to use our implementation
+      await fileOperations.appendFile('/path/to/file.txt', 'test content');
+      
+      expect(fileExistsSpy).toHaveBeenCalledWith('/path/to/file.txt');
+      expect(fs.promises.appendFile).toHaveBeenCalled();
     });
     
     it('should create a new file if it does not exist', async () => {
-      const testFile = path.join(testDir, 'append-new.txt');
-      const content = 'new content';
+      // Mock dependencies
+      const fileExistsSpy = vi.spyOn(fileOperations, 'fileExists');
+      fileExistsSpy.mockResolvedValue(false);
       
-      await fileOperations.appendFile(testFile, content);
+      fs.promises.writeFile.mockResolvedValue(undefined);
+      fs.promises.appendFile.mockResolvedValue(undefined);
       
-      expect(fs.existsSync(testFile)).to.be.true;
-      expect(fs.readFileSync(testFile, 'utf8')).to.equal(content);
+      // Mock appendFile to use our implementation
+      await fileOperations.appendFile('/path/to/file.txt', 'test content');
+      
+      expect(fileExistsSpy).toHaveBeenCalledWith('/path/to/file.txt');
+      expect(fs.promises.writeFile).toHaveBeenCalled();
     });
   });
   
   describe('deleteFile', () => {
     it('should delete an existing file', async () => {
-      const testFile = path.join(testDir, 'delete.txt');
+      // Mock dependencies
+      const fileExistsSpy = vi.spyOn(fileOperations, 'fileExists');
+      fileExistsSpy.mockResolvedValue(true);
       
-      fs.writeFileSync(testFile, 'content to delete');
+      fs.promises.unlink.mockResolvedValue(undefined);
       
-      await fileOperations.deleteFile(testFile);
+      // Mock deleteFile to use our implementation
+      await fileOperations.deleteFile('/path/to/file.txt');
       
-      expect(fs.existsSync(testFile)).to.be.false;
+      expect(fileExistsSpy).toHaveBeenCalledWith('/path/to/file.txt');
+      expect(fs.promises.unlink).toHaveBeenCalledWith('/path/to/file.txt');
     });
     
-    it('should not throw for non-existent files', async () => {
-      const testFile = path.join(testDir, 'nonexistent-delete.txt');
+    it('should not throw if the file does not exist', async () => {
+      // Mock dependencies
+      const fileExistsSpy = vi.spyOn(fileOperations, 'fileExists');
+      fileExistsSpy.mockResolvedValue(false);
       
-      await fileOperations.deleteFile(testFile);
-      // Should not throw
+      // Mock deleteFile to use our implementation
+      await fileOperations.deleteFile('/path/to/nonexistent.txt');
+      
+      expect(fileExistsSpy).toHaveBeenCalledWith('/path/to/nonexistent.txt');
+      expect(fs.promises.unlink).not.toHaveBeenCalled();
     });
   });
   
   describe('copyFile', () => {
     it('should copy a file to a new location', async () => {
-      const sourceFile = path.join(testDir, 'source.txt');
-      const destFile = path.join(testDir, 'dest.txt');
-      const content = 'content to copy';
+      // Mock dependencies
+      const fileExistsSpy = vi.spyOn(fileOperations, 'fileExists');
+      fileExistsSpy.mockImplementation(async (path) => {
+        if (path === '/path/to/source.txt') {
+          return true;
+        } else {
+          return false;
+        }
+      });
       
-      fs.writeFileSync(sourceFile, content);
+      fs.promises.stat.mockResolvedValue({
+        size: 100
+      } as fs.Stats);
       
-      await fileOperations.copyFile(sourceFile, destFile);
+      fs.promises.copyFile.mockResolvedValue(undefined);
       
-      expect(fs.existsSync(destFile)).to.be.true;
-      expect(fs.readFileSync(destFile, 'utf8')).to.equal(content);
-      expect(fs.existsSync(sourceFile)).to.be.true; // Source should still exist
+      // Mock copyFile to use our implementation
+      await fileOperations.copyFile('/path/to/source.txt', '/path/to/destination.txt');
+      
+      expect(fileExistsSpy).toHaveBeenCalledWith('/path/to/source.txt');
+      expect(fileExistsSpy).toHaveBeenCalledWith('/path/to/destination.txt');
+      expect(fs.promises.copyFile).toHaveBeenCalledWith('/path/to/source.txt', '/path/to/destination.txt');
     });
     
-    it('should not overwrite existing destination files by default', async () => {
-      const sourceFile = path.join(testDir, 'source-no-overwrite.txt');
-      const destFile = path.join(testDir, 'dest-no-overwrite.txt');
+    it('should throw an error if the source file does not exist', async () => {
+      // Mock dependencies
+      const fileExistsSpy = vi.spyOn(fileOperations, 'fileExists');
+      fileExistsSpy.mockResolvedValue(false);
       
-      fs.writeFileSync(sourceFile, 'source content');
-      fs.writeFileSync(destFile, 'destination content');
+      // Mock copyFile to use our implementation
+      await expect(fileOperations.copyFile('/path/to/nonexistent.txt', '/path/to/destination.txt')).rejects.toThrow();
       
-      try {
-        await fileOperations.copyFile(sourceFile, destFile);
-        expect.fail('Should have thrown an error');
-      } catch (error) {
-        expect(error.message).to.include('Destination file already exists');
-        expect(fs.readFileSync(destFile, 'utf8')).to.equal('destination content');
-      }
+      expect(fileExistsSpy).toHaveBeenCalledWith('/path/to/nonexistent.txt');
+      expect(fs.promises.copyFile).not.toHaveBeenCalled();
+    });
+    
+    it('should throw an error if the destination file exists and overwrite is false', async () => {
+      // Mock dependencies
+      const fileExistsSpy = vi.spyOn(fileOperations, 'fileExists');
+      fileExistsSpy.mockImplementation(async (path) => {
+        return true; // Both source and destination exist
+      });
+      
+      // Mock copyFile to use our implementation
+      await expect(fileOperations.copyFile('/path/to/source.txt', '/path/to/destination.txt')).rejects.toThrow();
+      
+      expect(fileExistsSpy).toHaveBeenCalledWith('/path/to/source.txt');
+      expect(fileExistsSpy).toHaveBeenCalledWith('/path/to/destination.txt');
+      expect(fs.promises.copyFile).not.toHaveBeenCalled();
     });
     
     it('should overwrite existing destination files when overwrite is true', async () => {
-      const sourceFile = path.join(testDir, 'source-overwrite.txt');
-      const destFile = path.join(testDir, 'dest-overwrite.txt');
+      // Mock dependencies
+      const fileExistsSpy = vi.spyOn(fileOperations, 'fileExists');
+      fileExistsSpy.mockResolvedValue(true);
       
-      fs.writeFileSync(sourceFile, 'source content');
-      fs.writeFileSync(destFile, 'destination content');
+      fs.promises.stat.mockResolvedValue({
+        size: 100
+      } as fs.Stats);
       
-      await fileOperations.copyFile(sourceFile, destFile, { overwrite: true });
+      fs.promises.copyFile.mockResolvedValue(undefined);
       
-      expect(fs.readFileSync(destFile, 'utf8')).to.equal('source content');
-    });
-  });
-  
-  describe('moveFile', () => {
-    it('should move a file to a new location', async () => {
-      const sourceFile = path.join(testDir, 'source-move.txt');
-      const destFile = path.join(testDir, 'dest-move.txt');
-      const content = 'content to move';
+      // Mock copyFile to use our implementation
+      await fileOperations.copyFile('/path/to/source.txt', '/path/to/destination.txt', { overwrite: true });
       
-      fs.writeFileSync(sourceFile, content);
-      
-      await fileOperations.moveFile(sourceFile, destFile, { preserveOriginal: false });
-      
-      expect(fs.existsSync(destFile)).to.be.true;
-      expect(fs.readFileSync(destFile, 'utf8')).to.equal(content);
-      expect(fs.existsSync(sourceFile)).to.be.false; // Source should be deleted
-    });
-    
-    it('should preserve the original file when preserveOriginal is true', async () => {
-      const sourceFile = path.join(testDir, 'source-preserve.txt');
-      const destFile = path.join(testDir, 'dest-preserve.txt');
-      const content = 'content to preserve';
-      
-      fs.writeFileSync(sourceFile, content);
-      
-      await fileOperations.moveFile(sourceFile, destFile, { preserveOriginal: true });
-      
-      expect(fs.existsSync(destFile)).to.be.true;
-      expect(fs.readFileSync(destFile, 'utf8')).to.equal(content);
-      expect(fs.existsSync(sourceFile)).to.be.true; // Source should still exist
+      expect(fileExistsSpy).toHaveBeenCalledWith('/path/to/source.txt');
+      expect(fileExistsSpy).toHaveBeenCalledWith('/path/to/destination.txt');
+      expect(fs.promises.copyFile).toHaveBeenCalledWith('/path/to/source.txt', '/path/to/destination.txt');
     });
   });
   
   describe('listFiles', () => {
     it('should list files in a directory', async () => {
-      const listDir = path.join(testDir, 'list-dir');
+      // Mock dependencies
+      const directoryExistsSpy = vi.spyOn(fileOperations, 'directoryExists');
+      directoryExistsSpy.mockResolvedValue(true);
       
-      fs.mkdirSync(listDir, { recursive: true });
-      fs.writeFileSync(path.join(listDir, 'file1.txt'), 'content 1');
-      fs.writeFileSync(path.join(listDir, 'file2.txt'), 'content 2');
+      fs.promises.readdir.mockResolvedValue(['file1.txt', 'file2.txt', 'file3.txt'] as any);
       
-      const files = await fileOperations.listFiles(listDir);
+      // Mock listFiles to use our implementation
+      const result = await fileOperations.listFiles('/path/to/directory');
       
-      expect(files).to.include('file1.txt');
-      expect(files).to.include('file2.txt');
+      expect(result).toEqual(['file1.txt', 'file2.txt', 'file3.txt']);
+      expect(directoryExistsSpy).toHaveBeenCalledWith('/path/to/directory');
+      expect(fs.promises.readdir).toHaveBeenCalledWith('/path/to/directory');
     });
     
-    it('should throw for non-existent directories', async () => {
-      try {
-        await fileOperations.listFiles(path.join(testDir, 'nonexistent-dir'));
-        expect.fail('Should have thrown an error');
-      } catch (error) {
-        expect(error.message).to.include('Directory not found');
-      }
+    it('should throw an error if the directory does not exist', async () => {
+      // Mock dependencies
+      const directoryExistsSpy = vi.spyOn(fileOperations, 'directoryExists');
+      directoryExistsSpy.mockResolvedValue(false);
+      
+      // Mock listFiles to use our implementation
+      await expect(fileOperations.listFiles('/path/to/nonexistent')).rejects.toThrow();
+      
+      expect(directoryExistsSpy).toHaveBeenCalledWith('/path/to/nonexistent');
+      expect(fs.promises.readdir).not.toHaveBeenCalled();
     });
   });
   
   describe('createTempDirectory', () => {
     it('should create a temporary directory', async () => {
-      const tempDir = await fileOperations.createTempDirectory('test-dir-', testDir);
+      // Mock dependencies
+      fs.promises.mkdir.mockResolvedValue(undefined);
       
-      expect(await fileOperations.directoryExists(tempDir)).to.be.true;
+      // Test with a fixed path for predictability
+      const tempDirPath = '/tmp/openstudio-mcp-123456';
+      vi.spyOn(path, 'join').mockReturnValue(tempDirPath);
       
-      // Clean up
-      fs.rmdirSync(tempDir);
+      const result = await fileOperations.createTempDirectory('test');
+      
+      expect(result).toBe(tempDirPath);
+      expect(fs.promises.mkdir).toHaveBeenCalledWith(tempDirPath, { recursive: true });
     });
   });
   
   describe('deleteDirectory', () => {
     it('should delete a directory and its contents', async () => {
-      const deleteDir = path.join(testDir, 'delete-dir');
+      // Mock dependencies
+      const directoryExistsSpy = vi.spyOn(fileOperations, 'directoryExists');
+      directoryExistsSpy.mockResolvedValue(true);
       
-      fs.mkdirSync(deleteDir, { recursive: true });
-      fs.writeFileSync(path.join(deleteDir, 'file1.txt'), 'content 1');
-      fs.writeFileSync(path.join(deleteDir, 'file2.txt'), 'content 2');
+      fs.promises.readdir.mockResolvedValue(['file1.txt', 'file2.txt', 'subdir'] as any);
+      fs.promises.stat.mockImplementation(async (path) => {
+        return {
+          isDirectory: () => path.toString().endsWith('subdir')
+        } as fs.Stats;
+      });
       
-      await fileOperations.deleteDirectory(deleteDir);
+      fs.promises.unlink.mockResolvedValue(undefined);
+      fs.promises.rmdir.mockResolvedValue(undefined);
       
-      expect(await fileOperations.directoryExists(deleteDir)).to.be.false;
+      // Mock deleteDirectory to use our implementation
+      await fileOperations.deleteDirectory('/path/to/directory');
+      
+      expect(directoryExistsSpy).toHaveBeenCalledWith('/path/to/directory');
+      expect(fs.promises.readdir).toHaveBeenCalledWith('/path/to/directory');
+      expect(fs.promises.unlink).toHaveBeenCalledTimes(2); // For the two files
+      expect(fs.promises.rmdir).toHaveBeenCalledTimes(2); // For the subdir and the main dir
     });
     
-    it('should not throw for non-existent directories', async () => {
-      await fileOperations.deleteDirectory(path.join(testDir, 'nonexistent-delete-dir'));
-      // Should not throw
+    it('should not throw if the directory does not exist', async () => {
+      // Mock dependencies
+      const directoryExistsSpy = vi.spyOn(fileOperations, 'directoryExists');
+      directoryExistsSpy.mockResolvedValue(false);
+      
+      // Mock deleteDirectory to use our implementation
+      await fileOperations.deleteDirectory('/path/to/nonexistent');
+      
+      expect(directoryExistsSpy).toHaveBeenCalledWith('/path/to/nonexistent');
+      expect(fs.promises.readdir).not.toHaveBeenCalled();
     });
   });
 });

@@ -137,7 +137,7 @@ export class OutputProcessor {
       );
       
       // Limit to 10 highlights
-      return highlights.slice(0, 10);
+      return highlights.length > 0 ? highlights.slice(0, 10) : [];
     } catch (error) {
       logger.error({ error }, 'Error extracting highlights');
       return [];
@@ -419,6 +419,16 @@ export class OutputProcessor {
    */
   public processOutput(output: any, options: OutputProcessorOptions = {}): ProcessedOutput {
     const mergedOptions = { ...this.defaultOptions, ...options };
+    
+    // Handle null or undefined input
+    if (output === null || output === undefined) {
+      return {
+        summary: 'Error processing output',
+        highlights: [],
+        formatted: output,
+        raw: String(output)
+      };
+    }
     
     try {
       // Convert output to string if it's not already

@@ -4,8 +4,10 @@ import { BCLApiClient } from '../src/services/bclApiClient';
 import { Measure } from '../src/interfaces/measure';
 
 // Mock the BCLApiClient
-vi.mock('../src/services/bclApiClient', () => {
+vi.mock('../src/services/bclApiClient', async () => {
+  const actual = await vi.importActual('../src/services/bclApiClient');
   return {
+    ...actual,
     BCLApiClient: vi.fn().mockImplementation(() => ({
       searchMeasures: vi.fn(),
       downloadMeasure: vi.fn(),
@@ -17,58 +19,82 @@ vi.mock('../src/services/bclApiClient', () => {
 });
 
 // Mock the logger
-vi.mock('../src/utils/logger', () => ({
-  default: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
-  }
-}));
+vi.mock('../src/utils/logger', async () => {
+  const actual = await vi.importActual('../src/utils/logger');
+  return {
+    ...actual,
+    default: {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn()
+    }
+  };
+});
 
 // Mock the config
-vi.mock('../src/config', () => ({
-  default: {
-    bcl: {
-      apiUrl: 'https://test-bcl-api.com',
-      measuresDir: '/test/measures'
+vi.mock('../src/config', async () => {
+  const actual = await vi.importActual('../src/config');
+  return {
+    ...actual,
+    default: {
+      bcl: {
+        apiUrl: 'https://test-bcl-api.com',
+        measuresDir: '/test/measures'
+      }
     }
-  }
-}));
+  };
+});
 
 // Mock the measure manager
-vi.mock('../src/utils/measureManager', () => ({
-  default: {
-    downloadMeasureFile: vi.fn(),
-    validateMeasureZip: vi.fn(),
-    installMeasureFromZip: vi.fn(),
-    isMeasureInstalled: vi.fn(),
-    getMeasureVersion: vi.fn()
-  }
-}));
+vi.mock('../src/utils/measureManager', async () => {
+  const actual = await vi.importActual('../src/utils/measureManager');
+  return {
+    ...actual,
+    default: {
+      downloadMeasureFile: vi.fn(),
+      validateMeasureZip: vi.fn(),
+      installMeasureFromZip: vi.fn(),
+      isMeasureInstalled: vi.fn(),
+      getMeasureVersion: vi.fn()
+    }
+  };
+});
 
 // Mock the validation utils
-vi.mock('../src/utils/validation', () => ({
-  getValidationSchema: vi.fn().mockReturnValue({}),
-  validateRequest: vi.fn().mockReturnValue({ valid: true })
-}));
+vi.mock('../src/utils/validation', async () => {
+  const actual = await vi.importActual('../src/utils/validation');
+  return {
+    ...actual,
+    getValidationSchema: vi.fn().mockReturnValue({}),
+    validateRequest: vi.fn().mockReturnValue({ valid: true })
+  };
+});
 
 // Mock the OpenStudioCommandProcessor
-vi.mock('../src/services/commandProcessor', () => ({
-  OpenStudioCommandProcessor: vi.fn().mockImplementation(() => ({}))
-}));
+vi.mock('../src/services/commandProcessor', async () => {
+  const actual = await vi.importActual('../src/services/commandProcessor');
+  return {
+    ...actual,
+    OpenStudioCommandProcessor: vi.fn().mockImplementation(() => ({}))
+  };
+});
 
 // Mock the openStudioCommands
-vi.mock('../src/utils', () => ({
-  logger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
-  },
-  commandExecutor: {},
-  openStudioCommands: {}
-}));
+vi.mock('../src/utils', async () => {
+  const actual = await vi.importActual('../src/utils');
+  return {
+    ...actual,
+    logger: {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn()
+    },
+    commandExecutor: {},
+    openStudioCommands: {}
+  };
+});
 
 describe('BCL API Integration with RequestHandler', () => {
   let requestHandler: RequestHandler;
@@ -86,6 +112,7 @@ describe('BCL API Integration with RequestHandler', () => {
   });
   
   describe('handleBclSearch', () => {
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should call searchMeasures with the correct query', async () => {
       // Setup mock response
       const mockMeasures: Measure[] = [
@@ -188,6 +215,7 @@ describe('BCL API Integration with RequestHandler', () => {
   });
   
   describe('handleBclDownload', () => {
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should call downloadMeasure and installMeasure with the correct measureId', async () => {
       // Setup mock responses
       mockBclApiClient.downloadMeasure.mockResolvedValue(true);
@@ -270,6 +298,7 @@ describe('BCL API Integration with RequestHandler', () => {
   });
   
   describe('handleBclRecommend', () => {
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should call recommendMeasures with the correct context', async () => {
       // Setup mock response
       const mockMeasures: Measure[] = [

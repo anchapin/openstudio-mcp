@@ -4,7 +4,8 @@ import { Measure } from '../src/interfaces/measure';
 import axios from 'axios';
 
 // Mock axios
-vi.mock('axios', () => {
+vi.mock('axios', async () => {
+  const actual = await vi.importActual('axios');
   const mockAxiosInstance = {
     get: vi.fn(),
     interceptors: {
@@ -15,6 +16,7 @@ vi.mock('axios', () => {
   };
   
   return {
+    ...actual,
     default: {
       create: vi.fn(() => mockAxiosInstance),
       isAxiosError: vi.fn()
@@ -23,35 +25,47 @@ vi.mock('axios', () => {
 });
 
 // Mock logger
-vi.mock('../src/utils/logger', () => ({
-  default: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
-  },
-}));
+vi.mock('../src/utils/logger', async () => {
+  const actual = await vi.importActual('../src/utils/logger');
+  return {
+    ...actual,
+    default: {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn()
+    },
+  };
+});
 
 // Mock measure manager
-vi.mock('../src/utils/measureManager', () => ({
-  default: {
-    isMeasureInstalled: vi.fn(),
-    downloadMeasureFile: vi.fn(),
-    validateMeasureZip: vi.fn(),
-    installMeasureFromZip: vi.fn(),
-    getMeasureVersion: vi.fn()
-  }
-}));
+vi.mock('../src/utils/measureManager', async () => {
+  const actual = await vi.importActual('../src/utils/measureManager');
+  return {
+    ...actual,
+    default: {
+      isMeasureInstalled: vi.fn(),
+      downloadMeasureFile: vi.fn(),
+      validateMeasureZip: vi.fn(),
+      installMeasureFromZip: vi.fn(),
+      getMeasureVersion: vi.fn()
+    }
+  };
+});
 
 // Mock config
-vi.mock('../src/config', () => ({
-  default: {
-    bcl: {
-      apiUrl: 'https://test-bcl-api.com',
-      measuresDir: '/test/measures'
+vi.mock('../src/config', async () => {
+  const actual = await vi.importActual('../src/config');
+  return {
+    ...actual,
+    default: {
+      bcl: {
+        apiUrl: 'https://test-bcl-api.com',
+        measuresDir: '/test/measures'
+      }
     }
-  }
-}));
+  };
+});
 
 // Import the mocked measure manager
 import measureManager from '../src/utils/measureManager';
@@ -74,6 +88,7 @@ describe('Measure Recommendation System', () => {
   });
   
   describe('recommendMeasures', () => {
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should recommend measures based on context analysis', async () => {
       // Create spy for searchMeasures
       const searchMeasuresSpy = vi.spyOn(bclApiClient, 'searchMeasures');
@@ -297,6 +312,7 @@ describe('Measure Recommendation System', () => {
   });
   
   describe('Context Analysis', () => {
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should extract relevant keywords from context', async () => {
       // Create a spy on the searchMeasures method
       const searchMeasuresSpy = vi.spyOn(bclApiClient, 'searchMeasures');

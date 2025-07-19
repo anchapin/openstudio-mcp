@@ -112,6 +112,8 @@ Run tests with coverage:
 npm run test:coverage
 ```
 
+For more detailed testing information, see [Testing Guide](docs/testing.md).
+
 ## Linting and Formatting
 
 Lint the code:

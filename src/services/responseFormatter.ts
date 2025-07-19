@@ -100,17 +100,25 @@ export class ResponseFormatter {
       });
       
       // Add processed output to the response
-      response.result.processedOutput = {
-        summary: processedOutput.summary
-      };
-      
-      // Include highlights if requested
-      if (mergedOptions.includeHighlights && processedOutput.highlights.length > 0) {
-        response.result.processedOutput.highlights = processedOutput.highlights;
+      if (processedOutput && processedOutput.summary !== undefined) {
+        response.result.processedOutput = {
+          summary: processedOutput.summary
+        };
+        
+        // Include highlights if requested
+        if (mergedOptions.includeHighlights && processedOutput.highlights && processedOutput.highlights.length > 0) {
+          response.result.processedOutput.highlights = processedOutput.highlights;
+        }
+        
+        // Include formatted output
+        if (processedOutput.formatted !== undefined) {
+          response.result.processedOutput.formatted = processedOutput.formatted;
+        }
+      } else {
+        response.result.processedOutput = {
+          summary: 'No output available'
+        };
       }
-      
-      // Include formatted output
-      response.result.processedOutput.formatted = processedOutput.formatted;
       
       // Include raw output if requested
       if (mergedOptions.includeRawOutput) {
@@ -191,8 +199,8 @@ export class ResponseFormatter {
         includeRawOutput: false
       });
       
-      // Use the processed summary as the error message if it's different from the original
-      if (processedOutput.summary !== errorMessage) {
+      // Use the processed summary as the error message if it's available and different from the original
+      if (processedOutput && processedOutput.summary !== undefined && processedOutput.summary !== errorMessage) {
         response.error.message = processedOutput.summary;
         
         // Store the original error message in the details
@@ -204,7 +212,8 @@ export class ResponseFormatter {
       }
       
       // Add highlights if available and requested
-      if (mergedOptions.includeHighlights && processedOutput.highlights.length > 0) {
+      if (processedOutput && processedOutput.highlights && 
+          mergedOptions.includeHighlights && processedOutput.highlights.length > 0) {
         if (!response.error.details) {
           response.error.details = { highlights: processedOutput.highlights };
         } else if (typeof response.error.details === 'object') {
