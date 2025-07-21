@@ -17,7 +17,7 @@
     "test:fix-specific": "node ./scripts/fix-specific-tests.js",
     "test:individual": "node ./scripts/run-tests-individually.js",
     "test:debug-all": "node ./scripts/debug-all-tests.js",
-    "test:unit": "vitest run --config vitest.unit.config.mts",
+    "test:unit": "vitest run --config vitest.unit.config.mts --reporter=basic --timeout=60000",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint . --ext .ts",

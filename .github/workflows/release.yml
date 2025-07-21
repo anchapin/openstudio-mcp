@@ -19,12 +19,15 @@ jobs:
     
     - name: Install dependencies
       run: npm ci
+      
+    - name: Setup test environment
+      run: node scripts/ci-test-setup.js
     
     - name: Build
       run: npm run build
     
     - name: Run tests
-      run: npm run test:unit
+      run: npx vitest run --config vitest.unit.config.mts --reporter=basic --timeout=60000
       env:
         NODE_ENV: test
         CI: true
