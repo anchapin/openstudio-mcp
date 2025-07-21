@@ -36,6 +36,9 @@ jobs:
       run: npm run test:unit
       env:
         NODE_ENV: test
+        CI: true
+        VITEST_MAX_THREADS: 1
+        VITEST_SEGFAULT_RETRY: 0
     
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3

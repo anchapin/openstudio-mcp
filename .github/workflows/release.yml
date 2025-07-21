@@ -28,6 +28,8 @@ jobs:
       env:
         NODE_ENV: test
         CI: true
+        VITEST_MAX_THREADS: 1
+        VITEST_SEGFAULT_RETRY: 0
     
     - name: Package all platforms
       run: npm run package:all

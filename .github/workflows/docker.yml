@@ -49,6 +49,8 @@ jobs:
       env:
         NODE_ENV: test
         CI: true
+        VITEST_MAX_THREADS: 1
+        VITEST_SEGFAULT_RETRY: 0
     
     - name: Build and push
       uses: docker/build-push-action@v4
