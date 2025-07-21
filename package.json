@@ -28,7 +28,8 @@
     "package:win": "npm run build && pkg . --targets node18-win-x64 --output bin/openstudio-mcp-server-win.exe",
     "package:mac": "npm run build && pkg . --targets node18-macos-x64,node18-macos-arm64 --output bin/openstudio-mcp-server-mac",
     "package:linux": "npm run build && pkg . --targets node18-linux-x64 --output bin/openstudio-mcp-server-linux",
-    "package:all": "npm run build && npm run package:win && npm run package:mac && npm run package:linux"
+    "package:all": "npm run build && npm run package:win && npm run package:mac && npm run package:linux",
+    "ci": "npm ci && npm run build"
   },
   "keywords": [
     "openstudio",

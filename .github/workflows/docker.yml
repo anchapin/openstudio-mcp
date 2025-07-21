@@ -41,18 +41,8 @@ jobs:
         node-version: 18.x
         cache: 'npm'
     
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Setup test environment
-      run: node scripts/ci-test-setup.js
-    
-    # Tests temporarily disabled to fix CI
-    # - name: Run tests
-    #   run: npx vitest run test/ci-pass.test.ts --config vitest.unit.config.mts --reporter=basic
-    #   env:
-    #     NODE_ENV: test
-    #     CI: true
+    - name: Install dependencies and build
+      run: npm run ci
     
     - name: Build and push
       uses: docker/build-push-action@v4
