@@ -35,6 +35,20 @@ jobs:
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
     
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run tests
+      run: npm run test:unit
+      env:
+        NODE_ENV: test
+    
     - name: Build and push
       uses: docker/build-push-action@v4
       with:

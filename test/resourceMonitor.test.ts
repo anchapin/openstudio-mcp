@@ -95,8 +95,7 @@ describe('Resource Monitor', () => {
     });
     
     // Skip all tests that use timers or async operations
-    it('should start and stop monitoring', async () => {
-    return 
+    it.skip('should start and stop monitoring', async () => {
       const monitor = new ProcessResourceMonitor(
         mockChildProcess,
         1024,
@@ -135,8 +134,7 @@ describe('Resource Monitor', () => {
       }
     });
     
-    it('should detect memory limit exceeded', async () => {
-    return 
+    it.skip('should detect memory limit exceeded', async () => {
       const monitor = new ProcessResourceMonitor(
         mockChildProcess,
         1024, // 1GB memory limit
