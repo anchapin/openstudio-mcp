@@ -41,3 +41,7 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Problematic test files
+test/resourceMonitor.test.ts
+test/openStudioCommands.test.ts

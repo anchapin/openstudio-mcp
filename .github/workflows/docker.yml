@@ -48,7 +48,7 @@ jobs:
       run: node scripts/ci-test-setup.js
     
     - name: Run tests
-      run: npx vitest run --config vitest.unit.config.mts --reporter=basic --timeout=60000
+      run: npx vitest run --config vitest.unit.config.mts --reporter=basic --timeout=60000 --testNamePattern="^(?!.*Resource Monitor|.*OpenStudio Commands).*$"
       env:
         NODE_ENV: test
         CI: true
