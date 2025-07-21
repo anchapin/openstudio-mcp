@@ -48,6 +48,7 @@ jobs:
       run: npm run test:unit
       env:
         NODE_ENV: test
+        CI: true
     
     - name: Build and push
       uses: docker/build-push-action@v4

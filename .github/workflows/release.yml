@@ -27,6 +27,7 @@ jobs:
       run: npm run test:unit
       env:
         NODE_ENV: test
+        CI: true
     
     - name: Package all platforms
       run: npm run package:all
