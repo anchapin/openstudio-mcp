@@ -62,6 +62,15 @@ Start the development server with hot reloading:
 npm run dev
 ```
 
+### CI/CD
+
+This project uses GitHub Actions for continuous integration and deployment:
+
+- **CI Workflow**: Automatically runs linting, building, and testing on push to master and pull requests
+- **Release Workflow**: Automatically builds and packages the application when a new version tag is pushed
+- **Docker Workflow**: Builds and publishes Docker images to GitHub Container Registry
+- **Dependency Review**: Scans dependencies for security vulnerabilities on pull requests
+
 ## Building
 
 Build the project:

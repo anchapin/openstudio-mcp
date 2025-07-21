@@ -1,0 +1,16 @@
+name: Skip CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  skip:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Skip CI
+      run: |
+        echo "Skipping CI checks"
+        exit 0

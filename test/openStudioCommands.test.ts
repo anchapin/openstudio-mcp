@@ -48,8 +48,7 @@ describe('OpenStudio Commands', () => {
     vi.resetAllMocks();
   });
 
-  it('should create a model', async () => {
-    return
+  it.skip('should create a model', async () => {
     // Mock the command executor to return a successful result
     vi.mocked(executeOpenStudioCommand).mockResolvedValue({
       success: true,
@@ -70,8 +69,7 @@ describe('OpenStudio Commands', () => {
     );
   });
 
-  it('should run a simulation', async () => {
-    return
+  it.skip('should run a simulation', async () => {
     // Mock the command executor to return a successful result
     vi.mocked(executeOpenStudioCommand).mockResolvedValue({
       success: true,
@@ -92,8 +90,7 @@ describe('OpenStudio Commands', () => {
     );
   });
 
-  it('should apply a measure', async () => {
-    return
+  it.skip('should apply a measure', async () => {
     // Mock the command executor to return a successful result
     vi.mocked(executeOpenStudioCommand).mockResolvedValue({
       success: true,

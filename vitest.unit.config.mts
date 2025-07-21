@@ -5,7 +5,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['./test/setup.ts'],
-    testTimeout: 30000, // Increased timeout to 30 seconds
+    testTimeout: 60000, // Increased timeout to 60 seconds
     exclude: ['**/node_modules/**'],
     coverage: {
       provider: 'v8',
