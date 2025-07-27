@@ -260,6 +260,32 @@ export class ProcessResourceMonitor {
 }
 
 /**
+ * Get resource usage for a process (simplified implementation)
+ * @param pid Process ID
+ * @returns Process resource usage information or null if not available
+ */
+export async function getProcessResourceUsage(pid: number): Promise<ProcessResourceUsage | null> {
+  try {
+    // This is a simplified implementation
+    // For production use, consider using a more robust solution like node-ps-list
+    
+    const currentCpuUsage = process.cpuUsage();
+    const totalMemory = os.totalmem();
+    const currentMemory = process.memoryUsage();
+    
+    return {
+      pid,
+      cpuUsage: 0, // Simplified - would need platform-specific implementation
+      memoryUsage: currentMemory.rss,
+      memoryPercentage: (currentMemory.rss / totalMemory) * 100,
+      uptime: process.uptime() * 1000, // Convert to milliseconds
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
  * Create a resource monitor for a child process
  * @param process Child process to monitor
  * @param memoryLimit Memory limit in MB

@@ -30,6 +30,7 @@ export interface MCPResponse {
     code: string;
     message: string;
     details?: any;
+    _metadata?: any;
   };
 }
 

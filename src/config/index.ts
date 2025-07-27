@@ -48,6 +48,20 @@ const config = {
     level: process.env.LOG_LEVEL || 'info',
     prettyPrint: process.env.NODE_ENV !== 'production',
   },
+  
+  // Security configuration
+  security: {
+    allowedDirectories: process.env.ALLOWED_DIRECTORIES ? 
+      process.env.ALLOWED_DIRECTORIES.split(',').map(dir => dir.trim()) : 
+      [],
+  },
+  
+  // File operations configuration
+  fileOperations: {
+    allowedDirectories: process.env.ALLOWED_DIRECTORIES ? 
+      process.env.ALLOWED_DIRECTORIES.split(',').map(dir => dir.trim()) : 
+      [],
+  },
 };
 
 // Create measures directory if it doesn't exist

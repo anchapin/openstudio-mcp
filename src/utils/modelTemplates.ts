@@ -185,8 +185,6 @@ async function createStandardModel(
     // Create a temporary Ruby script to generate the model
     const scriptContent = generateModelCreationScript(opts, outputPath);
     const scriptPath = await fileOperations.createTempFile(scriptContent, { 
-      prefix: 'create_model_',
-      suffix: '.rb',
       tempDir: config.tempDir
     });
     

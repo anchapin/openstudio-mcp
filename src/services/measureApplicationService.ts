@@ -923,3 +923,17 @@ export async function validateWorkflow(
   }
 }
 
+// Export all functions as a default object
+const measureApplicationService = {
+  validateMeasureForApplication,
+  applyMeasure,
+  applyMeasuresInSequence,
+  mapMeasureParameters,
+  downloadAndApplyMeasure,
+  executeMeasureWorkflow,
+  createWorkflowFromTemplate,
+  validateWorkflow
+};
+
+export default measureApplicationService;
+

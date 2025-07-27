@@ -66,7 +66,7 @@ export class OutputProcessor {
    * @param maxLength Maximum length of the summary
    * @returns Summarized output
    */
-  public summarizeText(output: string, maxLength: number = this.defaultOptions.maxSummaryLength): string {
+  public summarizeText(output: string, maxLength: number = this.defaultOptions.maxSummaryLength || 500): string {
     if (!output) return '';
     
     try {
@@ -86,7 +86,7 @@ export class OutputProcessor {
       
       // Add lines with important keywords
       const keywordLines = lines.filter(line => 
-        this.defaultOptions.highlightKeywords.some(keyword => 
+        (this.defaultOptions.highlightKeywords || []).some(keyword => 
           line.toLowerCase().includes(keyword.toLowerCase())
         )
       );
@@ -125,7 +125,7 @@ export class OutputProcessor {
    * @param keywords Keywords to highlight
    * @returns Array of highlighted lines
    */
-  public extractHighlights(output: string, keywords: string[] = this.defaultOptions.highlightKeywords): string[] {
+  public extractHighlights(output: string, keywords: string[] = this.defaultOptions.highlightKeywords || []): string[] {
     if (!output) return [];
     
     try {
@@ -150,7 +150,7 @@ export class OutputProcessor {
    * @param format Format to use
    * @returns Formatted output
    */
-  public formatOutput(output: any, format: OutputFormat = this.defaultOptions.format): any {
+  public formatOutput(output: any, format: OutputFormat = this.defaultOptions.format || OutputFormat.TEXT): any {
     try {
       switch (format) {
         case OutputFormat.JSON:
@@ -359,7 +359,7 @@ export class OutputProcessor {
     // Try to determine if it's time series data
     if (obj.timestamps || obj.dates || obj.times) {
       const labels = obj.timestamps || obj.dates || obj.times || [];
-      const datasets = [];
+      const datasets: any[] = [];
       
       // Extract datasets
       Object.entries(obj).forEach(([key, value]) => {
