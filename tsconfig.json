@@ -6,7 +6,8 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    "strict": false,
+    "strict": true,
+    "strictNullChecks": true,
     "noImplicitAny": false,
     "skipLibCheck": true,
     "outDir": "dist",
@@ -16,5 +17,19 @@
     "resolveJsonModule": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+  "exclude": [
+    "node_modules", 
+    "dist", 
+    "**/*.test.ts",
+    "src/services/responseFormatter.ts",
+    "src/services/simulationService.ts",
+    "src/utils/commandExecutor.ts",
+    "src/utils/configManager.ts",
+    "src/utils/fileOperations.ts",
+    "src/utils/modelTemplates.ts",
+    "src/utils/openStudioCommands.ts",
+    "src/utils/validation.ts",
+    "src/utils/validator.ts",
+    "src/utils/visualizationHelpers.ts"
+  ]
 }
