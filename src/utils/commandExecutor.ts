@@ -475,7 +475,7 @@ export async function executeCommand(
     }, 'Applying resource limits to command');
     
     // Spawn the process
-    const process = spawn(command, args, spawnOptions);
+    const childProcess = spawn(command, args, spawnOptions);
     
     // Set up timeout if specified
     let timeout: NodeJS.Timeout | null = null;
@@ -483,21 +483,21 @@ export async function executeCommand(
       timeout = setTimeout(() => {
         logger.warn({ command, args, timeout: opts.timeout }, 'Command execution timed out');
         
-        if (process.pid) {
+        if (childProcess.pid) {
           try {
             // Try to kill the process
-            process.kill('SIGTERM');
+            childProcess.kill('SIGTERM');
             
             // If process doesn't exit within 2 seconds, force kill it
             setTimeout(() => {
               try {
-                if (process.pid && !process.killed) {
-                  process.kill('SIGKILL');
-                  logger.warn({ pid: process.pid }, 'Force killed process after timeout');
+                if (childProcess.pid && !childProcess.killed) {
+                  childProcess.kill('SIGKILL');
+                  logger.warn({ pid: childProcess.pid }, 'Force killed process after timeout');
                 }
               } catch (error) {
                 logger.error({ 
-                  pid: process.pid, 
+                  pid: childProcess.pid, 
                   error: error instanceof Error ? error.message : String(error) 
                 }, 'Failed to force kill process');
               }
@@ -547,10 +547,10 @@ export async function executeCommand(
     }
     
     // Set up resource monitoring
-    if (process.pid && (opts.memoryLimit || opts.cpuLimit)) {
+    if (childProcess.pid && (opts.memoryLimit || opts.cpuLimit)) {
       // Create resource monitor with both memory and CPU limits
       createResourceMonitor(
-        process, 
+        childProcess, 
         opts.memoryLimit || 0,
         opts.cpuLimit || 0,
         (reason) => {
@@ -562,21 +562,21 @@ export async function executeCommand(
             reason
           }, `Process exceeded ${reason} limit`);
           
-          if (process.pid && !process.killed) {
+          if (childProcess.pid && !childProcess.killed) {
             try {
               // Try to kill the process
-              process.kill('SIGTERM');
+              childProcess.kill('SIGTERM');
               
               // If process doesn't exit within 2 seconds, force kill it
               setTimeout(() => {
                 try {
-                  if (process.pid && !process.killed) {
-                    process.kill('SIGKILL');
-                    logger.warn({ pid: process.pid }, `Force killed process after ${reason} limit exceeded`);
+                  if (childProcess.pid && !childProcess.killed) {
+                    childProcess.kill('SIGKILL');
+                    logger.warn({ pid: childProcess.pid }, `Force killed process after ${reason} limit exceeded`);
                   }
                 } catch (error) {
                   logger.error({ 
-                    pid: process.pid, 
+                    pid: childProcess.pid, 
                     error: error instanceof Error ? error.message : String(error) 
                   }, 'Failed to force kill process');
                 }
@@ -597,14 +597,14 @@ export async function executeCommand(
     
     // Store the process in the active processes map
     activeProcesses.set(commandId, {
-      process,
+      process: childProcess,
       timeout,
       startTime,
     });
     
     // Capture stdout if requested
-    if (opts.captureStdout && process.stdout) {
-      process.stdout.on('data', (data) => {
+    if (opts.captureStdout && childProcess.stdout) {
+      childProcess.stdout.on('data', (data) => {
         const chunk = data.toString();
         stdout += chunk;
         logger.debug({ command, chunk }, 'Command stdout');
@@ -612,8 +612,8 @@ export async function executeCommand(
     }
     
     // Capture stderr if requested
-    if (opts.captureStderr && process.stderr) {
-      process.stderr.on('data', (data) => {
+    if (opts.captureStderr && childProcess.stderr) {
+      childProcess.stderr.on('data', (data) => {
         const chunk = data.toString();
         stderr += chunk;
         logger.debug({ command, chunk }, 'Command stderr');
@@ -621,7 +621,7 @@ export async function executeCommand(
     }
     
     // Handle process exit
-    process.on('close', (code) => {
+    childProcess.on('close', (code) => {
       const executionTime = Date.now() - startTime;
       cleanupCommand(commandId);
       

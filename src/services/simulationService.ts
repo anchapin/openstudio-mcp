@@ -9,7 +9,7 @@ import { CommandResult } from '../interfaces';
 import path from 'path';
 import fs from 'fs';
 import config from '../config';
-import { resourceMonitor } from '../utils/resourceMonitor';
+import { createResourceMonitor, getProcessResourceUsage } from '../utils/resourceMonitor';
 
 /**
  * Simulation parameters
@@ -457,18 +457,18 @@ function monitorSimulation(simulationId: string, processId: number): void {
   const monitorInterval = setInterval(async () => {
     try {
       // Get resource usage
-      const usage = await resourceMonitor.getProcessResourceUsage(processId);
+      const usage = await getProcessResourceUsage(processId);
       
       if (usage) {
         // Update simulation result with resource usage
-        simulation.result.cpuUsage = usage.cpu;
-        simulation.result.memoryUsage = usage.memory;
+        simulation.result.cpuUsage = usage.cpuUsage;
+        simulation.result.memoryUsage = usage.memoryUsage;
         
         logger.debug({ 
           simulationId, 
           processId, 
-          cpuUsage: usage.cpu, 
-          memoryUsage: usage.memory 
+          cpuUsage: usage.cpuUsage, 
+          memoryUsage: usage.memoryUsage 
         }, 'Simulation resource usage');
       }
     } catch (error) {

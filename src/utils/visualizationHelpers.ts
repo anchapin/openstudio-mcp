@@ -268,7 +268,7 @@ export function generateSimulationDashboardHTML(simulationResult: SimulationResu
       <h1>Simulation Results Dashboard</h1>
       <p>
         Status: 
-        <span class="status ${simulationResult.status === 'COMPLETE' ? 'success' : simulationResult.status === 'FAILED' ? 'error' : 'warning'}">
+        <span class="status ${simulationResult.status === 'complete' ? 'success' : simulationResult.status === 'failed' ? 'error' : 'warning'}">
           ${simulationResult.status}
         </span>
       </p>

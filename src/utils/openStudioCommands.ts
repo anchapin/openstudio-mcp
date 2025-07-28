@@ -599,7 +599,7 @@ export async function listMeasures(measureDir?: string): Promise<OpenStudioComma
         const argumentSections = section.split(/Argument: /g).slice(1);
         
         for (const argSection of argumentSections) {
-          const argument = {
+          const argument: any = {
             name: '',
             displayName: '',
             description: '',

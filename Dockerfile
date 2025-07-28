@@ -40,14 +40,8 @@ RUN npm ci --production
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
 
-# Create directories
+# Create directories (templates and measures will be empty initially)
 RUN mkdir -p ./templates ./measures ./temp
-
-# Copy templates directory if it exists
-COPY templates ./templates
-
-# Copy measures directory if it exists
-COPY measures ./measures
 
 # Expose port
 EXPOSE 3000

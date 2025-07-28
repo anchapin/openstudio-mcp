@@ -5,14 +5,15 @@
  * It provides methods for formatting success and error responses,
  * as well as including metadata in responses.
  */
-import { MCPResponse, CommandResult, ResponseFormatterOptions } from '../interfaces';
+import { MCPResponse, CommandResult } from '../interfaces';
 import { logger, outputProcessor } from '../utils';
+import { OutputFormat } from '../utils/outputProcessor';
 
 /**
  * Response metadata interface
  */
 export interface ResponseMetadata {
-  timestamp: string;
+  timestamp?: string;
   duration?: number;
   requestId?: string;
   serverVersion?: string;
@@ -89,8 +90,8 @@ export class ResponseFormatter {
     if (mergedOptions.processOutput && result.output) {
       // Convert output format to the format expected by the output processor
       const outputFormat = mergedOptions.outputFormat ? 
-        mergedOptions.outputFormat.toUpperCase() : 
-        'TEXT';
+        OutputFormat[mergedOptions.outputFormat.toUpperCase() as keyof typeof OutputFormat] : 
+        OutputFormat.TEXT;
       
       // Process the output
       const processedOutput = outputProcessor.processOutput(result.output, {
@@ -195,12 +196,12 @@ export class ResponseFormatter {
       // Process the error message to make it more user-friendly
       const processedOutput = outputProcessor.processOutput(errorMessage, {
         maxSummaryLength: mergedOptions.maxSummaryLength || 200,
-        format: 'TEXT',
+        format: OutputFormat.TEXT,
         includeRawOutput: false
       });
       
       // Use the processed summary as the error message if it's available and different from the original
-      if (processedOutput && processedOutput.summary !== undefined && processedOutput.summary !== errorMessage) {
+      if (processedOutput && processedOutput.summary !== undefined && processedOutput.summary !== errorMessage && response.error) {
         response.error.message = processedOutput.summary;
         
         // Store the original error message in the details
@@ -213,7 +214,7 @@ export class ResponseFormatter {
       
       // Add highlights if available and requested
       if (processedOutput && processedOutput.highlights && 
-          mergedOptions.includeHighlights && processedOutput.highlights.length > 0) {
+          mergedOptions.includeHighlights && processedOutput.highlights.length > 0 && response.error) {
         if (!response.error.details) {
           response.error.details = { highlights: processedOutput.highlights };
         } else if (typeof response.error.details === 'object') {
@@ -223,7 +224,7 @@ export class ResponseFormatter {
     }
     
     // Add details if provided
-    if (details) {
+    if (details && response.error) {
       if (!response.error.details) {
         response.error.details = details;
       } else if (typeof response.error.details === 'object' && typeof details === 'object') {
@@ -248,7 +249,7 @@ export class ResponseFormatter {
       });
       
       // Only add metadata if there are properties
-      if (Object.keys(metadata).length > 0) {
+      if (Object.keys(metadata).length > 0 && response.error) {
         response.error._metadata = metadata;
       }
     }
@@ -306,10 +307,12 @@ export class ResponseFormatter {
         code: 'UNKNOWN_ERROR',
         message: 'Unknown error'
       };
-      responseCopy.error._metadata = {
-        ...(responseCopy.error._metadata || {}),
-        ...metadata
-      };
+      if (responseCopy.error) {
+        responseCopy.error._metadata = {
+          ...(responseCopy.error._metadata || {}),
+          ...metadata
+        };
+      }
     }
     
     return responseCopy;
