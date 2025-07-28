@@ -1,0 +1,31 @@
+{
+  "servers": {
+    "openstudio-mcp": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/Users/achapin/OpenStudio/openstudio-mcp/mcp-simple-server.js"],
+      "env": {
+        "NODE_ENV": "production"
+      },
+      "tools": [
+        "openstudio.model.create",
+        "openstudio.model.info",
+        "openstudio.bcl.search",
+        "openstudio.bcl.recommend",
+        "openstudio.simulation.run"
+      ]
+    },
+    "openstudio-mcp-http": {
+      "type": "http",
+      "url": "http://localhost:3000/mcp/",
+      "tools": [
+        "openstudio.model.create",
+        "openstudio.model.info",
+        "openstudio.bcl.search",
+        "openstudio.bcl.recommend",
+        "openstudio.simulation.run"
+      ]
+    }
+  },
+  "inputs": []
+}

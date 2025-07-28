@@ -1,0 +1,52 @@
+{
+  "openstudio": {
+    "tools": [
+      "openstudio.model.create",
+      "openstudio.model.open",
+      "openstudio.model.save",
+      "openstudio.model.info",
+      "openstudio.simulation.run",
+      "openstudio.bcl.search",
+      "openstudio.bcl.download",
+      "openstudio.bcl.recommend",
+      "openstudio.measure.apply"
+    ],
+    "description": "OpenStudio building energy modeling tools for creating models, running simulations, and managing measures from the Building Component Library",
+    "icon": "tools"
+  },
+  "openstudio-modeling": {
+    "tools": [
+      "openstudio.model.create",
+      "openstudio.model.open",
+      "openstudio.model.save",
+      "openstudio.model.info"
+    ],
+    "description": "OpenStudio model creation and management tools",
+    "icon": "file"
+  },
+  "openstudio-simulation": {
+    "tools": [
+      "openstudio.simulation.run"
+    ],
+    "description": "OpenStudio energy simulation tools",
+    "icon": "play"
+  },
+  "openstudio-bcl": {
+    "tools": [
+      "openstudio.bcl.search",
+      "openstudio.bcl.download",
+      "openstudio.bcl.recommend"
+    ],
+    "description": "Building Component Library integration for finding and downloading measures",
+    "icon": "search"
+  },
+  "openstudio-measures": {
+    "tools": [
+      "openstudio.measure.apply",
+      "openstudio.bcl.search",
+      "openstudio.bcl.download"
+    ],
+    "description": "OpenStudio measure application and management",
+    "icon": "settings"
+  }
+}

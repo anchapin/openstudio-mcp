@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "openstudio-mcp": {
+      "command": "node",
+      "args": ["/Users/achapin/OpenStudio/openstudio-mcp/mcp-simple-server.js"],
+      "env": {
+        "NODE_ENV": "production"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "openstudio.model.info",
+        "openstudio.bcl.search",
+        "openstudio.bcl.recommend"
+      ]
+    }
+  }
+}
