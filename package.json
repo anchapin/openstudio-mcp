@@ -22,7 +22,7 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
-    "prepare": "husky install",
+    "prepare": "command -v husky >/dev/null 2>&1 && husky install || true",
     "pkg": "pkg .",
     "package": "npm run build && npm run pkg",
     "package:win": "npm run build && pkg . --targets node18-win-x64 --output bin/openstudio-mcp-server-win.exe",
