@@ -2,7 +2,9 @@
   "mcpServers": {
     "openstudio-mcp": {
       "command": "node",
-      "args": ["/Users/achapin/OpenStudio/openstudio-mcp/mcp-simple-server.js"],
+      "args": [
+        "/Users/achapin/OpenStudio/openstudio-mcp/mcp-simple-server.js"
+      ],
       "env": {
         "NODE_ENV": "production"
       },

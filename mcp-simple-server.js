@@ -16,6 +16,9 @@ class SimpleMCPServer {
       terminal: false
     });
     
+    // Track pending requests to handle cancellations
+    this.pendingRequests = new Map();
+    
     this.setupStdioHandler();
     this.log('Simple MCP Server started');
   }
@@ -24,9 +27,12 @@ class SimpleMCPServer {
     this.rl.on('line', (line) => {
       if (!line.trim()) return;
       
+      this.log(`Received: ${line.trim()}`);
+      
       try {
         const request = JSON.parse(line);
-        this.handleMCPRequest(request);
+        // Handle request immediately without any delays
+        setImmediate(() => this.handleMCPRequest(request));
       } catch (error) {
         this.log(`Error parsing stdin: ${error}`);
         this.sendError(null, 'PARSE_ERROR', 'Invalid JSON in request');
@@ -47,20 +53,28 @@ class SimpleMCPServer {
     try {
       switch (method) {
         case 'initialize':
-          // Respond immediately to initialize
-          this.sendResponse({
+          // Respond immediately to initialize with proper capabilities
+          const initResponse = {
+            jsonrpc: '2.0',
             id,
             result: {
               protocolVersion: '2024-11-05',
               capabilities: {
-                tools: {}
+                tools: {
+                  listChanged: false
+                },
+                resources: {
+                  subscribe: false,
+                  listChanged: false
+                }
               },
               serverInfo: {
                 name: 'OpenStudio MCP Server (Simple)',
                 version: '0.1.0'
               }
             }
-          });
+          };
+          this.sendResponse(initResponse);
           this.log(`Initialize response sent for ${id}`);
           break;
           
@@ -73,7 +87,39 @@ class SimpleMCPServer {
           this.handleToolCall(id, params);
           break;
           
+        case 'resources/list':
+          this.handleResourcesList(id);
+          this.log(`Resources list response sent for ${id}`);
+          break;
+          
+        case 'resources/templates/list':
+          this.handleResourceTemplatesList(id);
+          this.log(`Resource templates list response sent for ${id}`);
+          break;
+          
+        case 'notifications/cancelled':
+          // Handle cancellation notifications - these don't need a response
+          const cancelledId = params?.requestId;
+          if (cancelledId && this.pendingRequests.has(cancelledId)) {
+            this.pendingRequests.delete(cancelledId);
+            this.log(`Request cancelled: ${cancelledId}`);
+          } else {
+            this.log(`Request cancelled: ${cancelledId || 'unknown'}`);
+          }
+          return; // Don't send a response for notifications
+          
+        case 'notifications/initialized':
+          // Handle initialized notifications - these don't need a response
+          this.log('Client initialized');
+          return; // Don't send a response for notifications
+          
         default:
+          // Check if it's a notification (no response expected)
+          if (method.startsWith('notifications/')) {
+            this.log(`Unhandled notification: ${method}`);
+            return; // Don't send error responses for notifications
+          }
+          
           this.sendError(id, 'METHOD_NOT_FOUND', `Unknown method: ${method}`);
           this.log(`Unknown method error sent for ${id}: ${method}`);
       }
@@ -81,6 +127,28 @@ class SimpleMCPServer {
       this.log(`Error handling request: ${error}`);
       this.sendError(id, 'INTERNAL_ERROR', error.message);
     }
+  }
+  
+  handleResourcesList(id) {
+    // Return empty resources list since we don't have any resources
+    this.sendResponse({
+      jsonrpc: '2.0',
+      id,
+      result: {
+        resources: []
+      }
+    });
+  }
+  
+  handleResourceTemplatesList(id) {
+    // Return empty resource templates list since we don't have any templates
+    this.sendResponse({
+      jsonrpc: '2.0',
+      id,
+      result: {
+        resourceTemplates: []
+      }
+    });
   }
   
   handleToolsList(id) {
@@ -180,6 +248,7 @@ class SimpleMCPServer {
     ];
     
     this.sendResponse({
+      jsonrpc: '2.0',
       id,
       result: {
         tools: tools
@@ -192,7 +261,16 @@ class SimpleMCPServer {
     
     this.log(`Tool call: ${name} (id: ${id})`);
     
+    // Track this request
+    this.pendingRequests.set(id, { name, startTime: Date.now() });
+    
     try {
+      // Check if request was cancelled before starting
+      if (!this.pendingRequests.has(id)) {
+        this.log(`Request ${id} was cancelled before execution`);
+        return;
+      }
+      
       // Add timeout protection
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
@@ -210,6 +288,12 @@ class SimpleMCPServer {
       
       clearTimeout(timeoutId);
       
+      // Check if request was cancelled during execution
+      if (!this.pendingRequests.has(id)) {
+        this.log(`Request ${id} was cancelled during execution`);
+        return;
+      }
+      
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -217,6 +301,7 @@ class SimpleMCPServer {
       const result = await response.json();
       
       this.sendResponse({
+        jsonrpc: '2.0',
         id,
         result: result
       });
@@ -234,26 +319,45 @@ class SimpleMCPServer {
         errorMessage = 'OpenStudio MCP server is not running. Please start it with: npm start';
       }
       
-      this.sendResponse({
-        id,
-        result: {
-          content: [
-            {
-              type: 'text',
-              text: `${errorMessage}\n\nMake sure the OpenStudio MCP server is running on http://localhost:3000`
-            }
-          ]
-        }
-      });
+      // Only send response if request wasn't cancelled
+      if (this.pendingRequests.has(id)) {
+        this.sendResponse({
+          jsonrpc: '2.0',
+          id,
+          result: {
+            content: [
+              {
+                type: 'text',
+                text: `${errorMessage}\n\nMake sure the OpenStudio MCP server is running on http://localhost:3000`
+              }
+            ]
+          }
+        });
+      }
+    } finally {
+      // Clean up pending request
+      this.pendingRequests.delete(id);
     }
   }
   
   sendResponse(response) {
-    process.stdout.write(JSON.stringify(response) + '\n');
+    // Ensure all responses have the required jsonrpc field
+    if (!response.jsonrpc) {
+      response.jsonrpc = '2.0';
+    }
+    
+    const responseStr = JSON.stringify(response) + '\n';
+    process.stdout.write(responseStr);
+    // Force flush to ensure immediate delivery
+    if (process.stdout.flush) {
+      process.stdout.flush();
+    }
+    this.log(`Response sent for id ${response.id}`);
   }
   
   sendError(id, code, message, details = null) {
     this.sendResponse({
+      jsonrpc: '2.0',
       id,
       error: {
         code,
