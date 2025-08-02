@@ -11,7 +11,7 @@ export interface ResponseMetadata {
   requestId?: string;
   serverVersion?: string;
   openStudioVersion?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -32,25 +32,25 @@ export interface ResponseFormatterInterface {
   formatSuccess(
     requestId: string,
     requestType: string,
-    result: any,
-    options?: ResponseFormatterOptions
-  ): any;
-  
+    result: unknown,
+    options?: ResponseFormatterOptions,
+  ): unknown;
+
   formatError(
     requestId: string,
     requestType: string,
     error: string | Error,
     code?: string,
-    details?: any,
-    options?: ResponseFormatterOptions
-  ): any;
-  
+    details?: unknown,
+    options?: ResponseFormatterOptions,
+  ): unknown;
+
   formatResponse(
     requestId: string,
     requestType: string,
-    result: any,
-    options?: ResponseFormatterOptions
-  ): any;
-  
-  addMetadata(response: any, metadata: ResponseMetadata): any;
+    result: unknown,
+    options?: ResponseFormatterOptions,
+  ): unknown;
+
+  addMetadata(response: unknown, metadata: ResponseMetadata): unknown;
 }

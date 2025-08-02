@@ -1,6 +1,4 @@
-/**
- * Resource monitor tests
- */
+/**\n * Resource monitor tests\n */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ProcessResourceMonitor, createResourceMonitor } from '../src/utils/resourceMonitor';
 import { EventEmitter } from 'events';
@@ -46,9 +44,10 @@ vi.mock('child_process', () => ({
 }));
 
 describe('ResourceMonitor', () => {
-  vi.setConfig({ testTimeout: 60000 });
+  vi.setConfig({ testTimeout: 30000 });
   let mockChildProcess: EventEmitter;
   let onLimitExceeded: ReturnType<typeof vi.fn>;
+  let monitor: ProcessResourceMonitor | null = null;
 
   beforeEach(() => {
     // Create a mock child process
@@ -62,17 +61,26 @@ describe('ResourceMonitor', () => {
 
     // Create a mock callback
     onLimitExceeded = vi.fn();
+
+    // Always use real timers for resource monitor tests
+    vi.useRealTimers();
   });
 
   afterEach(() => {
-    // Always restore real timers
-    vi.useRealTimers();
+    // Clean up any active monitor
+    if (monitor) {
+      monitor.stop();
+      monitor = null;
+    }
+
+    // Clear all mocks and timers
+    vi.clearAllMocks();
     vi.clearAllTimers();
   });
 
   describe('ProcessResourceMonitor', () => {
     it('should create a monitor instance', () => {
-      const monitor = new ProcessResourceMonitor(
+      monitor = new ProcessResourceMonitor(
         mockChildProcess as unknown as ChildProcess,
         1024, // 1GB memory limit
         50, // 50% CPU limit
@@ -83,7 +91,7 @@ describe('ResourceMonitor', () => {
     });
 
     it('should have start and stop methods', () => {
-      const monitor = new ProcessResourceMonitor(
+      monitor = new ProcessResourceMonitor(
         mockChildProcess as unknown as ChildProcess,
         1024,
         50,
@@ -97,7 +105,7 @@ describe('ResourceMonitor', () => {
 
   describe('createResourceMonitor', () => {
     it('should create a monitor using factory function', () => {
-      const monitor = createResourceMonitor(
+      monitor = createResourceMonitor(
         mockChildProcess as unknown as ChildProcess,
         1024,
         50,
@@ -105,9 +113,6 @@ describe('ResourceMonitor', () => {
       );
 
       expect(monitor).toBeInstanceOf(ProcessResourceMonitor);
-
-      // Clean up
-      monitor.stop();
     });
   });
 });

@@ -1,6 +1,6 @@
 /**
  * Command processor service
- * 
+ *
  * This service is responsible for processing commands and executing them
  * using the secure command execution module.
  */
@@ -21,27 +21,30 @@ export class OpenStudioCommandProcessor implements CommandProcessor {
    * @param params Command parameters
    * @returns Promise that resolves with the command result
    */
-  public async processCommand(command: string, params: any): Promise<CommandResult> {
+  public async processCommand(
+    command: string,
+    params: Record<string, unknown>,
+  ): Promise<CommandResult> {
     logger.info({ command, params }, 'Processing command');
-    
+
     try {
       // Prepare command execution options
       const options = {
-        cwd: params.workingDirectory,
-        env: params.env,
-        timeout: params.timeout || config.openStudio.timeout,
-        memoryLimit: params.memoryLimit || 2048, // Default to 2GB memory limit
-        niceness: params.niceness || 10, // Default to lower priority
+        cwd: params.workingDirectory as string | undefined,
+        env: params.env as Record<string, string> | undefined,
+        timeout: (params.timeout as number) || config.openStudio.timeout,
+        memoryLimit: (params.memoryLimit as number) || 2048, // Default to 2GB memory limit
+        niceness: (params.niceness as number) || 10, // Default to lower priority
         restricted: params.restricted !== false, // Default to restricted mode
       };
-      
+
       // Execute the command with args if provided
       const result = await commandExecutor.executeCommand(
-        command, 
-        params.args || [], 
-        options
+        command,
+        (params.args as string[]) || [],
+        options,
       );
-      
+
       return {
         success: result.success,
         output: result.stdout,
@@ -54,7 +57,7 @@ export class OpenStudioCommandProcessor implements CommandProcessor {
       };
     } catch (error) {
       logger.error({ command, params, error }, 'Error processing command');
-      
+
       return {
         success: false,
         output: '',
@@ -69,9 +72,12 @@ export class OpenStudioCommandProcessor implements CommandProcessor {
    * @param args Command arguments
    * @returns Promise that resolves with the command result
    */
-  public async executeOpenStudioCommand(command: string, args: string[] = []): Promise<CommandResult> {
+  public async executeOpenStudioCommand(
+    command: string,
+    args: string[] = [],
+  ): Promise<CommandResult> {
     logger.info({ command, args }, 'Executing OpenStudio command');
-    
+
     try {
       // Execute the OpenStudio command with enhanced options
       const result = await commandExecutor.executeOpenStudioCommand(command, args, {
@@ -80,7 +86,7 @@ export class OpenStudioCommandProcessor implements CommandProcessor {
         niceness: 10, // Default to lower priority
         restricted: true, // Default to restricted mode
       });
-      
+
       return {
         success: result.success,
         output: result.stdout,
@@ -93,7 +99,7 @@ export class OpenStudioCommandProcessor implements CommandProcessor {
       };
     } catch (error) {
       logger.error({ command, args, error }, 'Error executing OpenStudio command');
-      
+
       return {
         success: false,
         output: '',
@@ -109,7 +115,7 @@ export class OpenStudioCommandProcessor implements CommandProcessor {
    */
   public async handleFileOperation(operation: FileOperation): Promise<FileOperationResult> {
     logger.info({ operation }, 'Handling file operation');
-    
+
     // Validate the path
     if (!isPathSafe(operation.path)) {
       logger.warn({ operation }, 'Unsafe file path');
@@ -118,7 +124,7 @@ export class OpenStudioCommandProcessor implements CommandProcessor {
         error: 'Unsafe file path',
       };
     }
-    
+
     try {
       switch (operation.type) {
         case 'read':
@@ -136,7 +142,7 @@ export class OpenStudioCommandProcessor implements CommandProcessor {
       }
     } catch (error) {
       logger.error({ operation, error }, 'Error handling file operation');
-      
+
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -153,17 +159,17 @@ export class OpenStudioCommandProcessor implements CommandProcessor {
     try {
       // Ensure the file exists
       await fs.access(filePath);
-      
+
       // Read the file
       const content = await fs.readFile(filePath, 'utf8');
-      
+
       return {
         success: true,
         content,
       };
     } catch (error) {
       logger.error({ filePath, error }, 'Error reading file');
-      
+
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -182,16 +188,16 @@ export class OpenStudioCommandProcessor implements CommandProcessor {
       // Ensure the directory exists
       const directory = path.dirname(filePath);
       await fs.mkdir(directory, { recursive: true });
-      
+
       // Write the file
       await fs.writeFile(filePath, content, 'utf8');
-      
+
       return {
         success: true,
       };
     } catch (error) {
       logger.error({ filePath, error }, 'Error writing file');
-      
+
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -208,16 +214,16 @@ export class OpenStudioCommandProcessor implements CommandProcessor {
     try {
       // Ensure the file exists
       await fs.access(filePath);
-      
+
       // Delete the file
       await fs.unlink(filePath);
-      
+
       return {
         success: true,
       };
     } catch (error) {
       logger.error({ filePath, error }, 'Error deleting file');
-      
+
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),

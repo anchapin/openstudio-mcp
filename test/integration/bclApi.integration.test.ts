@@ -19,32 +19,32 @@ describe('BCL API Integration', () => {
   vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
   let bclApiClient: BCLApiClient;
   let originalNodeEnv: string | undefined;
-  
+
   beforeAll(() => {
     // Save original NODE_ENV and set to 'test'
     originalNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'test';
-    
+
     // Create a BCL API client with the real API URL
     bclApiClient = new BCLApiClient(testConfig.bcl.apiUrl);
   });
-  
+
   afterAll(() => {
     // Restore original NODE_ENV
     process.env.NODE_ENV = originalNodeEnv;
   });
-  
+
   it('should search for measures', async () => {
     // Skip this test in CI environments
     if (process.env.CI) {
       return;
     }
-    
+
     try {
       const measures = await bclApiClient.searchMeasures('lighting');
-      
+
       expect(Array.isArray(measures)).toBe(true);
-      
+
       // Only check properties if we got results
       if (measures.length > 0) {
         // Check that measures have the expected properties
@@ -59,18 +59,18 @@ describe('BCL API Integration', () => {
       console.warn('BCL API might be unavailable, skipping detailed assertions');
     }
   }, 15000); // Increase timeout for API call
-  
+
   it('should recommend measures based on context', async () => {
     // Skip this test in CI environments
     if (process.env.CI) {
       return;
     }
-    
+
     try {
       const measures = await bclApiClient.recommendMeasures('energy efficiency lighting');
-      
+
       expect(Array.isArray(measures)).toBe(true);
-      
+
       // Only check properties if we got results
       if (measures.length > 0) {
         // Check that measures have the expected properties
@@ -85,24 +85,24 @@ describe('BCL API Integration', () => {
       console.warn('BCL API might be unavailable, skipping detailed assertions');
     }
   }, 15000); // Increase timeout for API call
-  
+
   it('should handle API errors gracefully', async () => {
     // Skip this test in CI environments
     if (process.env.CI) {
       return;
     }
-    
+
     // Create a client with an invalid URL
     const invalidClient = new BCLApiClient('https://invalid-url.example.com');
-    
+
     // Mock the searchMeasures method for the invalid client
     invalidClient.searchMeasures = async () => {
       return [];
     };
-    
+
     // Search should return an empty array on error
     const measures = await invalidClient.searchMeasures('lighting');
-    
+
     expect(Array.isArray(measures)).toBe(true);
     expect(measures.length).toBe(0);
   });

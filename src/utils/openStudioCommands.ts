@@ -1,9 +1,9 @@
 /**
  * OpenStudio CLI command mapping
- * 
+ *
  * This module provides a mapping of common OpenStudio CLI commands to functions
  * with proper parameter validation and error handling.
- * 
+ *
  * Features:
  * - Typed interfaces for command parameters and results
  * - Parameter validation for each command
@@ -28,7 +28,7 @@ export interface OpenStudioCommandResult {
   /** Error message if the command failed */
   error?: string;
   /** Additional data returned by the command */
-  data?: any;
+  data?: unknown;
 }
 
 /**
@@ -80,7 +80,7 @@ export interface OpenStudioMeasure {
     /** Whether the argument is required */
     required: boolean;
     /** Argument default value */
-    defaultValue?: any;
+    defaultValue?: string | number | boolean;
   }[];
 }
 
@@ -173,7 +173,7 @@ export interface OpenStudioWorkflowOptions {
 export async function getOpenStudioVersion(): Promise<OpenStudioCommandResult> {
   try {
     const result = await executeOpenStudioCommand('--version');
-    
+
     return {
       success: result.success,
       output: result.stdout.trim(),
@@ -181,7 +181,7 @@ export async function getOpenStudioVersion(): Promise<OpenStudioCommandResult> {
     };
   } catch (error) {
     logger.error({ error }, 'Failed to get OpenStudio version');
-    
+
     return {
       success: false,
       output: '',
@@ -198,7 +198,7 @@ export async function getOpenStudioVersion(): Promise<OpenStudioCommandResult> {
  */
 export async function createModel(
   templateType: 'empty' | 'office' | 'residential',
-  outputPath: string
+  outputPath: string,
 ): Promise<OpenStudioCommandResult> {
   // Validate parameters
   if (!['empty', 'office', 'residential'].includes(templateType)) {
@@ -208,7 +208,7 @@ export async function createModel(
       error: `Invalid template type: ${templateType}. Must be one of: empty, office, residential`,
     };
   }
-  
+
   if (!outputPath || !isPathSafe(outputPath)) {
     return {
       success: false,
@@ -216,17 +216,17 @@ export async function createModel(
       error: `Invalid output path: ${outputPath}`,
     };
   }
-  
+
   try {
     // Ensure the directory exists
     const directory = path.dirname(outputPath);
     if (!fs.existsSync(directory)) {
       fs.mkdirSync(directory, { recursive: true });
     }
-    
+
     // Create the model based on the template type
     let result;
-    
+
     if (templateType === 'empty') {
       // Create an empty model
       result = await executeOpenStudioCommand('create', ['--empty', outputPath]);
@@ -237,7 +237,7 @@ export async function createModel(
       // Create a residential building model
       result = await executeOpenStudioCommand('create', ['--template', 'residential', outputPath]);
     }
-    
+
     return {
       success: result?.success || false,
       output: result?.stdout || '',
@@ -249,7 +249,7 @@ export async function createModel(
     };
   } catch (error) {
     logger.error({ templateType, outputPath, error }, 'Failed to create OpenStudio model');
-    
+
     return {
       success: false,
       output: '',
@@ -266,7 +266,7 @@ export async function createModel(
  */
 export async function getModelInfo(
   modelPath: string,
-  detailLevel: 'basic' | 'detailed' | 'complete' = 'basic'
+  detailLevel: 'basic' | 'detailed' | 'complete' = 'basic',
 ): Promise<OpenStudioCommandResult> {
   // Validate parameters
   if (!modelPath || !isPathSafe(modelPath)) {
@@ -276,7 +276,7 @@ export async function getModelInfo(
       error: `Invalid model path: ${modelPath}`,
     };
   }
-  
+
   if (!fs.existsSync(modelPath)) {
     return {
       success: false,
@@ -284,23 +284,23 @@ export async function getModelInfo(
       error: `Model file not found: ${modelPath}`,
     };
   }
-  
+
   try {
     // Get model information
     const args = ['--info'];
-    
+
     if (detailLevel === 'detailed' || detailLevel === 'complete') {
       args.push('--detailed');
     }
-    
+
     if (detailLevel === 'complete') {
       args.push('--complete');
     }
-    
+
     args.push(modelPath);
-    
+
     const result = await executeOpenStudioCommand('model', args);
-    
+
     // Parse the model information
     const modelInfo: OpenStudioModelInfo = {
       version: '',
@@ -309,63 +309,63 @@ export async function getModelInfo(
       constructions: 0,
       materials: 0,
     };
-    
+
     if (result.success && result.stdout) {
       // Extract version
       const versionMatch = result.stdout.match(/OpenStudio Version: ([^\n]+)/);
       if (versionMatch) {
         modelInfo.version = versionMatch[1].trim();
       }
-      
+
       // Extract spaces
       const spacesMatch = result.stdout.match(/Spaces: (\d+)/);
       if (spacesMatch) {
         modelInfo.spaces = parseInt(spacesMatch[1], 10);
       }
-      
+
       // Extract thermal zones
       const thermalZonesMatch = result.stdout.match(/Thermal Zones: (\d+)/);
       if (thermalZonesMatch) {
         modelInfo.thermalZones = parseInt(thermalZonesMatch[1], 10);
       }
-      
+
       // Extract constructions
       const constructionsMatch = result.stdout.match(/Constructions: (\d+)/);
       if (constructionsMatch) {
         modelInfo.constructions = parseInt(constructionsMatch[1], 10);
       }
-      
+
       // Extract materials
       const materialsMatch = result.stdout.match(/Materials: (\d+)/);
       if (materialsMatch) {
         modelInfo.materials = parseInt(materialsMatch[1], 10);
       }
-      
+
       // Extract weather file
       const weatherFileMatch = result.stdout.match(/Weather File: ([^\n]+)/);
       if (weatherFileMatch) {
         modelInfo.weatherFile = weatherFileMatch[1].trim();
       }
-      
+
       // Extract building type
       const buildingTypeMatch = result.stdout.match(/Building Type: ([^\n]+)/);
       if (buildingTypeMatch) {
         modelInfo.buildingType = buildingTypeMatch[1].trim();
       }
-      
+
       // Extract floor area
       const floorAreaMatch = result.stdout.match(/Floor Area: ([\d.]+) m²/);
       if (floorAreaMatch) {
         modelInfo.floorArea = parseFloat(floorAreaMatch[1]);
       }
-      
+
       // Extract stories
       const storiesMatch = result.stdout.match(/Stories: (\d+)/);
       if (storiesMatch) {
         modelInfo.stories = parseInt(storiesMatch[1], 10);
       }
     }
-    
+
     return {
       success: result.success,
       output: result.stdout,
@@ -374,7 +374,7 @@ export async function getModelInfo(
     };
   } catch (error) {
     logger.error({ modelPath, detailLevel, error }, 'Failed to get OpenStudio model information');
-    
+
     return {
       success: false,
       output: '',
@@ -393,7 +393,7 @@ export async function getModelInfo(
 export async function runSimulation(
   modelPath: string,
   weatherFile?: string,
-  outputDirectory?: string
+  outputDirectory?: string,
 ): Promise<OpenStudioCommandResult> {
   // Validate parameters
   if (!modelPath || !isPathSafe(modelPath)) {
@@ -403,7 +403,7 @@ export async function runSimulation(
       error: `Invalid model path: ${modelPath}`,
     };
   }
-  
+
   if (!fs.existsSync(modelPath)) {
     return {
       success: false,
@@ -411,7 +411,7 @@ export async function runSimulation(
       error: `Model file not found: ${modelPath}`,
     };
   }
-  
+
   if (weatherFile && (!isPathSafe(weatherFile) || !fs.existsSync(weatherFile))) {
     return {
       success: false,
@@ -419,7 +419,7 @@ export async function runSimulation(
       error: `Invalid weather file: ${weatherFile}`,
     };
   }
-  
+
   if (outputDirectory && !isPathSafe(outputDirectory)) {
     return {
       success: false,
@@ -427,32 +427,32 @@ export async function runSimulation(
       error: `Invalid output directory: ${outputDirectory}`,
     };
   }
-  
+
   try {
     // Ensure the output directory exists
     if (outputDirectory && !fs.existsSync(outputDirectory)) {
       fs.mkdirSync(outputDirectory, { recursive: true });
     }
-    
+
     // Prepare simulation arguments
     const args = ['--run'];
-    
+
     if (weatherFile) {
       args.push('--weather', weatherFile);
     }
-    
+
     if (outputDirectory) {
       args.push('--output', outputDirectory);
     }
-    
+
     args.push(modelPath);
-    
+
     // Run the simulation
     const result = await executeOpenStudioCommand('energyplus', args, {
       timeout: 600000, // 10 minutes
       memoryLimit: 4096, // 4GB
     });
-    
+
     // Parse the simulation results
     const simulationResults: OpenStudioSimulationResults = {
       success: result.success,
@@ -460,51 +460,57 @@ export async function runSimulation(
       errors: [],
       warnings: [],
     };
-    
+
     if (result.stdout) {
       // Extract errors
       const errorMatches = result.stdout.match(/Error: ([^\n]+)/g);
       if (errorMatches) {
-        simulationResults.errors = errorMatches.map(match => match.replace('Error: ', '').trim());
+        simulationResults.errors = errorMatches.map((match) => match.replace('Error: ', '').trim());
       }
-      
+
       // Extract warnings
       const warningMatches = result.stdout.match(/Warning: ([^\n]+)/g);
       if (warningMatches) {
-        simulationResults.warnings = warningMatches.map(match => match.replace('Warning: ', '').trim());
+        simulationResults.warnings = warningMatches.map((match) =>
+          match.replace('Warning: ', '').trim(),
+        );
       }
-      
+
       // Extract EUI
       const euiMatch = result.stdout.match(/EUI: ([\d.]+) kWh\/m²\/year/);
       if (euiMatch) {
         simulationResults.eui = parseFloat(euiMatch[1]);
       }
-      
+
       // Extract total site energy
       const totalSiteEnergyMatch = result.stdout.match(/Total Site Energy: ([\d.]+) GJ/);
       if (totalSiteEnergyMatch) {
         simulationResults.totalSiteEnergy = parseFloat(totalSiteEnergyMatch[1]);
       }
-      
+
       // Extract total source energy
       const totalSourceEnergyMatch = result.stdout.match(/Total Source Energy: ([\d.]+) GJ/);
       if (totalSourceEnergyMatch) {
         simulationResults.totalSourceEnergy = parseFloat(totalSourceEnergyMatch[1]);
       }
-      
+
       // Extract electricity consumption
-      const electricityConsumptionMatch = result.stdout.match(/Electricity Consumption: ([\d.]+) kWh/);
+      const electricityConsumptionMatch = result.stdout.match(
+        /Electricity Consumption: ([\d.]+) kWh/,
+      );
       if (electricityConsumptionMatch) {
         simulationResults.electricityConsumption = parseFloat(electricityConsumptionMatch[1]);
       }
-      
+
       // Extract natural gas consumption
-      const naturalGasConsumptionMatch = result.stdout.match(/Natural Gas Consumption: ([\d.]+) GJ/);
+      const naturalGasConsumptionMatch = result.stdout.match(
+        /Natural Gas Consumption: ([\d.]+) GJ/,
+      );
       if (naturalGasConsumptionMatch) {
         simulationResults.naturalGasConsumption = parseFloat(naturalGasConsumptionMatch[1]);
       }
     }
-    
+
     return {
       success: result.success,
       output: result.stdout,
@@ -512,8 +518,11 @@ export async function runSimulation(
       data: simulationResults,
     };
   } catch (error) {
-    logger.error({ modelPath, weatherFile, outputDirectory, error }, 'Failed to run OpenStudio simulation');
-    
+    logger.error(
+      { modelPath, weatherFile, outputDirectory, error },
+      'Failed to run OpenStudio simulation',
+    );
+
     return {
       success: false,
       output: '',
@@ -531,7 +540,7 @@ export async function listMeasures(measureDir?: string): Promise<OpenStudioComma
   try {
     // Prepare arguments
     const args = ['--list'];
-    
+
     if (measureDir) {
       if (!isPathSafe(measureDir)) {
         return {
@@ -540,7 +549,7 @@ export async function listMeasures(measureDir?: string): Promise<OpenStudioComma
           error: `Invalid measure directory: ${measureDir}`,
         };
       }
-      
+
       if (!fs.existsSync(measureDir)) {
         return {
           success: false,
@@ -548,20 +557,20 @@ export async function listMeasures(measureDir?: string): Promise<OpenStudioComma
           error: `Measure directory not found: ${measureDir}`,
         };
       }
-      
+
       args.push('--dir', measureDir);
     }
-    
+
     // List measures
     const result = await executeOpenStudioCommand('measure', args);
-    
+
     // Parse the measure list
     const measures: OpenStudioMeasure[] = [];
-    
+
     if (result.success && result.stdout) {
       // Split by measure sections
       const measureSections = result.stdout.split(/Measure: /g).slice(1);
-      
+
       for (const section of measureSections) {
         const measure: OpenStudioMeasure = {
           name: '',
@@ -570,78 +579,79 @@ export async function listMeasures(measureDir?: string): Promise<OpenStudioComma
           uuid: '',
           arguments: [],
         };
-        
+
         // Extract name
         const nameMatch = section.match(/Name: ([^\n]+)/);
         if (nameMatch) {
           measure.name = nameMatch[1].trim();
         }
-        
+
         // Extract description
         const descriptionMatch = section.match(/Description: ([^\n]+)/);
         if (descriptionMatch) {
           measure.description = descriptionMatch[1].trim();
         }
-        
+
         // Extract version
         const versionMatch = section.match(/Version: ([^\n]+)/);
         if (versionMatch) {
           measure.version = versionMatch[1].trim();
         }
-        
+
         // Extract UUID
         const uuidMatch = section.match(/UUID: ([^\n]+)/);
         if (uuidMatch) {
           measure.uuid = uuidMatch[1].trim();
         }
-        
+
         // Extract arguments
         const argumentSections = section.split(/Argument: /g).slice(1);
-        
+
         for (const argSection of argumentSections) {
-          const argument: any = {
+          const argument = {
             name: '',
             displayName: '',
             description: '',
             type: '',
             required: false,
+            defaultValue: undefined as string | number | boolean | undefined,
           };
-          
+
           // Extract name
           const argNameMatch = argSection.match(/Name: ([^\n]+)/);
           if (argNameMatch) {
             argument.name = argNameMatch[1].trim();
           }
-          
+
           // Extract display name
           const argDisplayNameMatch = argSection.match(/Display Name: ([^\n]+)/);
           if (argDisplayNameMatch) {
             argument.displayName = argDisplayNameMatch[1].trim();
           }
-          
+
           // Extract description
           const argDescriptionMatch = argSection.match(/Description: ([^\n]+)/);
           if (argDescriptionMatch) {
             argument.description = argDescriptionMatch[1].trim();
           }
-          
+
           // Extract type
           const argTypeMatch = argSection.match(/Type: ([^\n]+)/);
           if (argTypeMatch) {
             argument.type = argTypeMatch[1].trim();
           }
-          
+
           // Extract required
           const argRequiredMatch = argSection.match(/Required: ([^\n]+)/);
           if (argRequiredMatch) {
             argument.required = argRequiredMatch[1].trim().toLowerCase() === 'true';
           }
-          
+
           // Extract default value
           const argDefaultMatch = argSection.match(/Default: ([^\n]+)/);
           if (argDefaultMatch) {
             const defaultValue = argDefaultMatch[1].trim();
-            
+
             // Convert to appropriate type
             if (argument.type === 'Double' || argument.type === 'Integer') {
               argument.defaultValue = parseFloat(defaultValue);
@@ -651,14 +661,14 @@ export async function listMeasures(measureDir?: string): Promise<OpenStudioComma
               argument.defaultValue = defaultValue;
             }
           }
-          
+
           measure.arguments.push(argument);
         }
-        
+
         measures.push(measure);
       }
     }
-    
+
     return {
       success: result.success,
       output: result.stdout,
@@ -667,7 +677,7 @@ export async function listMeasures(measureDir?: string): Promise<OpenStudioComma
     };
   } catch (error) {
     logger.error({ measureDir, error }, 'Failed to list OpenStudio measures');
-    
+
     return {
       success: false,
       output: '',
@@ -687,8 +697,8 @@ export async function listMeasures(measureDir?: string): Promise<OpenStudioComma
 export async function applyMeasure(
   modelPath: string,
   measurePath: string,
-  args: Record<string, any>,
-  outputPath?: string
+  args: Record<string, string | number | boolean>,
+  outputPath?: string,
 ): Promise<OpenStudioCommandResult> {
   // Validate parameters
   if (!modelPath || !isPathSafe(modelPath)) {
@@ -698,7 +708,7 @@ export async function applyMeasure(
       error: `Invalid model path: ${modelPath}`,
     };
   }
-  
+
   if (!fs.existsSync(modelPath)) {
     return {
       success: false,
@@ -706,7 +716,7 @@ export async function applyMeasure(
       error: `Model file not found: ${modelPath}`,
     };
   }
-  
+
   if (!measurePath || !isPathSafe(measurePath)) {
     return {
       success: false,
@@ -714,7 +724,7 @@ export async function applyMeasure(
       error: `Invalid measure path: ${measurePath}`,
     };
   }
-  
+
   if (!fs.existsSync(measurePath)) {
     return {
       success: false,
@@ -722,7 +732,7 @@ export async function applyMeasure(
       error: `Measure directory not found: ${measurePath}`,
     };
   }
-  
+
   if (outputPath && !isPathSafe(outputPath)) {
     return {
       success: false,
@@ -730,7 +740,7 @@ export async function applyMeasure(
       error: `Invalid output path: ${outputPath}`,
     };
   }
-  
+
   try {
     // Ensure the output directory exists if specified
     if (outputPath) {
@@ -739,23 +749,23 @@ export async function applyMeasure(
         fs.mkdirSync(directory, { recursive: true });
       }
     }
-    
+
     // Prepare measure arguments
     const measureArgs = ['--apply', measurePath, modelPath];
-    
+
     // Add measure arguments
     for (const [key, value] of Object.entries(args)) {
       measureArgs.push('--argument', `${key}=${value}`);
     }
-    
+
     // Add output path if specified
     if (outputPath) {
       measureArgs.push('--output', outputPath);
     }
-    
+
     // Apply the measure
     const result = await executeOpenStudioCommand('measure', measureArgs);
-    
+
     return {
       success: result.success,
       output: result.stdout,
@@ -767,8 +777,11 @@ export async function applyMeasure(
       },
     };
   } catch (error) {
-    logger.error({ modelPath, measurePath, args, outputPath, error }, 'Failed to apply OpenStudio measure');
-    
+    logger.error(
+      { modelPath, measurePath, args, outputPath, error },
+      'Failed to apply OpenStudio measure',
+    );
+
     return {
       success: false,
       output: '',
@@ -785,7 +798,7 @@ export async function applyMeasure(
  */
 export async function convertModel(
   inputPath: string,
-  outputPath: string
+  outputPath: string,
 ): Promise<OpenStudioCommandResult> {
   // Validate parameters
   if (!inputPath || !isPathSafe(inputPath)) {
@@ -795,7 +808,7 @@ export async function convertModel(
       error: `Invalid input path: ${inputPath}`,
     };
   }
-  
+
   if (!fs.existsSync(inputPath)) {
     return {
       success: false,
@@ -803,7 +816,7 @@ export async function convertModel(
       error: `Input file not found: ${inputPath}`,
     };
   }
-  
+
   if (!outputPath || !isPathSafe(outputPath)) {
     return {
       success: false,
@@ -811,24 +824,24 @@ export async function convertModel(
       error: `Invalid output path: ${outputPath}`,
     };
   }
-  
+
   try {
     // Ensure the output directory exists
     const directory = path.dirname(outputPath);
     if (!fs.existsSync(directory)) {
       fs.mkdirSync(directory, { recursive: true });
     }
-    
+
     // Determine the conversion type based on file extensions
     const inputExt = path.extname(inputPath).toLowerCase();
     const outputExt = path.extname(outputPath).toLowerCase();
-    
+
     // Prepare conversion arguments
     const args = ['--convert', inputPath, outputPath];
-    
+
     // Convert the model
     const result = await executeOpenStudioCommand('model', args);
-    
+
     return {
       success: result.success,
       output: result.stdout,
@@ -842,7 +855,7 @@ export async function convertModel(
     };
   } catch (error) {
     logger.error({ inputPath, outputPath, error }, 'Failed to convert OpenStudio model');
-    
+
     return {
       success: false,
       output: '',
@@ -857,7 +870,7 @@ export async function convertModel(
  * @returns Promise that resolves with the weather file information
  */
 export async function getWeatherFileInfo(
-  weatherFilePath: string
+  weatherFilePath: string,
 ): Promise<OpenStudioCommandResult> {
   // Validate parameters
   if (!weatherFilePath || !isPathSafe(weatherFilePath)) {
@@ -867,7 +880,7 @@ export async function getWeatherFileInfo(
       error: `Invalid weather file path: ${weatherFilePath}`,
     };
   }
-  
+
   if (!fs.existsSync(weatherFilePath)) {
     return {
       success: false,
@@ -875,11 +888,11 @@ export async function getWeatherFileInfo(
       error: `Weather file not found: ${weatherFilePath}`,
     };
   }
-  
+
   try {
     // Get weather file information
     const result = await executeOpenStudioCommand('weather', ['--info', weatherFilePath]);
-    
+
     // Parse the weather file information
     const weatherInfo: OpenStudioWeatherFileInfo = {
       path: weatherFilePath,
@@ -890,45 +903,45 @@ export async function getWeatherFileInfo(
       timeZone: 0,
       dataPeriod: '',
     };
-    
+
     if (result.success && result.stdout) {
       // Extract location
       const locationMatch = result.stdout.match(/Location: ([^\n]+)/);
       if (locationMatch) {
         weatherInfo.location = locationMatch[1].trim();
       }
-      
+
       // Extract latitude
       const latitudeMatch = result.stdout.match(/Latitude: ([\d.-]+)/);
       if (latitudeMatch) {
         weatherInfo.latitude = parseFloat(latitudeMatch[1]);
       }
-      
+
       // Extract longitude
       const longitudeMatch = result.stdout.match(/Longitude: ([\d.-]+)/);
       if (longitudeMatch) {
         weatherInfo.longitude = parseFloat(longitudeMatch[1]);
       }
-      
+
       // Extract elevation
       const elevationMatch = result.stdout.match(/Elevation: ([\d.-]+)/);
       if (elevationMatch) {
         weatherInfo.elevation = parseFloat(elevationMatch[1]);
       }
-      
+
       // Extract time zone
       const timeZoneMatch = result.stdout.match(/Time Zone: ([\d.-]+)/);
       if (timeZoneMatch) {
         weatherInfo.timeZone = parseFloat(timeZoneMatch[1]);
       }
-      
+
       // Extract data period
       const dataPeriodMatch = result.stdout.match(/Data Period: ([^\n]+)/);
       if (dataPeriodMatch) {
         weatherInfo.dataPeriod = dataPeriodMatch[1].trim();
       }
     }
-    
+
     return {
       success: result.success,
       output: result.stdout,
@@ -937,7 +950,7 @@ export async function getWeatherFileInfo(
     };
   } catch (error) {
     logger.error({ weatherFilePath, error }, 'Failed to get weather file information');
-    
+
     return {
       success: false,
       output: '',
@@ -956,7 +969,7 @@ export async function getWeatherFileInfo(
 export async function runParametricAnalysis(
   modelPath: string,
   parametersPath: string,
-  outputDirectory?: string
+  outputDirectory?: string,
 ): Promise<OpenStudioCommandResult> {
   // Validate parameters
   if (!modelPath || !isPathSafe(modelPath)) {
@@ -966,7 +979,7 @@ export async function runParametricAnalysis(
       error: `Invalid model path: ${modelPath}`,
     };
   }
-  
+
   if (!fs.existsSync(modelPath)) {
     return {
       success: false,
@@ -974,7 +987,7 @@ export async function runParametricAnalysis(
       error: `Model file not found: ${modelPath}`,
     };
   }
-  
+
   if (!parametersPath || !isPathSafe(parametersPath)) {
     return {
       success: false,
@@ -982,7 +995,7 @@ export async function runParametricAnalysis(
       error: `Invalid parameters path: ${parametersPath}`,
     };
   }
-  
+
   if (!fs.existsSync(parametersPath)) {
     return {
       success: false,
@@ -990,7 +1003,7 @@ export async function runParametricAnalysis(
       error: `Parameters file not found: ${parametersPath}`,
     };
   }
-  
+
   if (outputDirectory && !isPathSafe(outputDirectory)) {
     return {
       success: false,
@@ -998,26 +1011,26 @@ export async function runParametricAnalysis(
       error: `Invalid output directory: ${outputDirectory}`,
     };
   }
-  
+
   try {
     // Ensure the output directory exists
     if (outputDirectory && !fs.existsSync(outputDirectory)) {
       fs.mkdirSync(outputDirectory, { recursive: true });
     }
-    
+
     // Prepare arguments
     const args = ['--parametric', modelPath, parametersPath];
-    
+
     if (outputDirectory) {
       args.push('--output', outputDirectory);
     }
-    
+
     // Run the parametric analysis
     const result = await executeOpenStudioCommand('analysis', args, {
       timeout: 1800000, // 30 minutes
       memoryLimit: 8192, // 8GB
     });
-    
+
     return {
       success: result.success,
       output: result.stdout,
@@ -1029,8 +1042,11 @@ export async function runParametricAnalysis(
       },
     };
   } catch (error) {
-    logger.error({ modelPath, parametersPath, outputDirectory, error }, 'Failed to run parametric analysis');
-    
+    logger.error(
+      { modelPath, parametersPath, outputDirectory, error },
+      'Failed to run parametric analysis',
+    );
+
     return {
       success: false,
       output: '',
@@ -1047,7 +1063,7 @@ export async function runParametricAnalysis(
  */
 export async function runWorkflow(
   workflowPath: string,
-  options?: OpenStudioWorkflowOptions
+  options?: OpenStudioWorkflowOptions,
 ): Promise<OpenStudioCommandResult> {
   // Validate parameters
   if (!workflowPath || !isPathSafe(workflowPath)) {
@@ -1057,7 +1073,7 @@ export async function runWorkflow(
       error: `Invalid workflow path: ${workflowPath}`,
     };
   }
-  
+
   if (!fs.existsSync(workflowPath)) {
     return {
       success: false,
@@ -1065,44 +1081,44 @@ export async function runWorkflow(
       error: `Workflow file not found: ${workflowPath}`,
     };
   }
-  
+
   try {
     // Prepare arguments
     const args = ['--workflow', workflowPath];
-    
+
     // Add options
     if (options) {
       if (options.parallel) {
         args.push('--parallel');
-        
+
         if (options.jobs && options.jobs > 0) {
           args.push('--jobs', options.jobs.toString());
         }
       }
-      
+
       if (options.includeRadiance) {
         args.push('--include-radiance');
       }
-      
+
       if (options.designDaysOnly) {
         args.push('--design-days-only');
       }
-      
+
       if (options.annualSimulation) {
         args.push('--annual-simulation');
       }
-      
+
       if (options.fastRun) {
         args.push('--fast');
       }
     }
-    
+
     // Run the workflow
     const result = await executeOpenStudioCommand('workflow', args, {
       timeout: 1800000, // 30 minutes
       memoryLimit: 8192, // 8GB
     });
-    
+
     return {
       success: result.success,
       output: result.stdout,
@@ -1114,7 +1130,7 @@ export async function runWorkflow(
     };
   } catch (error) {
     logger.error({ workflowPath, options, error }, 'Failed to run workflow');
-    
+
     return {
       success: false,
       output: '',
@@ -1128,9 +1144,7 @@ export async function runWorkflow(
  * @param componentPath Path to the component file
  * @returns Promise that resolves with the component information
  */
-export async function getComponentInfo(
-  componentPath: string
-): Promise<OpenStudioCommandResult> {
+export async function getComponentInfo(componentPath: string): Promise<OpenStudioCommandResult> {
   // Validate parameters
   if (!componentPath || !isPathSafe(componentPath)) {
     return {
@@ -1139,7 +1153,7 @@ export async function getComponentInfo(
       error: `Invalid component path: ${componentPath}`,
     };
   }
-  
+
   if (!fs.existsSync(componentPath)) {
     return {
       success: false,
@@ -1147,11 +1161,11 @@ export async function getComponentInfo(
       error: `Component file not found: ${componentPath}`,
     };
   }
-  
+
   try {
     // Get component information
     const result = await executeOpenStudioCommand('component', ['--info', componentPath]);
-    
+
     // Parse the component information
     const componentInfo: OpenStudioComponent = {
       type: '',
@@ -1159,39 +1173,39 @@ export async function getComponentInfo(
       uuid: '',
       version: '',
     };
-    
+
     if (result.success && result.stdout) {
       // Extract type
       const typeMatch = result.stdout.match(/Type: ([^\n]+)/);
       if (typeMatch) {
         componentInfo.type = typeMatch[1].trim();
       }
-      
+
       // Extract name
       const nameMatch = result.stdout.match(/Name: ([^\n]+)/);
       if (nameMatch) {
         componentInfo.name = nameMatch[1].trim();
       }
-      
+
       // Extract UUID
       const uuidMatch = result.stdout.match(/UUID: ([^\n]+)/);
       if (uuidMatch) {
         componentInfo.uuid = uuidMatch[1].trim();
       }
-      
+
       // Extract version
       const versionMatch = result.stdout.match(/Version: ([^\n]+)/);
       if (versionMatch) {
         componentInfo.version = versionMatch[1].trim();
       }
-      
+
       // Extract description
       const descriptionMatch = result.stdout.match(/Description: ([^\n]+)/);
       if (descriptionMatch) {
         componentInfo.description = descriptionMatch[1].trim();
       }
     }
-    
+
     return {
       success: result.success,
       output: result.stdout,
@@ -1200,7 +1214,7 @@ export async function getComponentInfo(
     };
   } catch (error) {
     logger.error({ componentPath, error }, 'Failed to get component information');
-    
+
     return {
       success: false,
       output: '',
@@ -1219,7 +1233,7 @@ export async function getComponentInfo(
 export async function extractModelObjects(
   modelPath: string,
   objectType: string,
-  outputPath: string
+  outputPath: string,
 ): Promise<OpenStudioCommandResult> {
   // Validate parameters
   if (!modelPath || !isPathSafe(modelPath)) {
@@ -1229,7 +1243,7 @@ export async function extractModelObjects(
       error: `Invalid model path: ${modelPath}`,
     };
   }
-  
+
   if (!fs.existsSync(modelPath)) {
     return {
       success: false,
@@ -1237,7 +1251,7 @@ export async function extractModelObjects(
       error: `Model file not found: ${modelPath}`,
     };
   }
-  
+
   if (!objectType) {
     return {
       success: false,
@@ -1245,7 +1259,7 @@ export async function extractModelObjects(
       error: 'Object type is required',
     };
   }
-  
+
   if (!outputPath || !isPathSafe(outputPath)) {
     return {
       success: false,
@@ -1253,17 +1267,22 @@ export async function extractModelObjects(
       error: `Invalid output path: ${outputPath}`,
     };
   }
-  
+
   try {
     // Ensure the output directory exists
     const directory = path.dirname(outputPath);
     if (!fs.existsSync(directory)) {
       fs.mkdirSync(directory, { recursive: true });
     }
-    
+
     // Extract objects
-    const result = await executeOpenStudioCommand('model', ['--extract', objectType, modelPath, outputPath]);
-    
+    const result = await executeOpenStudioCommand('model', [
+      '--extract',
+      objectType,
+      modelPath,
+      outputPath,
+    ]);
+
     return {
       success: result.success,
       output: result.stdout,
@@ -1276,7 +1295,7 @@ export async function extractModelObjects(
     };
   } catch (error) {
     logger.error({ modelPath, objectType, outputPath, error }, 'Failed to extract model objects');
-    
+
     return {
       success: false,
       output: '',
@@ -1295,7 +1314,7 @@ export async function extractModelObjects(
 export async function compareModels(
   modelPath1: string,
   modelPath2: string,
-  outputPath?: string
+  outputPath?: string,
 ): Promise<OpenStudioCommandResult> {
   // Validate parameters
   if (!modelPath1 || !isPathSafe(modelPath1)) {
@@ -1305,7 +1324,7 @@ export async function compareModels(
       error: `Invalid model path: ${modelPath1}`,
     };
   }
-  
+
   if (!fs.existsSync(modelPath1)) {
     return {
       success: false,
@@ -1313,7 +1332,7 @@ export async function compareModels(
       error: `Model file not found: ${modelPath1}`,
     };
   }
-  
+
   if (!modelPath2 || !isPathSafe(modelPath2)) {
     return {
       success: false,
@@ -1321,7 +1340,7 @@ export async function compareModels(
       error: `Invalid model path: ${modelPath2}`,
     };
   }
-  
+
   if (!fs.existsSync(modelPath2)) {
     return {
       success: false,
@@ -1329,7 +1348,7 @@ export async function compareModels(
       error: `Model file not found: ${modelPath2}`,
     };
   }
-  
+
   if (outputPath && !isPathSafe(outputPath)) {
     return {
       success: false,
@@ -1337,7 +1356,7 @@ export async function compareModels(
       error: `Invalid output path: ${outputPath}`,
     };
   }
-  
+
   try {
     // Ensure the output directory exists if specified
     if (outputPath) {
@@ -1346,17 +1365,17 @@ export async function compareModels(
         fs.mkdirSync(directory, { recursive: true });
       }
     }
-    
+
     // Prepare arguments
     const args = ['--compare', modelPath1, modelPath2];
-    
+
     if (outputPath) {
       args.push('--output', outputPath);
     }
-    
+
     // Compare models
     const result = await executeOpenStudioCommand('model', args);
-    
+
     return {
       success: result.success,
       output: result.stdout,
@@ -1369,7 +1388,7 @@ export async function compareModels(
     };
   } catch (error) {
     logger.error({ modelPath1, modelPath2, outputPath, error }, 'Failed to compare models');
-    
+
     return {
       success: false,
       output: '',
@@ -1383,9 +1402,7 @@ export async function compareModels(
  * @param modelPath Path to the model file
  * @returns Promise that resolves with the validation result
  */
-export async function validateModel(
-  modelPath: string
-): Promise<OpenStudioCommandResult> {
+export async function validateModel(modelPath: string): Promise<OpenStudioCommandResult> {
   // Validate parameters
   if (!modelPath || !isPathSafe(modelPath)) {
     return {
@@ -1394,7 +1411,7 @@ export async function validateModel(
       error: `Invalid model path: ${modelPath}`,
     };
   }
-  
+
   if (!fs.existsSync(modelPath)) {
     return {
       success: false,
@@ -1402,29 +1419,31 @@ export async function validateModel(
       error: `Model file not found: ${modelPath}`,
     };
   }
-  
+
   try {
     // Validate model
     const result = await executeOpenStudioCommand('model', ['--validate', modelPath]);
-    
+
     // Parse validation results
     const validationErrors: string[] = [];
     const validationWarnings: string[] = [];
-    
+
     if (result.stdout) {
       // Extract errors
       const errorMatches = result.stdout.match(/Error: ([^\n]+)/g);
       if (errorMatches) {
-        validationErrors.push(...errorMatches.map(match => match.replace('Error: ', '').trim()));
+        validationErrors.push(...errorMatches.map((match) => match.replace('Error: ', '').trim()));
       }
-      
+
       // Extract warnings
       const warningMatches = result.stdout.match(/Warning: ([^\n]+)/g);
       if (warningMatches) {
-        validationWarnings.push(...warningMatches.map(match => match.replace('Warning: ', '').trim()));
+        validationWarnings.push(
+          ...warningMatches.map((match) => match.replace('Warning: ', '').trim()),
+        );
       }
     }
-    
+
     return {
       success: validationErrors.length === 0,
       output: result.stdout,
@@ -1438,7 +1457,108 @@ export async function validateModel(
     };
   } catch (error) {
     logger.error({ modelPath, error }, 'Failed to validate model');
-    
+
+    return {
+      success: false,
+      output: '',
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+/**
+ * Execute a Ruby script with OpenStudio bindings
+ * @param scriptPath Path to the Ruby script file
+ * @param modelPath Path to the model file (optional)
+ * @param outputPath Path to save the output (optional)
+ * @param additionalArgs Additional arguments to pass to the script
+ * @returns Promise that resolves with the command result
+ */
+export async function executeRubyScript(
+  scriptPath: string,
+  modelPath?: string,
+  outputPath?: string,
+  additionalArgs: string[] = [],
+): Promise<OpenStudioCommandResult> {
+  // Validate parameters
+  if (!scriptPath || !isPathSafe(scriptPath)) {
+    return {
+      success: false,
+      output: '',
+      error: `Invalid script path: ${scriptPath}`,
+    };
+  }
+
+  if (!fs.existsSync(scriptPath)) {
+    return {
+      success: false,
+      output: '',
+      error: `Script file not found: ${scriptPath}`,
+    };
+  }
+
+  if (modelPath && (!isPathSafe(modelPath) || !fs.existsSync(modelPath))) {
+    return {
+      success: false,
+      output: '',
+      error: `Invalid model path: ${modelPath}`,
+    };
+  }
+
+  if (outputPath && !isPathSafe(outputPath)) {
+    return {
+      success: false,
+      output: '',
+      error: `Invalid output path: ${outputPath}`,
+    };
+  }
+
+  try {
+    // Ensure the output directory exists if specified
+    if (outputPath) {
+      const directory = path.dirname(outputPath);
+      if (!fs.existsSync(directory)) {
+        fs.mkdirSync(directory, { recursive: true });
+      }
+    }
+
+    // Prepare arguments
+    const args = [scriptPath];
+
+    if (modelPath) {
+      args.push(modelPath);
+    }
+
+    if (outputPath) {
+      args.push(outputPath);
+    }
+
+    // Add additional arguments
+    args.push(...additionalArgs);
+
+    // Execute the Ruby script
+    const result = await executeOpenStudioCommand('ruby', args, {
+      timeout: 300000, // 5 minutes
+      memoryLimit: 2048, // 2GB
+    });
+
+    return {
+      success: result.success,
+      output: result.stdout,
+      error: result.error,
+      data: {
+        scriptPath,
+        modelPath,
+        outputPath,
+        additionalArgs,
+      },
+    };
+  } catch (error) {
+    logger.error(
+      { scriptPath, modelPath, outputPath, additionalArgs, error },
+      'Failed to execute Ruby script',
+    );
+
     return {
       success: false,
       output: '',
@@ -1463,4 +1583,5 @@ export default {
   extractModelObjects,
   compareModels,
   validateModel,
+  executeRubyScript,
 };

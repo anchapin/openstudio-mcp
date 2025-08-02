@@ -30,11 +30,11 @@ export class ConfigManager {
    */
   public getConfigDir(): string {
     // If running as a packaged executable, use the user's home directory
-    if ((process as any).pkg) {
+    if ((process as unknown as { pkg?: boolean }).pkg) {
       const homeDir = process.env.HOME || process.env.USERPROFILE || '';
       return path.join(homeDir, '.openstudio-mcp-server');
     }
-    
+
     // Otherwise, use the current directory
     return process.cwd();
   }
@@ -47,11 +47,11 @@ export class ConfigManager {
     // If a config path is provided, use it
     if (configPath) {
       this.configPath = configPath;
-      
+
       if (fs.existsSync(configPath)) {
         logger.info(`Loading configuration from ${configPath}`);
         const envConfig = dotenv.parse(fs.readFileSync(configPath));
-        
+
         // Set environment variables from the config file
         for (const key in envConfig) {
           if (Object.prototype.hasOwnProperty.call(envConfig, key)) {
@@ -67,17 +67,17 @@ export class ConfigManager {
     // Try to load from the default locations
     const configDir = this.getConfigDir();
     const defaultConfigPath = path.join(configDir, '.env');
-    
+
     if (fs.existsSync(defaultConfigPath)) {
       logger.info(`Loading configuration from ${defaultConfigPath}`);
       this.configPath = defaultConfigPath;
       dotenv.config({ path: defaultConfigPath });
     } else {
       // If running as a packaged executable, check the user's home directory
-      if ((process as any).pkg) {
+      if ((process as unknown as { pkg?: boolean }).pkg) {
         const homeDir = process.env.HOME || process.env.USERPROFILE || '';
         const homeConfigPath = path.join(homeDir, '.openstudio-mcp-server', 'config');
-        
+
         if (fs.existsSync(homeConfigPath)) {
           logger.info(`Loading configuration from ${homeConfigPath}`);
           this.configPath = homeConfigPath;
@@ -93,13 +93,13 @@ export class ConfigManager {
    */
   public saveConfigFile(configPath?: string): void {
     const savePath = configPath || this.configPath || path.join(this.getConfigDir(), '.env');
-    
+
     // Ensure the directory exists
     const configDir = path.dirname(savePath);
     if (!fs.existsSync(configDir)) {
       fs.mkdirSync(configDir, { recursive: true });
     }
-    
+
     // Build the configuration content
     const configContent = [
       '# Server configuration',
@@ -117,7 +117,7 @@ export class ConfigManager {
       '# Logging configuration',
       `LOG_LEVEL=${process.env.LOG_LEVEL || 'info'}`,
     ].join('\n');
-    
+
     // Write the configuration file
     fs.writeFileSync(savePath, configContent);
     logger.info(`Configuration saved to ${savePath}`);

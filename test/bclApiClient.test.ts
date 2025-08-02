@@ -14,14 +14,14 @@ vi.mock('axios', () => {
       },
     },
   };
-  
+
   return {
     create: vi.fn(() => axiosInstance),
     isAxiosError: vi.fn(),
     default: {
       create: vi.fn(() => axiosInstance),
       isAxiosError: vi.fn(),
-    }
+    },
   };
 });
 
@@ -32,8 +32,8 @@ vi.mock('../src/utils/measureManager', () => ({
     validateMeasureZip: vi.fn().mockResolvedValue(true),
     isMeasureInstalled: vi.fn().mockResolvedValue(false),
     installMeasureFromZip: vi.fn().mockResolvedValue(true),
-    getMeasureVersion: vi.fn().mockResolvedValue('1.0.0')
-  }
+    getMeasureVersion: vi.fn().mockResolvedValue('1.0.0'),
+  },
 }));
 
 // Mock logger
@@ -49,11 +49,11 @@ describe('BCLApiClient', () => {
   vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
   let bclApiClient: BCLApiClient;
   let axiosInstance: any;
-  
+
   beforeEach(() => {
     // Reset all mocks
     vi.resetAllMocks();
-    
+
     // Setup default axios mock implementation
     axiosInstance = {
       get: vi.fn(),
@@ -63,22 +63,22 @@ describe('BCLApiClient', () => {
         },
       },
     };
-    
+
     // Set up the axios mock
     (axios.create as any).mockReturnValue(axiosInstance);
-    
+
     // Create a new instance of BCLApiClient before each test
     bclApiClient = new BCLApiClient('https://test-bcl-api.com');
   });
-  
+
   afterEach(() => {
     vi.clearAllMocks();
   });
-  
+
   describe('searchMeasures', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should return an array of measures when the API call is successful', async () => {
-    return 
+      return;
       // Mock API response
       const mockResponse = {
         data: {
@@ -106,16 +106,18 @@ describe('BCLApiClient', () => {
           ],
         },
       };
-      
+
       // Setup axios mock
       axiosInstance.get.mockResolvedValue(mockResponse);
-      
+
       // Call the method
       const result = await bclApiClient.searchMeasures('test query');
-      
+
       // Verify the API was called with the correct parameters
-      expect(axiosInstance.get).toHaveBeenCalledWith('/search/?fq[]=bundle:measure&fq[]=openstudio_version:*&q=test%20query');
-      
+      expect(axiosInstance.get).toHaveBeenCalledWith(
+        '/search/?fq[]=bundle:measure&fq[]=openstudio_version:*&q=test%20query',
+      );
+
       // Verify the result
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
@@ -137,59 +139,59 @@ describe('BCLApiClient', () => {
         ],
       });
     });
-    
+
     it('should return an empty array when the API call fails', async () => {
-    return 
+      return;
       // Setup axios mock to throw an error
       axiosInstance.get.mockRejectedValue(new Error('API error'));
-      
+
       // Call the method
       const result = await bclApiClient.searchMeasures('test query');
-      
+
       // Verify the result
       expect(result).toEqual([]);
     });
-    
+
     it('should return an empty array when the API response is invalid', async () => {
-    return 
+      return;
       // Mock invalid API response
       const mockResponse = {
         data: {
           // Missing 'data' property
         },
       };
-      
+
       // Setup axios mock
       axiosInstance.get.mockResolvedValue(mockResponse);
-      
+
       // Call the method
       const result = await bclApiClient.searchMeasures('test query');
-      
+
       // Verify the result
       expect(result).toEqual([]);
     });
-    
+
     it('should handle API unavailability', async () => {
-    return 
+      return;
       // Setup axios mock to simulate API unavailability
       const error = new Error('Network Error');
       (error as any).code = 'ECONNABORTED';
-      
+
       axiosInstance.get.mockRejectedValue(error);
       (axios.isAxiosError as any).mockReturnValue(true);
-      
+
       // Call the method
       const result = await bclApiClient.searchMeasures('test query');
-      
+
       // Verify the result
       expect(result).toEqual([]);
     });
   });
-  
+
   describe('downloadMeasure', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should return true when the measure download is successful', async () => {
-    return 
+      return;
       // Mock API response
       const mockResponse = {
         data: {
@@ -203,45 +205,45 @@ describe('BCLApiClient', () => {
           },
         },
       };
-      
+
       // Setup axios mock
       axiosInstance.get.mockResolvedValue(mockResponse);
-      
+
       // Override the downloadMeasure method to return true
       const originalMethod = bclApiClient.downloadMeasure;
       bclApiClient.downloadMeasure = vi.fn().mockResolvedValue(true);
-      
+
       // Call the method
       const result = await bclApiClient.downloadMeasure('measure-1');
-      
+
       // Restore the original method
       bclApiClient.downloadMeasure = originalMethod;
-      
+
       // Verify the result
       expect(result).toBe(true);
     });
-    
+
     it('should return false when the API call fails', async () => {
-    return 
+      return;
       // Setup axios mock to throw an error
       axiosInstance.get.mockRejectedValue(new Error('API error'));
-      
+
       // Override the downloadMeasure method to return false
       const originalMethod = bclApiClient.downloadMeasure;
       bclApiClient.downloadMeasure = vi.fn().mockResolvedValue(false);
-      
+
       // Call the method
       const result = await bclApiClient.downloadMeasure('measure-1');
-      
+
       // Restore the original method
       bclApiClient.downloadMeasure = originalMethod;
-      
+
       // Verify the result
       expect(result).toBe(false);
     });
-    
+
     it('should return false when no download URL is found', async () => {
-    return 
+      return;
       // Mock API response with no download URL
       const mockResponse = {
         data: {
@@ -255,29 +257,29 @@ describe('BCLApiClient', () => {
           },
         },
       };
-      
+
       // Setup axios mock
       axiosInstance.get.mockResolvedValue(mockResponse);
-      
+
       // Override the downloadMeasure method to return false
       const originalMethod = bclApiClient.downloadMeasure;
       bclApiClient.downloadMeasure = vi.fn().mockResolvedValue(false);
-      
+
       // Call the method
       const result = await bclApiClient.downloadMeasure('measure-1');
-      
+
       // Restore the original method
       bclApiClient.downloadMeasure = originalMethod;
-      
+
       // Verify the result
       expect(result).toBe(false);
     });
   });
-  
+
   describe('recommendMeasures', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should return recommended measures based on context', async () => {
-    return 
+      return;
       // Mock searchMeasures to return different measures for different keywords
       const mockMeasures1: Measure[] = [
         {
@@ -290,7 +292,7 @@ describe('BCLApiClient', () => {
           arguments: [],
         },
       ];
-      
+
       const mockMeasures2: Measure[] = [
         {
           id: 'measure-2',
@@ -302,10 +304,10 @@ describe('BCLApiClient', () => {
           arguments: [],
         },
       ];
-      
+
       // Create a spy on the searchMeasures method
       const searchMeasuresSpy = vi.spyOn(bclApiClient, 'searchMeasures');
-      
+
       // Make it return different values based on the input
       searchMeasuresSpy.mockImplementation((query: string) => {
         if (query === 'energy') {
@@ -316,75 +318,75 @@ describe('BCLApiClient', () => {
           return Promise.resolve([]);
         }
       });
-      
+
       // Call the method
       const result = await bclApiClient.recommendMeasures('energy efficiency improvement');
-      
+
       // Verify searchMeasures was called with the extracted keywords
       expect(searchMeasuresSpy).toHaveBeenCalledWith('energy');
       expect(searchMeasuresSpy).toHaveBeenCalledWith('efficiency');
       expect(searchMeasuresSpy).toHaveBeenCalledWith('improvement');
-      
+
       // Verify the result contains both measures
       expect(result).toHaveLength(2);
-      expect(result.map(m => m.id)).toContain('measure-1');
-      expect(result.map(m => m.id)).toContain('measure-2');
+      expect(result.map((m) => m.id)).toContain('measure-1');
+      expect(result.map((m) => m.id)).toContain('measure-2');
     });
-    
+
     it('should handle errors and return an empty array', async () => {
-    return 
+      return;
       // Create a spy on the searchMeasures method that throws an error
       const searchMeasuresSpy = vi.spyOn(bclApiClient, 'searchMeasures');
       searchMeasuresSpy.mockRejectedValue(new Error('Search error'));
-      
+
       // Call the method
       const result = await bclApiClient.recommendMeasures('energy efficiency');
-      
+
       // Verify the result
       expect(result).toEqual([]);
     });
   });
-  
+
   describe('updateMeasure', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should return true when the measure update is successful', async () => {
-    return 
+      return;
       // Create a spy on the installMeasure method
       const installMeasureSpy = vi.spyOn(bclApiClient, 'installMeasure');
       installMeasureSpy.mockResolvedValue(true);
-      
+
       // Call the method
       const result = await bclApiClient.updateMeasure('measure-1');
-      
+
       // Verify installMeasure was called with the correct parameters
       expect(installMeasureSpy).toHaveBeenCalledWith('measure-1');
-      
+
       // Verify the result
       expect(result).toBe(true);
     });
-    
+
     it('should return false when the measure update fails', async () => {
-    return 
+      return;
       // Create a spy on the installMeasure method
       const installMeasureSpy = vi.spyOn(bclApiClient, 'installMeasure');
       installMeasureSpy.mockResolvedValue(false);
-      
+
       // Call the method
       const result = await bclApiClient.updateMeasure('measure-1');
-      
+
       // Verify the result
       expect(result).toBe(false);
     });
-    
+
     it('should handle errors and return false', async () => {
-    return 
+      return;
       // Create a spy on the installMeasure method that throws an error
       const installMeasureSpy = vi.spyOn(bclApiClient, 'installMeasure');
       installMeasureSpy.mockRejectedValue(new Error('Install error'));
-      
+
       // Call the method
       const result = await bclApiClient.updateMeasure('measure-1');
-      
+
       // Verify the result
       expect(result).toBe(false);
     });

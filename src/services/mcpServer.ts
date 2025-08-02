@@ -24,7 +24,7 @@ const requestRouter = new RequestRouter(requestHandler);
 export interface MCPCapability {
   name: string;
   description: string;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
 }
 
 /**
@@ -54,7 +54,7 @@ export class MCPServer implements MCPServerInterface {
     } catch (error) {
       logger.warn(
         { error: error instanceof Error ? error.message : String(error) },
-        'Failed to detect OpenStudio version. Make sure OpenStudio CLI is installed and available in your PATH.'
+        'Failed to detect OpenStudio version. Make sure OpenStudio CLI is installed and available in your PATH.',
       );
     }
   }
@@ -162,7 +162,7 @@ export class MCPServer implements MCPServerInterface {
         },
       },
     });
-    
+
     this.capabilities.push({
       name: 'openstudio.model.info',
       description: 'Get information about an OpenStudio model',
@@ -233,7 +233,7 @@ export class MCPServer implements MCPServerInterface {
         },
       },
     });
-    
+
     this.capabilities.push({
       name: 'openstudio.bcl.recommend',
       description: 'Get measure recommendations based on context',
@@ -387,16 +387,19 @@ export class MCPServer implements MCPServerInterface {
   public validateRequest(request: MCPRequest): boolean {
     // Use the validation utility
     const validationResult = validateRequest(request);
-    
+
     if (!validationResult.valid) {
-      logger.warn({ 
-        request, 
-        errors: validationResult.errors,
-        errorCode: validationResult.errorCode 
-      }, 'Request validation failed');
+      logger.warn(
+        {
+          request,
+          errors: validationResult.errors,
+          errorCode: validationResult.errorCode,
+        },
+        'Request validation failed',
+      );
       return false;
     }
-    
+
     return true;
   }
 
@@ -408,34 +411,32 @@ export class MCPServer implements MCPServerInterface {
   public async handleRequest(request: MCPRequest): Promise<MCPResponse> {
     // Use the RequestRouter to route the request to the appropriate handler
     logger.info({ requestId: request.id, requestType: request.type }, 'Routing request to handler');
-    
+
     // Prepare response formatter options
     const formatterOptions = {
       serverVersion: process.env.npm_package_version || '0.1.0',
       openStudioVersion: this.openStudioVersion,
       includeMetadata: true,
-      includeRawOutput: true
+      includeRawOutput: true,
     };
-    
+
     try {
       // Route the request using the RequestRouter
       const result = await requestRouter.routeRequest(request);
-      
+
       // Use the response formatter to format the response
-      return responseFormatter.formatResponse(
-        request.id,
-        request.type,
-        result,
-        formatterOptions
-      );
+      return responseFormatter.formatResponse(request.id, request.type, result, formatterOptions);
     } catch (error) {
       // Handle unexpected errors
-      logger.error({ 
-        requestId: request.id,
-        requestType: request.type,
-        error: error instanceof Error ? error.message : String(error)
-      }, 'Error executing handler');
-      
+      logger.error(
+        {
+          requestId: request.id,
+          requestType: request.type,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Error executing handler',
+      );
+
       // Use the response formatter to format the error response
       return responseFormatter.formatError(
         request.id,
@@ -443,7 +444,7 @@ export class MCPServer implements MCPServerInterface {
         error instanceof Error ? error.message : String(error),
         'INTERNAL_ERROR',
         { originalError: error instanceof Error ? error.stack : String(error) },
-        formatterOptions
+        formatterOptions,
       );
     }
   }

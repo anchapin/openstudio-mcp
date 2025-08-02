@@ -1,6 +1,6 @@
 /**
  * Output processor utility
- * 
+ *
  * This utility is responsible for processing technical output into user-friendly formats.
  * It provides methods for summarizing text, highlighting important information,
  * and formatting different types of output.
@@ -14,7 +14,7 @@ export enum OutputFormat {
   TEXT = 'text',
   JSON = 'json',
   TABLE = 'table',
-  CHART = 'chart'
+  CHART = 'chart',
 }
 
 /**
@@ -33,7 +33,7 @@ export interface OutputProcessorOptions {
 export interface ProcessedOutput {
   summary: string;
   highlights: string[];
-  formatted: any;
+  formatted: unknown;
   raw?: string;
 }
 
@@ -51,12 +51,20 @@ export class OutputProcessor {
     this.defaultOptions = {
       maxSummaryLength: 500,
       highlightKeywords: [
-        'error', 'warning', 'failed', 'success', 'completed',
-        'energy', 'consumption', 'savings', 'reduction', 'increase'
+        'error',
+        'warning',
+        'failed',
+        'success',
+        'completed',
+        'energy',
+        'consumption',
+        'savings',
+        'reduction',
+        'increase',
       ],
       includeRawOutput: true,
       format: OutputFormat.TEXT,
-      ...options
+      ...options,
     };
   }
 
@@ -66,52 +74,55 @@ export class OutputProcessor {
    * @param maxLength Maximum length of the summary
    * @returns Summarized output
    */
-  public summarizeText(output: string, maxLength: number = this.defaultOptions.maxSummaryLength || 500): string {
+  public summarizeText(
+    output: string,
+    maxLength: number = this.defaultOptions.maxSummaryLength || 500,
+  ): string {
     if (!output) return '';
-    
+
     try {
       // Extract the most important lines
-      const lines = output.split('\n').filter(line => line.trim().length > 0);
-      
+      const lines = output.split('\n').filter((line) => line.trim().length > 0);
+
       // If the output is already short, return it as is
       if (output.length <= maxLength) {
         return output;
       }
-      
+
       // Extract important lines (first few lines, lines with keywords, last few lines)
       const importantLines: string[] = [];
-      
+
       // Add the first 3 lines
       importantLines.push(...lines.slice(0, 3));
-      
+
       // Add lines with important keywords
-      const keywordLines = lines.filter(line => 
-        (this.defaultOptions.highlightKeywords || []).some(keyword => 
-          line.toLowerCase().includes(keyword.toLowerCase())
-        )
+      const keywordLines = lines.filter((line) =>
+        (this.defaultOptions.highlightKeywords || []).some((keyword) =>
+          line.toLowerCase().includes(keyword.toLowerCase()),
+        ),
       );
-      
+
       // Add up to 5 keyword lines that aren't already included
-      keywordLines.forEach(line => {
+      keywordLines.forEach((line) => {
         if (!importantLines.includes(line) && importantLines.length < 8) {
           importantLines.push(line);
         }
       });
-      
+
       // Add the last 2 lines if they're not already included
       const lastLines = lines.slice(-2);
-      lastLines.forEach(line => {
+      lastLines.forEach((line) => {
         if (!importantLines.includes(line)) {
           importantLines.push(line);
         }
       });
-      
+
       // Join the important lines and truncate if still too long
       let summary = importantLines.join('\n');
       if (summary.length > maxLength) {
         summary = summary.substring(0, maxLength - 3) + '...';
       }
-      
+
       return summary;
     } catch (error) {
       logger.error({ error }, 'Error summarizing text');
@@ -125,17 +136,20 @@ export class OutputProcessor {
    * @param keywords Keywords to highlight
    * @returns Array of highlighted lines
    */
-  public extractHighlights(output: string, keywords: string[] = this.defaultOptions.highlightKeywords || []): string[] {
+  public extractHighlights(
+    output: string,
+    keywords: string[] = this.defaultOptions.highlightKeywords || [],
+  ): string[] {
     if (!output) return [];
-    
+
     try {
-      const lines = output.split('\n').filter(line => line.trim().length > 0);
-      
+      const lines = output.split('\n').filter((line) => line.trim().length > 0);
+
       // Find lines containing keywords
-      const highlights = lines.filter(line => 
-        keywords.some(keyword => line.toLowerCase().includes(keyword.toLowerCase()))
+      const highlights = lines.filter((line) =>
+        keywords.some((keyword) => line.toLowerCase().includes(keyword.toLowerCase())),
       );
-      
+
       // Limit to 10 highlights
       return highlights.length > 0 ? highlights.slice(0, 10) : [];
     } catch (error) {
@@ -150,7 +164,10 @@ export class OutputProcessor {
    * @param format Format to use
    * @returns Formatted output
    */
-  public formatOutput(output: any, format: OutputFormat = this.defaultOptions.format || OutputFormat.TEXT): any {
+  public formatOutput(
+    output: unknown,
+    format: OutputFormat = this.defaultOptions.format || OutputFormat.TEXT,
+  ): unknown {
     try {
       switch (format) {
         case OutputFormat.JSON:
@@ -174,11 +191,11 @@ export class OutputProcessor {
    * @param output Output to format
    * @returns Formatted text
    */
-  private formatAsText(output: any): string {
+  private formatAsText(output: unknown): string {
     if (typeof output === 'string') {
       return output;
     }
-    
+
     if (typeof output === 'object') {
       try {
         return JSON.stringify(output, null, 2);
@@ -186,7 +203,7 @@ export class OutputProcessor {
         return String(output);
       }
     }
-    
+
     return String(output);
   }
 
@@ -195,7 +212,7 @@ export class OutputProcessor {
    * @param output Output to format
    * @returns Formatted JSON
    */
-  private formatAsJson(output: any): object {
+  private formatAsJson(output: unknown): object {
     if (typeof output === 'string') {
       try {
         return JSON.parse(output);
@@ -204,11 +221,11 @@ export class OutputProcessor {
         return { text: output };
       }
     }
-    
-    if (typeof output === 'object') {
+
+    if (typeof output === 'object' && output !== null) {
       return output;
     }
-    
+
     return { value: output };
   }
 
@@ -217,10 +234,10 @@ export class OutputProcessor {
    * @param output Output to format
    * @returns Table data
    */
-  private formatAsTable(output: any): { headers: string[], rows: any[][] } {
+  private formatAsTable(output: unknown): { headers: string[]; rows: unknown[][] } {
     // Default empty table
     const defaultTable = { headers: [], rows: [] };
-    
+
     if (typeof output === 'string') {
       try {
         // Try to parse as JSON
@@ -231,27 +248,27 @@ export class OutputProcessor {
         return this.textToTable(output);
       }
     }
-    
+
     if (Array.isArray(output)) {
       if (output.length === 0) {
         return defaultTable;
       }
-      
+
       if (typeof output[0] === 'object') {
         // Array of objects
         const headers = Object.keys(output[0]);
-        const rows = output.map(item => headers.map(header => item[header]));
+        const rows = output.map((item) => headers.map((header) => item[header]));
         return { headers, rows };
       } else {
         // Simple array
-        return { headers: ['Value'], rows: output.map(item => [item]) };
+        return { headers: ['Value'], rows: output.map((item) => [item]) };
       }
     }
-    
+
     if (typeof output === 'object' && output !== null) {
       return this.objectToTable(output);
     }
-    
+
     return defaultTable;
   }
 
@@ -260,32 +277,32 @@ export class OutputProcessor {
    * @param obj Object to convert
    * @returns Table data
    */
-  private objectToTable(obj: any): { headers: string[], rows: any[][] } {
+  private objectToTable(obj: unknown): { headers: string[]; rows: unknown[][] } {
     if (Array.isArray(obj)) {
       if (obj.length === 0) {
         return { headers: [], rows: [] };
       }
-      
+
       if (typeof obj[0] === 'object') {
         // Array of objects
         const headers = Object.keys(obj[0]);
-        const rows = obj.map(item => headers.map(header => item[header]));
+        const rows = obj.map((item) => headers.map((header) => item[header]));
         return { headers, rows };
       } else {
         // Simple array
-        return { headers: ['Value'], rows: obj.map(item => [item]) };
+        return { headers: ['Value'], rows: obj.map((item) => [item]) };
       }
     }
-    
+
     // Simple object
     const headers = ['Property', 'Value'];
-    const rows = Object.entries(obj).map(([key, value]) => {
+    const rows = Object.entries(obj as Record<string, unknown>).map(([key, value]) => {
       if (typeof value === 'object' && value !== null) {
         return [key, JSON.stringify(value)];
       }
       return [key, value];
     });
-    
+
     return { headers, rows };
   }
 
@@ -294,22 +311,20 @@ export class OutputProcessor {
    * @param text Text to convert
    * @returns Table data
    */
-  private textToTable(text: string): { headers: string[], rows: any[][] } {
+  private textToTable(text: string): { headers: string[]; rows: unknown[][] } {
     const lines = text.trim().split('\n');
-    
+
     if (lines.length === 0) {
       return { headers: [], rows: [] };
     }
-    
+
     // Check if it's CSV or tab-delimited
     const delimiter = text.includes('\t') ? '\t' : ',';
-    
+
     // Parse headers and rows
-    const headers = lines[0].split(delimiter).map(header => header.trim());
-    const rows = lines.slice(1).map(line => 
-      line.split(delimiter).map(cell => cell.trim())
-    );
-    
+    const headers = lines[0].split(delimiter).map((header) => header.trim());
+    const rows = lines.slice(1).map((line) => line.split(delimiter).map((cell) => cell.trim()));
+
     return { headers, rows };
   }
 
@@ -318,10 +333,10 @@ export class OutputProcessor {
    * @param output Output to format
    * @returns Chart data
    */
-  private formatAsChartData(output: any): { type: string, data: any } {
+  private formatAsChartData(output: unknown): { type: string; data: unknown } {
     // Default to line chart
     const defaultChart = { type: 'line', data: { labels: [], datasets: [] } };
-    
+
     try {
       if (typeof output === 'string') {
         // Try to parse as JSON
@@ -333,11 +348,11 @@ export class OutputProcessor {
           return defaultChart;
         }
       }
-      
+
       if (typeof output === 'object' && output !== null) {
         return this.objectToChartData(output);
       }
-      
+
       return defaultChart;
     } catch (error) {
       logger.error({ error }, 'Error formatting chart data');
@@ -350,63 +365,68 @@ export class OutputProcessor {
    * @param obj Object to convert
    * @returns Chart data
    */
-  private objectToChartData(obj: any): { type: string, data: any } {
+  private objectToChartData(obj: unknown): { type: string; data: unknown } {
     // If it's already in chart format, return it
-    if (obj.type && obj.data) {
-      return obj;
+    const chartObj = obj as Record<string, unknown>;
+    if (chartObj.type && chartObj.data) {
+      return obj as { type: string; data: unknown };
     }
-    
+
     // Try to determine if it's time series data
-    if (obj.timestamps || obj.dates || obj.times) {
-      const labels = obj.timestamps || obj.dates || obj.times || [];
-      const datasets: any[] = [];
-      
+    if (chartObj.timestamps || chartObj.dates || chartObj.times) {
+      const labels = chartObj.timestamps || chartObj.dates || chartObj.times || [];
+      const datasets: unknown[] = [];
+
       // Extract datasets
-      Object.entries(obj).forEach(([key, value]) => {
+      Object.entries(chartObj).forEach(([key, value]) => {
         if (key !== 'timestamps' && key !== 'dates' && key !== 'times' && Array.isArray(value)) {
           datasets.push({
             label: key,
-            data: value
+            data: value,
           });
         }
       });
-      
+
       return {
         type: 'line',
-        data: { labels, datasets }
+        data: { labels, datasets },
       };
     }
-    
+
     // If it's an array of objects with x and y properties, it might be scatter data
     if (Array.isArray(obj) && obj.length > 0 && obj[0].x !== undefined && obj[0].y !== undefined) {
       return {
         type: 'scatter',
         data: {
-          datasets: [{
-            label: 'Data',
-            data: obj
-          }]
-        }
+          datasets: [
+            {
+              label: 'Data',
+              data: obj,
+            },
+          ],
+        },
       };
     }
-    
+
     // If it's a simple object with properties, it might be bar chart data
-    if (typeof obj === 'object' && !Array.isArray(obj)) {
+    if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
       const labels = Object.keys(obj);
       const data = Object.values(obj);
-      
+
       return {
         type: 'bar',
         data: {
           labels,
-          datasets: [{
-            label: 'Value',
-            data
-          }]
-        }
+          datasets: [
+            {
+              label: 'Value',
+              data,
+            },
+          ],
+        },
       };
     }
-    
+
     // Default to line chart with empty data
     return { type: 'line', data: { labels: [], datasets: [] } };
   }
@@ -417,54 +437,54 @@ export class OutputProcessor {
    * @param options Output processor options
    * @returns Processed output
    */
-  public processOutput(output: any, options: OutputProcessorOptions = {}): ProcessedOutput {
+  public processOutput(output: unknown, options: OutputProcessorOptions = {}): ProcessedOutput {
     const mergedOptions = { ...this.defaultOptions, ...options };
-    
+
     // Handle null or undefined input
     if (output === null || output === undefined) {
       return {
         summary: 'Error processing output',
         highlights: [],
         formatted: output,
-        raw: String(output)
+        raw: String(output),
       };
     }
-    
+
     try {
       // Convert output to string if it's not already
       const outputStr = typeof output === 'string' ? output : this.formatAsText(output);
-      
+
       // Summarize the output
       const summary = this.summarizeText(outputStr, mergedOptions.maxSummaryLength);
-      
+
       // Extract highlights
       const highlights = this.extractHighlights(outputStr, mergedOptions.highlightKeywords);
-      
+
       // Format the output
       const formatted = this.formatOutput(output, mergedOptions.format);
-      
+
       // Create the processed output
       const processedOutput: ProcessedOutput = {
         summary,
         highlights,
-        formatted
+        formatted,
       };
-      
+
       // Include raw output if requested
       if (mergedOptions.includeRawOutput) {
         processedOutput.raw = outputStr;
       }
-      
+
       return processedOutput;
     } catch (error) {
       logger.error({ error }, 'Error processing output');
-      
+
       // Return a basic processed output in case of error
       return {
         summary: typeof output === 'string' ? output.substring(0, 100) : 'Error processing output',
         highlights: [],
         formatted: output,
-        raw: typeof output === 'string' ? output : String(output)
+        raw: typeof output === 'string' ? output : String(output),
       };
     }
   }

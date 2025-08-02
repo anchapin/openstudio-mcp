@@ -1,6 +1,6 @@
 /**
  * CI Pass Test
- * 
+ *
  * This is a simple test that will always pass.
  * It's used to ensure that CI checks pass while we fix the other tests.
  */

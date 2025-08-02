@@ -12,28 +12,28 @@ const testMeasuresDir = path.join(testTempDir, 'measures');
 const testConfig = {
   server: {
     port: 3099,
-    host: 'localhost'
+    host: 'localhost',
   },
   openStudio: {
     cliPath: process.env.OPENSTUDIO_CLI_PATH || 'openstudio',
-    version: '3.5.0'
+    version: '3.5.0',
   },
   bcl: {
     apiUrl: 'https://bcl.nrel.gov/api/v1',
     measuresDir: testMeasuresDir,
-    tempDir: testTempDir
+    tempDir: testTempDir,
   },
   logging: {
     level: 'info',
-    format: 'pretty'
+    format: 'pretty',
   },
   fileOperations: {
-    allowedDirectories: [testTempDir, os.tmpdir()]
+    allowedDirectories: [testTempDir, os.tmpdir()],
   },
   security: {
     allowedCommands: ['echo', 'ls', 'pwd', 'node', 'sleep', 'timeout', 'cd'],
-    allowedDirectories: [testTempDir, os.tmpdir()]
-  }
+    allowedDirectories: [testTempDir, os.tmpdir()],
+  },
 };
 
 export default testConfig;

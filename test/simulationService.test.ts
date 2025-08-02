@@ -2,31 +2,30 @@
  * Simulation service tests
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import path from 'path';
 
 // Mock dependencies before importing the module
 vi.mock('../src/utils/openStudioCommands', async () => {
   const mockRunSimulation = vi.fn();
   const mockGetModelInfo = vi.fn();
-  
+
   return {
     default: {
       runSimulation: mockRunSimulation,
-      getModelInfo: mockGetModelInfo
+      getModelInfo: mockGetModelInfo,
     },
     runSimulation: mockRunSimulation,
-    getModelInfo: mockGetModelInfo
+    getModelInfo: mockGetModelInfo,
   };
 });
 
 vi.mock('../src/utils/resourceMonitor', async () => ({
   default: {
-    getProcessResourceUsage: vi.fn()
+    getProcessResourceUsage: vi.fn(),
   },
   resourceMonitor: {
-    getProcessResourceUsage: vi.fn()
+    getProcessResourceUsage: vi.fn(),
   },
-  createResourceMonitor: vi.fn()
+  createResourceMonitor: vi.fn(),
 }));
 
 vi.mock('../src/utils/logger', async () => ({
@@ -34,14 +33,14 @@ vi.mock('../src/utils/logger', async () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
+    debug: vi.fn(),
   },
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 vi.mock('fs', async () => {
@@ -61,14 +60,14 @@ describe('Simulation Service', () => {
   vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
   beforeEach(() => {
     vi.resetAllMocks();
-    
+
     // Skip all tests for now to avoid hanging
   });
-  
+
   describe('runSimulation', () => {
     vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should run a simulation with minimal parameters', async () => {
-    return 
+      return;
       // Mock successful simulation run
       vi.mocked(openStudioCommands.runSimulation).mockResolvedValue({
         success: true,
@@ -76,21 +75,21 @@ describe('Simulation Service', () => {
         stdout: 'Simulation completed successfully',
         stderr: '',
         command: 'openstudio',
-        args: ['run', '--workflow', '/path/to/model.osw']
+        args: ['run', '--workflow', '/path/to/model.osw'],
       });
-      
+
       const result = await simulationService.runSimulation({
         modelPath: '/path/to/model.osm',
-        weatherFile: '/path/to/weather.epw'
+        weatherFile: '/path/to/weather.epw',
       });
-      
+
       expect(result.success).toBe(true);
       expect(result.status).toBe(SimulationStatus.COMPLETED);
       expect(openStudioCommands.runSimulation).toHaveBeenCalled();
     });
-    
+
     it('should handle simulation failures', async () => {
-    return 
+      return;
       // Mock failed simulation run
       vi.mocked(openStudioCommands.runSimulation).mockResolvedValue({
         success: false,
@@ -98,24 +97,24 @@ describe('Simulation Service', () => {
         stdout: '',
         stderr: 'Simulation failed',
         command: 'openstudio',
-        args: ['run', '--workflow', '/path/to/model.osw']
+        args: ['run', '--workflow', '/path/to/model.osw'],
       });
-      
+
       const result = await simulationService.runSimulation({
         modelPath: '/path/to/model.osm',
-        weatherFile: '/path/to/weather.epw'
+        weatherFile: '/path/to/weather.epw',
       });
-      
+
       expect(result.success).toBe(false);
       expect(result.status).toBe(SimulationStatus.FAILED);
     });
   });
-  
+
   describe('getSimulationStatus', () => {
     it('should get the status of a running simulation', async () => {
-    return 
+      return;
       const simulationId = '123';
-      
+
       // Mock simulation in progress
       simulationService.simulationRegistry.set(simulationId, {
         id: simulationId,
@@ -123,19 +122,19 @@ describe('Simulation Service', () => {
         startTime: new Date(),
         modelPath: '/path/to/model.osm',
         outputPath: '/path/to/output',
-        progress: 50
+        progress: 50,
       });
-      
+
       const status = await simulationService.getSimulationStatus(simulationId);
-      
+
       expect(status.status).toBe(SimulationStatus.RUNNING);
       expect(status.progress).toBe(50);
     });
-    
+
     it('should return not found for unknown simulation ID', async () => {
-    return 
+      return;
       const status = await simulationService.getSimulationStatus('unknown');
-      
+
       expect(status.status).toBe(SimulationStatus.NOT_FOUND);
     });
   });

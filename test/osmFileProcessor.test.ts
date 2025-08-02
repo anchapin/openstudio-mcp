@@ -1,18 +1,14 @@
 /**
  * Tests for the OSM file processor module
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   validateOSMFile,
   extractOSMInformation,
-  extractDetailedOSMInformation,
   modifyOSMWithMeasure,
-  convertOSMFile,
-  mergeOSMFiles
 } from '../src/utils/osmFileProcessor';
 import * as commandExecutor from '../src/utils/commandExecutor';
 import * as fileOperations from '../src/utils/fileOperations';
-import fs from 'fs';
 
 // Mock the command executor
 vi.mock('../src/utils/commandExecutor', async () => ({
@@ -60,8 +56,8 @@ vi.mock('../src/utils/logger', async () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 describe('OSM File Processor', () => {
@@ -69,11 +65,11 @@ describe('OSM File Processor', () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
-  
+
   describe('validateOSMFile', () => {
     vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should validate a valid OSM file', async () => {
-    return 
+      return;
       // Mock the command executor to return a successful result
       vi.mocked(commandExecutor.executeOpenStudioCommand).mockResolvedValue({
         success: true,
@@ -81,21 +77,21 @@ describe('OSM File Processor', () => {
         stdout: 'Valid OSM file',
         stderr: '',
         command: 'openstudio',
-        args: ['validate', '/path/to/model.osm']
+        args: ['validate', '/path/to/model.osm'],
       });
-      
+
       const result = await validateOSMFile('/path/to/model.osm');
-      
+
       expect(result.valid).toBe(true);
       expect(commandExecutor.executeOpenStudioCommand).toHaveBeenCalledWith(
         expect.stringContaining('openstudio'),
         expect.arrayContaining(['validate']),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
-    
+
     it('should return invalid for an invalid OSM file', async () => {
-    return 
+      return;
       // Mock the command executor to return an error result
       vi.mocked(commandExecutor.executeOpenStudioCommand).mockResolvedValue({
         success: false,
@@ -103,19 +99,19 @@ describe('OSM File Processor', () => {
         stdout: '',
         stderr: 'Invalid OSM file',
         command: 'openstudio',
-        args: ['validate', '/path/to/invalid.osm']
+        args: ['validate', '/path/to/invalid.osm'],
       });
-      
+
       const result = await validateOSMFile('/path/to/invalid.osm');
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors).toBeDefined();
     });
   });
-  
+
   describe('extractOSMInformation', () => {
     it('should extract basic information from an OSM file', async () => {
-    return 
+      return;
       // Mock the command executor to return a successful result with JSON data
       vi.mocked(commandExecutor.executeOpenStudioCommand).mockResolvedValue({
         success: true,
@@ -124,24 +120,24 @@ describe('OSM File Processor', () => {
           building: {
             name: 'Test Building',
             area: 10000,
-            stories: 2
-          }
+            stories: 2,
+          },
         }),
         stderr: '',
         command: 'openstudio',
-        args: ['extract', 'info', '/path/to/model.osm']
+        args: ['extract', 'info', '/path/to/model.osm'],
       });
-      
+
       const info = await extractOSMInformation('/path/to/model.osm');
-      
+
       expect(info).toHaveProperty('building');
       expect(info.building.name).toBe('Test Building');
     });
   });
-  
+
   describe('modifyOSMWithMeasure', () => {
     it('should apply a measure to an OSM file', async () => {
-    return 
+      return;
       // Mock the command executor to return a successful result
       vi.mocked(commandExecutor.executeOpenStudioCommand).mockResolvedValue({
         success: true,
@@ -149,18 +145,16 @@ describe('OSM File Processor', () => {
         stdout: 'Measure applied successfully',
         stderr: '',
         command: 'openstudio',
-        args: ['apply', 'measure']
+        args: ['apply', 'measure'],
       });
-      
+
       // Mock file operations
       vi.mocked(fileOperations.createTempFile).mockResolvedValue('/tmp/output.osm');
-      
-      const result = await modifyOSMWithMeasure(
-        '/path/to/model.osm',
-        '/path/to/measure',
-        { param1: 'value1' }
-      );
-      
+
+      const result = await modifyOSMWithMeasure('/path/to/model.osm', '/path/to/measure', {
+        param1: 'value1',
+      });
+
       expect(result.success).toBe(true);
       expect(result.outputPath).toBe('/tmp/output.osm');
     });

@@ -467,8 +467,10 @@ export class BCLApiClient implements BCLIntegration {
 
       // Extract tags from attributes if available
       const tags: string[] = [];
-      if (bclMeasure.attributes?.attribute) {
-        bclMeasure.attributes.attribute.forEach((attr: { name?: string; value?: string }) => {
+      const measure = bclMeasure as Record<string, unknown>; // Type assertion for dynamic API response
+      const attributes = measure.attributes as { attribute?: { name?: string; value?: string }[] };
+      if (attributes?.attribute) {
+        attributes.attribute.forEach((attr: { name?: string; value?: string }) => {
           if (attr.name && attr.value) {
             tags.push(`${attr.name}: ${attr.value}`);
           }
@@ -477,11 +479,11 @@ export class BCLApiClient implements BCLIntegration {
 
       // Create the measure object
       return {
-        id: bclMeasure.uuid || '',
-        name: bclMeasure.display_name || bclMeasure.name || '',
-        description: bclMeasure.description || '',
-        version: bclMeasure.version_id || '0.0.0',
-        modelerDescription: bclMeasure.modeler_description || '',
+        id: (measure.uuid as string) || '',
+        name: (measure.display_name as string) || (measure.name as string) || '',
+        description: (measure.description as string) || '',
+        version: (measure.version_id as string) || '0.0.0',
+        modelerDescription: (measure.modeler_description as string) || '',
         tags: tags,
         arguments: args,
       };
@@ -491,9 +493,10 @@ export class BCLApiClient implements BCLIntegration {
       );
 
       // Return a minimal valid measure object
+      const fallbackMeasure = bclMeasure as { uuid?: string; display_name?: string; name?: string };
       return {
-        id: bclMeasure.uuid || 'unknown',
-        name: bclMeasure.display_name || bclMeasure.name || 'Unknown Measure',
+        id: fallbackMeasure.uuid || 'unknown',
+        name: fallbackMeasure.display_name || fallbackMeasure.name || 'Unknown Measure',
         description: 'Error parsing measure data',
         version: '0.0.0',
         modelerDescription: '',

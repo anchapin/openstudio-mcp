@@ -12,9 +12,9 @@ export interface MCPRequest {
     command?: string;
     modelPath?: string;
     measureId?: string;
-    measureParams?: Record<string, any>;
+    measureParams?: Record<string, unknown>;
     query?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -25,12 +25,12 @@ export interface MCPResponse {
   id: string;
   type: string;
   status: 'success' | 'error';
-  result?: any;
+  result?: unknown;
   error?: {
     code: string;
     message: string;
-    details?: any;
-    _metadata?: any;
+    details?: unknown;
+    _metadata?: unknown;
   };
 }
 

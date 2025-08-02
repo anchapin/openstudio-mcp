@@ -24,7 +24,7 @@ export interface MeasureArgument {
   description: string;
   type: string;
   required: boolean;
-  defaultValue?: any;
+  defaultValue?: string | number | boolean;
 }
 
 /**

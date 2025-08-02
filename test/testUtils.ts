@@ -13,7 +13,7 @@ export function ensureTestDirectories(): void {
   if (!fs.existsSync(testConfig.bcl.tempDir)) {
     fs.mkdirSync(testConfig.bcl.tempDir, { recursive: true });
   }
-  
+
   // Create test measures directory if it doesn't exist
   if (!fs.existsSync(testConfig.bcl.measuresDir)) {
     fs.mkdirSync(testConfig.bcl.measuresDir, { recursive: true });
@@ -29,15 +29,15 @@ function deleteDirectoryContents(dirPath: string, excludeDirs: string[] = []): v
   }
 
   const files = fs.readdirSync(dirPath);
-  
+
   for (const file of files) {
     const filePath = path.join(dirPath, file);
-    
+
     // Skip excluded directories
     if (excludeDirs.includes(file)) {
       continue;
     }
-    
+
     try {
       if (fs.lstatSync(filePath).isDirectory()) {
         // Recursively delete directory contents
@@ -49,7 +49,7 @@ function deleteDirectoryContents(dirPath: string, excludeDirs: string[] = []): v
         fs.unlinkSync(filePath);
       }
     } catch (err) {
-      console.error(`Error cleaning up ${filePath}:`, err);
+      // Silently handle cleanup errors in tests
     }
   }
 }
@@ -63,9 +63,9 @@ export function cleanupTestDirectories(): void {
     if (fs.existsSync(testConfig.bcl.tempDir)) {
       deleteDirectoryContents(testConfig.bcl.tempDir, ['measures']);
     }
-    
-    console.log('Test directories cleaned up successfully');
+
+    // Test directories cleaned up successfully
   } catch (err) {
-    console.error('Error during test directory cleanup:', err);
+    // Silently handle cleanup errors in tests
   }
 }

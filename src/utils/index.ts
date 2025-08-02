@@ -3,7 +3,12 @@
  */
 export { default as logger } from './logger';
 export { default as commandExecutor } from './commandExecutor';
-export { executeCommand, executeOpenStudioCommand, killAllProcesses, getActiveProcesses } from './commandExecutor';
+export {
+  executeCommand,
+  executeOpenStudioCommand,
+  killAllProcesses,
+  getActiveProcesses,
+} from './commandExecutor';
 export { default as openStudioCommands } from './openStudioCommands';
 export { getOpenStudioVersion } from './openStudioCommands';
 export { default as fileOperations } from './fileOperations';

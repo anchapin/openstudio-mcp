@@ -1,8 +1,8 @@
 /**
  * OSM file processing module
- * 
+ *
  * This module provides functions to parse, validate, and modify OpenStudio Model (OSM) files.
- * 
+ *
  * Features:
  * - OSM file parsing and validation
  * - Model information extraction
@@ -179,10 +179,10 @@ const defaultOptions: OSMProcessingOptions = {
  */
 export async function validateOSMFile(
   osmFilePath: string,
-  options: OSMProcessingOptions = {}
+  options: OSMProcessingOptions = {},
 ): Promise<OSMValidationResult> {
   const opts = { ...defaultOptions, ...options };
-  
+
   // Validate path
   if (!osmFilePath || !isPathSafe(osmFilePath)) {
     return {
@@ -194,7 +194,7 @@ export async function validateOSMFile(
 
   try {
     // Check if file exists
-    if (!await fileOperations.fileExists(osmFilePath)) {
+    if (!(await fileOperations.fileExists(osmFilePath))) {
       return {
         valid: false,
         errors: [`OSM file not found: ${osmFilePath}`],
@@ -207,7 +207,9 @@ export async function validateOSMFile(
     if (opts.maxFileSize && stats.size > opts.maxFileSize) {
       return {
         valid: false,
-        errors: [`OSM file size exceeds maximum allowed size (${stats.size} > ${opts.maxFileSize} bytes)`],
+        errors: [
+          `OSM file size exceeds maximum allowed size (${stats.size} > ${opts.maxFileSize} bytes)`,
+        ],
         warnings: [],
       };
     }
@@ -228,13 +230,15 @@ export async function validateOSMFile(
       // Extract errors
       const errorMatches = result.stdout.match(/Error: ([^\n]+)/g);
       if (errorMatches) {
-        validationResult.errors = errorMatches.map(match => match.replace('Error: ', '').trim());
+        validationResult.errors = errorMatches.map((match) => match.replace('Error: ', '').trim());
       }
 
       // Extract warnings
       const warningMatches = result.stdout.match(/Warning: ([^\n]+)/g);
       if (warningMatches) {
-        validationResult.warnings = warningMatches.map(match => match.replace('Warning: ', '').trim());
+        validationResult.warnings = warningMatches.map((match) =>
+          match.replace('Warning: ', '').trim(),
+        );
       }
     }
 
@@ -246,7 +250,7 @@ export async function validateOSMFile(
     return validationResult;
   } catch (error) {
     logger.error({ osmFilePath, error }, 'Failed to validate OSM file');
-    
+
     return {
       valid: false,
       errors: [error instanceof Error ? error.message : String(error)],
@@ -265,10 +269,10 @@ export async function validateOSMFile(
 export async function extractOSMInformation(
   osmFilePath: string,
   detailLevel: 'basic' | 'detailed' | 'complete' = 'basic',
-  options: OSMProcessingOptions = {}
+  options: OSMProcessingOptions = {},
 ): Promise<OpenStudioCommandResult> {
   const opts = { ...defaultOptions, ...options };
-  
+
   // Validate path
   if (!osmFilePath || !isPathSafe(osmFilePath)) {
     return {
@@ -280,7 +284,7 @@ export async function extractOSMInformation(
 
   try {
     // Check if file exists
-    if (!await fileOperations.fileExists(osmFilePath)) {
+    if (!(await fileOperations.fileExists(osmFilePath))) {
       return {
         success: false,
         output: '',
@@ -313,21 +317,21 @@ export async function extractOSMInformation(
 
     // Get model information
     const args = ['--info'];
-    
+
     if (detailLevel === 'detailed' || detailLevel === 'complete') {
       args.push('--detailed');
     }
-    
+
     if (detailLevel === 'complete') {
       args.push('--complete');
     }
-    
+
     args.push(osmFilePath);
-    
+
     const result = await executeOpenStudioCommand('model', args, {
       timeout: opts.timeout,
     });
-    
+
     // Parse the model information
     const modelInfo: OpenStudioModelInfo = {
       version: '',
@@ -336,63 +340,63 @@ export async function extractOSMInformation(
       constructions: 0,
       materials: 0,
     };
-    
+
     if (result.success && result.stdout) {
       // Extract version
       const versionMatch = result.stdout.match(/OpenStudio Version: ([^\n]+)/);
       if (versionMatch) {
         modelInfo.version = versionMatch[1].trim();
       }
-      
+
       // Extract spaces
       const spacesMatch = result.stdout.match(/Spaces: (\d+)/);
       if (spacesMatch) {
         modelInfo.spaces = parseInt(spacesMatch[1], 10);
       }
-      
+
       // Extract thermal zones
       const thermalZonesMatch = result.stdout.match(/Thermal Zones: (\d+)/);
       if (thermalZonesMatch) {
         modelInfo.thermalZones = parseInt(thermalZonesMatch[1], 10);
       }
-      
+
       // Extract constructions
       const constructionsMatch = result.stdout.match(/Constructions: (\d+)/);
       if (constructionsMatch) {
         modelInfo.constructions = parseInt(constructionsMatch[1], 10);
       }
-      
+
       // Extract materials
       const materialsMatch = result.stdout.match(/Materials: (\d+)/);
       if (materialsMatch) {
         modelInfo.materials = parseInt(materialsMatch[1], 10);
       }
-      
+
       // Extract weather file
       const weatherFileMatch = result.stdout.match(/Weather File: ([^\n]+)/);
       if (weatherFileMatch) {
         modelInfo.weatherFile = weatherFileMatch[1].trim();
       }
-      
+
       // Extract building type
       const buildingTypeMatch = result.stdout.match(/Building Type: ([^\n]+)/);
       if (buildingTypeMatch) {
         modelInfo.buildingType = buildingTypeMatch[1].trim();
       }
-      
+
       // Extract floor area
       const floorAreaMatch = result.stdout.match(/Floor Area: ([\d.]+) m²/);
       if (floorAreaMatch) {
         modelInfo.floorArea = parseFloat(floorAreaMatch[1]);
       }
-      
+
       // Extract stories
       const storiesMatch = result.stdout.match(/Stories: (\d+)/);
       if (storiesMatch) {
         modelInfo.stories = parseInt(storiesMatch[1], 10);
       }
     }
-    
+
     return {
       success: result.success,
       output: result.stdout,
@@ -401,7 +405,7 @@ export async function extractOSMInformation(
     };
   } catch (error) {
     logger.error({ osmFilePath, detailLevel, error }, 'Failed to extract OSM information');
-    
+
     return {
       success: false,
       output: '',
@@ -418,27 +422,37 @@ export async function extractOSMInformation(
  */
 export async function extractDetailedOSMInformation(
   osmFilePath: string,
-  options: OSMProcessingOptions = {}
+  options: OSMProcessingOptions = {},
 ): Promise<OSMModelDetails | null> {
   try {
     // Get basic model information first
     const basicInfoResult = await extractOSMInformation(osmFilePath, 'basic', options);
-    
+
     if (!basicInfoResult.success || !basicInfoResult.data) {
-      logger.error({ osmFilePath, error: basicInfoResult.error }, 'Failed to extract basic OSM information');
+      logger.error(
+        { osmFilePath, error: basicInfoResult.error },
+        'Failed to extract basic OSM information',
+      );
       return null;
     }
-    
+
     // Now get detailed information using OpenStudio CLI
-    const detailedResult = await executeOpenStudioCommand('model', ['--detailed', '--complete', osmFilePath], {
-      timeout: options.timeout || defaultOptions.timeout,
-    });
-    
+    const detailedResult = await executeOpenStudioCommand(
+      'model',
+      ['--detailed', '--complete', osmFilePath],
+      {
+        timeout: options.timeout || defaultOptions.timeout,
+      },
+    );
+
     if (!detailedResult.success) {
-      logger.error({ osmFilePath, error: detailedResult.error }, 'Failed to extract detailed OSM information');
+      logger.error(
+        { osmFilePath, error: detailedResult.error },
+        'Failed to extract detailed OSM information',
+      );
       return null;
     }
-    
+
     // Parse the detailed output
     const modelDetails: OSMModelDetails = {
       modelInfo: basicInfoResult.data as OpenStudioModelInfo,
@@ -449,15 +463,17 @@ export async function extractDetailedOSMInformation(
       surfaces: [],
       subSurfaces: [],
     };
-    
+
     // Parse spaces
     const spacesSection = detailedResult.stdout.match(/Spaces:([\s\S]*?)(?=Thermal Zones:|$)/);
     if (spacesSection && spacesSection[1]) {
       const spaceLines = spacesSection[1].trim().split('\n');
-      
+
       for (const line of spaceLines) {
-        const spaceMatch = line.match(/\s*(.+?):\s*Type\s*=\s*(.+?),\s*Area\s*=\s*([\d.]+)\s*m²,\s*Volume\s*=\s*([\d.]+)\s*m³(?:,\s*Thermal Zone\s*=\s*(.+))?/);
-        
+        const spaceMatch = line.match(
+          /\s*(.+?):\s*Type\s*=\s*(.+?),\s*Area\s*=\s*([\d.]+)\s*m²,\s*Volume\s*=\s*([\d.]+)\s*m³(?:,\s*Thermal Zone\s*=\s*(.+))?/,
+        );
+
         if (spaceMatch) {
           modelDetails.spaces?.push({
             name: spaceMatch[1].trim(),
@@ -469,53 +485,61 @@ export async function extractDetailedOSMInformation(
         }
       }
     }
-    
+
     // Parse thermal zones
-    const zonesSection = detailedResult.stdout.match(/Thermal Zones:([\s\S]*?)(?=Constructions:|$)/);
+    const zonesSection = detailedResult.stdout.match(
+      /Thermal Zones:([\s\S]*?)(?=Constructions:|$)/,
+    );
     if (zonesSection && zonesSection[1]) {
       const zoneLines = zonesSection[1].trim().split('\n');
-      
+
       for (const line of zoneLines) {
-        const zoneMatch = line.match(/\s*(.+?):\s*Type\s*=\s*(.+?),\s*Area\s*=\s*([\d.]+)\s*m²,\s*Volume\s*=\s*([\d.]+)\s*m³,\s*Spaces\s*=\s*(.+)/);
-        
+        const zoneMatch = line.match(
+          /\s*(.+?):\s*Type\s*=\s*(.+?),\s*Area\s*=\s*([\d.]+)\s*m²,\s*Volume\s*=\s*([\d.]+)\s*m³,\s*Spaces\s*=\s*(.+)/,
+        );
+
         if (zoneMatch) {
           modelDetails.thermalZones?.push({
             name: zoneMatch[1].trim(),
             type: zoneMatch[2].trim(),
             area: parseFloat(zoneMatch[3]),
             volume: parseFloat(zoneMatch[4]),
-            spaces: zoneMatch[5].split(',').map(s => s.trim()),
+            spaces: zoneMatch[5].split(',').map((s) => s.trim()),
           });
         }
       }
     }
-    
+
     // Parse constructions
-    const constructionsSection = detailedResult.stdout.match(/Constructions:([\s\S]*?)(?=Materials:|$)/);
+    const constructionsSection = detailedResult.stdout.match(
+      /Constructions:([\s\S]*?)(?=Materials:|$)/,
+    );
     if (constructionsSection && constructionsSection[1]) {
       const constructionLines = constructionsSection[1].trim().split('\n');
-      
+
       for (const line of constructionLines) {
         const constructionMatch = line.match(/\s*(.+?):\s*Type\s*=\s*(.+?),\s*Layers\s*=\s*(.+)/);
-        
+
         if (constructionMatch) {
           modelDetails.constructions?.push({
             name: constructionMatch[1].trim(),
             type: constructionMatch[2].trim(),
-            layers: constructionMatch[3].split(',').map(l => l.trim()),
+            layers: constructionMatch[3].split(',').map((l) => l.trim()),
           });
         }
       }
     }
-    
+
     // Parse materials
     const materialsSection = detailedResult.stdout.match(/Materials:([\s\S]*?)(?=Surfaces:|$)/);
     if (materialsSection && materialsSection[1]) {
       const materialLines = materialsSection[1].trim().split('\n');
-      
+
       for (const line of materialLines) {
-        const materialMatch = line.match(/\s*(.+?):\s*Type\s*=\s*(.+?)(?:,\s*Thickness\s*=\s*([\d.]+)\s*m)?(?:,\s*Conductivity\s*=\s*([\d.]+)\s*W\/m-K)?(?:,\s*Density\s*=\s*([\d.]+)\s*kg\/m³)?(?:,\s*Specific Heat\s*=\s*([\d.]+)\s*J\/kg-K)?/);
-        
+        const materialMatch = line.match(
+          /\s*(.+?):\s*Type\s*=\s*(.+?)(?:,\s*Thickness\s*=\s*([\d.]+)\s*m)?(?:,\s*Conductivity\s*=\s*([\d.]+)\s*W\/m-K)?(?:,\s*Density\s*=\s*([\d.]+)\s*kg\/m³)?(?:,\s*Specific Heat\s*=\s*([\d.]+)\s*J\/kg-K)?/,
+        );
+
         if (materialMatch) {
           modelDetails.materials?.push({
             name: materialMatch[1].trim(),
@@ -528,15 +552,17 @@ export async function extractDetailedOSMInformation(
         }
       }
     }
-    
+
     // Parse surfaces
     const surfacesSection = detailedResult.stdout.match(/Surfaces:([\s\S]*?)(?=SubSurfaces:|$)/);
     if (surfacesSection && surfacesSection[1]) {
       const surfaceLines = surfacesSection[1].trim().split('\n');
-      
+
       for (const line of surfaceLines) {
-        const surfaceMatch = line.match(/\s*(.+?):\s*Type\s*=\s*(.+?)(?:,\s*Area\s*=\s*([\d.]+)\s*m²)?(?:,\s*Construction\s*=\s*(.+?))?(?:,\s*Space\s*=\s*(.+?))?(?:,\s*Outside Boundary Condition\s*=\s*(.+))?/);
-        
+        const surfaceMatch = line.match(
+          /\s*(.+?):\s*Type\s*=\s*(.+?)(?:,\s*Area\s*=\s*([\d.]+)\s*m²)?(?:,\s*Construction\s*=\s*(.+?))?(?:,\s*Space\s*=\s*(.+?))?(?:,\s*Outside Boundary Condition\s*=\s*(.+))?/,
+        );
+
         if (surfaceMatch) {
           modelDetails.surfaces?.push({
             name: surfaceMatch[1].trim(),
@@ -549,15 +575,17 @@ export async function extractDetailedOSMInformation(
         }
       }
     }
-    
+
     // Parse subsurfaces
     const subSurfacesSection = detailedResult.stdout.match(/SubSurfaces:([\s\S]*?)(?=$)/);
     if (subSurfacesSection && subSurfacesSection[1]) {
       const subSurfaceLines = subSurfacesSection[1].trim().split('\n');
-      
+
       for (const line of subSurfaceLines) {
-        const subSurfaceMatch = line.match(/\s*(.+?):\s*Type\s*=\s*(.+?)(?:,\s*Area\s*=\s*([\d.]+)\s*m²)?(?:,\s*Construction\s*=\s*(.+?))?(?:,\s*Parent Surface\s*=\s*(.+))?/);
-        
+        const subSurfaceMatch = line.match(
+          /\s*(.+?):\s*Type\s*=\s*(.+?)(?:,\s*Area\s*=\s*([\d.]+)\s*m²)?(?:,\s*Construction\s*=\s*(.+?))?(?:,\s*Parent Surface\s*=\s*(.+))?/,
+        );
+
         if (subSurfaceMatch) {
           modelDetails.subSurfaces?.push({
             name: subSurfaceMatch[1].trim(),
@@ -569,7 +597,7 @@ export async function extractDetailedOSMInformation(
         }
       }
     }
-    
+
     return modelDetails;
   } catch (error) {
     logger.error({ osmFilePath, error }, 'Failed to extract detailed OSM information');
@@ -589,12 +617,12 @@ export async function extractDetailedOSMInformation(
 export async function modifyOSMWithMeasure(
   osmFilePath: string,
   measurePath: string,
-  measureArgs: Record<string, any>,
+  measureArgs: Record<string, unknown>,
   outputPath?: string,
-  options: OSMProcessingOptions = {}
+  options: OSMProcessingOptions = {},
 ): Promise<OpenStudioCommandResult> {
   const opts = { ...defaultOptions, ...options };
-  
+
   // Validate paths
   if (!osmFilePath || !isPathSafe(osmFilePath)) {
     return {
@@ -603,7 +631,7 @@ export async function modifyOSMWithMeasure(
       error: `Invalid OSM file path: ${osmFilePath}`,
     };
   }
-  
+
   if (!measurePath || !isPathSafe(measurePath)) {
     return {
       success: false,
@@ -611,7 +639,7 @@ export async function modifyOSMWithMeasure(
       error: `Invalid measure path: ${measurePath}`,
     };
   }
-  
+
   if (outputPath && !isPathSafe(outputPath)) {
     return {
       success: false,
@@ -622,15 +650,15 @@ export async function modifyOSMWithMeasure(
 
   try {
     // Check if files exist
-    if (!await fileOperations.fileExists(osmFilePath)) {
+    if (!(await fileOperations.fileExists(osmFilePath))) {
       return {
         success: false,
         output: '',
         error: `OSM file not found: ${osmFilePath}`,
       };
     }
-    
-    if (!await fileOperations.directoryExists(measurePath)) {
+
+    if (!(await fileOperations.directoryExists(measurePath))) {
       return {
         success: false,
         output: '',
@@ -654,7 +682,7 @@ export async function modifyOSMWithMeasure(
     // Create a temporary file if requested
     let tempFilePath: string | undefined;
     let actualOutputPath = outputPath;
-    
+
     if (opts.useTemporary && !outputPath) {
       tempFilePath = await fileOperations.createTempFile('', {
         tempDir: opts.tempDir,
@@ -664,28 +692,28 @@ export async function modifyOSMWithMeasure(
 
     // Prepare measure arguments
     const args = ['--apply', measurePath, osmFilePath];
-    
+
     // Add measure arguments
     for (const [key, value] of Object.entries(measureArgs)) {
       args.push('--argument', `${key}=${value}`);
     }
-    
+
     // Add output path if specified
     if (actualOutputPath) {
       args.push('--output', actualOutputPath);
     }
-    
+
     // Apply the measure
     const result = await executeOpenStudioCommand('measure', args, {
       timeout: opts.timeout,
     });
-    
+
     // If using a temporary file and the command was successful, copy to the original file
     if (tempFilePath && result.success) {
       await fileOperations.copyFile(tempFilePath, osmFilePath, { overwrite: true });
       await fileOperations.deleteFile(tempFilePath);
     }
-    
+
     return {
       success: result.success,
       output: result.stdout,
@@ -697,8 +725,11 @@ export async function modifyOSMWithMeasure(
       },
     };
   } catch (error) {
-    logger.error({ osmFilePath, measurePath, measureArgs, outputPath, error }, 'Failed to modify OSM with measure');
-    
+    logger.error(
+      { osmFilePath, measurePath, measureArgs, outputPath, error },
+      'Failed to modify OSM with measure',
+    );
+
     return {
       success: false,
       output: '',
@@ -717,10 +748,10 @@ export async function modifyOSMWithMeasure(
 export async function convertOSMFile(
   osmFilePath: string,
   outputPath: string,
-  options: OSMProcessingOptions = {}
+  options: OSMProcessingOptions = {},
 ): Promise<OpenStudioCommandResult> {
   const opts = { ...defaultOptions, ...options };
-  
+
   // Validate paths
   if (!osmFilePath || !isPathSafe(osmFilePath)) {
     return {
@@ -729,7 +760,7 @@ export async function convertOSMFile(
       error: `Invalid OSM file path: ${osmFilePath}`,
     };
   }
-  
+
   if (!outputPath || !isPathSafe(outputPath)) {
     return {
       success: false,
@@ -740,7 +771,7 @@ export async function convertOSMFile(
 
   try {
     // Check if file exists
-    if (!await fileOperations.fileExists(osmFilePath)) {
+    if (!(await fileOperations.fileExists(osmFilePath))) {
       return {
         success: false,
         output: '',
@@ -764,19 +795,19 @@ export async function convertOSMFile(
     // Ensure the output directory exists
     const directory = path.dirname(outputPath);
     await fileOperations.ensureDirectory(directory);
-    
+
     // Determine the conversion type based on file extensions
     const inputExt = path.extname(osmFilePath).toLowerCase();
     const outputExt = path.extname(outputPath).toLowerCase();
-    
+
     // Prepare conversion arguments
     const args = ['--convert', osmFilePath, outputPath];
-    
+
     // Convert the model
     const result = await executeOpenStudioCommand('model', args, {
       timeout: opts.timeout,
     });
-    
+
     return {
       success: result.success,
       output: result.stdout,
@@ -790,7 +821,7 @@ export async function convertOSMFile(
     };
   } catch (error) {
     logger.error({ osmFilePath, outputPath, error }, 'Failed to convert OSM file');
-    
+
     return {
       success: false,
       output: '',
@@ -811,10 +842,10 @@ export async function mergeOSMFiles(
   primaryOSMPath: string,
   secondaryOSMPath: string,
   outputPath: string,
-  options: OSMProcessingOptions = {}
+  options: OSMProcessingOptions = {},
 ): Promise<OpenStudioCommandResult> {
   const opts = { ...defaultOptions, ...options };
-  
+
   // Validate paths
   if (!primaryOSMPath || !isPathSafe(primaryOSMPath)) {
     return {
@@ -823,7 +854,7 @@ export async function mergeOSMFiles(
       error: `Invalid primary OSM file path: ${primaryOSMPath}`,
     };
   }
-  
+
   if (!secondaryOSMPath || !isPathSafe(secondaryOSMPath)) {
     return {
       success: false,
@@ -831,7 +862,7 @@ export async function mergeOSMFiles(
       error: `Invalid secondary OSM file path: ${secondaryOSMPath}`,
     };
   }
-  
+
   if (!outputPath || !isPathSafe(outputPath)) {
     return {
       success: false,
@@ -842,15 +873,15 @@ export async function mergeOSMFiles(
 
   try {
     // Check if files exist
-    if (!await fileOperations.fileExists(primaryOSMPath)) {
+    if (!(await fileOperations.fileExists(primaryOSMPath))) {
       return {
         success: false,
         output: '',
         error: `Primary OSM file not found: ${primaryOSMPath}`,
       };
     }
-    
-    if (!await fileOperations.fileExists(secondaryOSMPath)) {
+
+    if (!(await fileOperations.fileExists(secondaryOSMPath))) {
       return {
         success: false,
         output: '',
@@ -869,7 +900,7 @@ export async function mergeOSMFiles(
           data: primaryValidation,
         };
       }
-      
+
       const secondaryValidation = await validateOSMFile(secondaryOSMPath, opts);
       if (!secondaryValidation.valid) {
         return {
@@ -884,15 +915,15 @@ export async function mergeOSMFiles(
     // Ensure the output directory exists
     const directory = path.dirname(outputPath);
     await fileOperations.ensureDirectory(directory);
-    
+
     // Prepare merge arguments
     const args = ['--merge', primaryOSMPath, secondaryOSMPath, outputPath];
-    
+
     // Merge the models
     const result = await executeOpenStudioCommand('model', args, {
       timeout: opts.timeout,
     });
-    
+
     return {
       success: result.success,
       output: result.stdout,
@@ -904,8 +935,11 @@ export async function mergeOSMFiles(
       },
     };
   } catch (error) {
-    logger.error({ primaryOSMPath, secondaryOSMPath, outputPath, error }, 'Failed to merge OSM files');
-    
+    logger.error(
+      { primaryOSMPath, secondaryOSMPath, outputPath, error },
+      'Failed to merge OSM files',
+    );
+
     return {
       success: false,
       output: '',

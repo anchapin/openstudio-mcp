@@ -20,13 +20,13 @@ vi.mock('../src/services/bclApiClient', () => ({
   BCLApiClient: vi.fn().mockImplementation(() => ({
     downloadMeasure: mockDownloadMeasure,
     installMeasure: mockInstallMeasure,
-  }))
+  })),
 }));
 
 vi.mock('../src/utils/measureManager', () => ({
   default: {
     isMeasureInstalled: vi.fn(),
-  }
+  },
 }));
 
 vi.mock('../src/utils/fileOperations', () => ({
@@ -35,7 +35,7 @@ vi.mock('../src/utils/fileOperations', () => ({
     directoryExists: vi.fn(),
     copyFile: vi.fn(),
     deleteFile: vi.fn(),
-  }
+  },
 }));
 
 // Mock logger
@@ -44,8 +44,8 @@ vi.mock('../src/utils/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 describe('Measure Application Workflow', () => {
@@ -59,25 +59,27 @@ describe('Measure Application Workflow', () => {
   });
 
   describe('executeMeasureWorkflow', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should execute a workflow successfully', async () => {
-    return; //  Mock dependencies
+      return; //  Mock dependencies
       (fileOperations.fileExists as any).mockResolvedValue(true);
-      (measureApplicationService.applyMeasure as any).mockResolvedValueOnce({
-        success: true,
-        outputModelPath: '/path/to/intermediate.osm',
-        originalModelPath: '/path/to/model.osm',
-        measureId: 'measure1',
-        arguments: { arg1: 42 },
-        warnings: ['Warning 1']
-      }).mockResolvedValueOnce({
-        success: true,
-        outputModelPath: '/path/to/output.osm',
-        originalModelPath: '/path/to/intermediate.osm',
-        measureId: 'measure2',
-        arguments: { arg2: 'value' },
-        warnings: ['Warning 2']
-      });
+      (measureApplicationService.applyMeasure as any)
+        .mockResolvedValueOnce({
+          success: true,
+          outputModelPath: '/path/to/intermediate.osm',
+          originalModelPath: '/path/to/model.osm',
+          measureId: 'measure1',
+          arguments: { arg1: 42 },
+          warnings: ['Warning 1'],
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          outputModelPath: '/path/to/output.osm',
+          originalModelPath: '/path/to/intermediate.osm',
+          measureId: 'measure2',
+          arguments: { arg2: 'value' },
+          warnings: ['Warning 2'],
+        });
 
       // Create a workflow
       const workflow = {
@@ -89,18 +91,18 @@ describe('Measure Application Workflow', () => {
             name: 'Step 1',
             description: 'Step 1 description',
             measureId: 'measure1',
-            arguments: { arg1: 42 }
+            arguments: { arg1: 42 },
           },
           {
             name: 'Step 2',
             description: 'Step 2 description',
             measureId: 'measure2',
-            arguments: { arg2: 'value' }
-          }
+            arguments: { arg2: 'value' },
+          },
         ],
         stopOnError: true,
         createBackup: true,
-        validate: true
+        validate: true,
       };
 
       // Execute the workflow
@@ -114,28 +116,33 @@ describe('Measure Application Workflow', () => {
       expect(result.stepResults[0].success).toBe(true);
       expect(result.stepResults[1].success).toBe(true);
       expect(result.warnings).toEqual(['Warning 1', 'Warning 2']);
-      expect(fileOperations.copyFile).toHaveBeenCalledWith('/path/to/model.osm', '/path/to/model.osm.workflow-backup');
+      expect(fileOperations.copyFile).toHaveBeenCalledWith(
+        '/path/to/model.osm',
+        '/path/to/model.osm.workflow-backup',
+      );
       expect(measureApplicationService.applyMeasure).toHaveBeenCalledTimes(2);
     });
 
     it('should handle workflow failure', async () => {
-    return 
+      return;
       // Mock dependencies
       (fileOperations.fileExists as any).mockResolvedValue(true);
-      (measureApplicationService.applyMeasure as any).mockResolvedValueOnce({
-        success: true,
-        outputModelPath: '/path/to/intermediate.osm',
-        originalModelPath: '/path/to/model.osm',
-        measureId: 'measure1',
-        arguments: { arg1: 42 }
-      }).mockResolvedValueOnce({
-        success: false,
-        outputModelPath: '/path/to/intermediate.osm',
-        originalModelPath: '/path/to/intermediate.osm',
-        measureId: 'measure2',
-        arguments: { arg2: 'value' },
-        error: 'Measure application failed'
-      });
+      (measureApplicationService.applyMeasure as any)
+        .mockResolvedValueOnce({
+          success: true,
+          outputModelPath: '/path/to/intermediate.osm',
+          originalModelPath: '/path/to/model.osm',
+          measureId: 'measure1',
+          arguments: { arg1: 42 },
+        })
+        .mockResolvedValueOnce({
+          success: false,
+          outputModelPath: '/path/to/intermediate.osm',
+          originalModelPath: '/path/to/intermediate.osm',
+          measureId: 'measure2',
+          arguments: { arg2: 'value' },
+          error: 'Measure application failed',
+        });
 
       // Create a workflow
       const workflow = {
@@ -147,18 +154,18 @@ describe('Measure Application Workflow', () => {
             name: 'Step 1',
             description: 'Step 1 description',
             measureId: 'measure1',
-            arguments: { arg1: 42 }
+            arguments: { arg1: 42 },
           },
           {
             name: 'Step 2',
             description: 'Step 2 description',
             measureId: 'measure2',
-            arguments: { arg2: 'value' }
-          }
+            arguments: { arg2: 'value' },
+          },
         ],
         stopOnError: true,
         createBackup: true,
-        validate: true
+        validate: true,
       };
 
       // Execute the workflow
@@ -176,29 +183,32 @@ describe('Measure Application Workflow', () => {
     });
 
     it('should continue execution if stopOnError is false', async () => {
-    return 
+      return;
       // Mock dependencies
       (fileOperations.fileExists as any).mockResolvedValue(true);
-      (measureApplicationService.applyMeasure as any).mockResolvedValueOnce({
-        success: true,
-        outputModelPath: '/path/to/intermediate.osm',
-        originalModelPath: '/path/to/model.osm',
-        measureId: 'measure1',
-        arguments: { arg1: 42 }
-      }).mockResolvedValueOnce({
-        success: false,
-        outputModelPath: '/path/to/intermediate.osm',
-        originalModelPath: '/path/to/intermediate.osm',
-        measureId: 'measure2',
-        arguments: { arg2: 'value' },
-        error: 'Measure application failed'
-      }).mockResolvedValueOnce({
-        success: true,
-        outputModelPath: '/path/to/output.osm',
-        originalModelPath: '/path/to/intermediate.osm',
-        measureId: 'measure3',
-        arguments: { arg3: true }
-      });
+      (measureApplicationService.applyMeasure as any)
+        .mockResolvedValueOnce({
+          success: true,
+          outputModelPath: '/path/to/intermediate.osm',
+          originalModelPath: '/path/to/model.osm',
+          measureId: 'measure1',
+          arguments: { arg1: 42 },
+        })
+        .mockResolvedValueOnce({
+          success: false,
+          outputModelPath: '/path/to/intermediate.osm',
+          originalModelPath: '/path/to/intermediate.osm',
+          measureId: 'measure2',
+          arguments: { arg2: 'value' },
+          error: 'Measure application failed',
+        })
+        .mockResolvedValueOnce({
+          success: true,
+          outputModelPath: '/path/to/output.osm',
+          originalModelPath: '/path/to/intermediate.osm',
+          measureId: 'measure3',
+          arguments: { arg3: true },
+        });
 
       // Create a workflow
       const workflow = {
@@ -210,24 +220,24 @@ describe('Measure Application Workflow', () => {
             name: 'Step 1',
             description: 'Step 1 description',
             measureId: 'measure1',
-            arguments: { arg1: 42 }
+            arguments: { arg1: 42 },
           },
           {
             name: 'Step 2',
             description: 'Step 2 description',
             measureId: 'measure2',
-            arguments: { arg2: 'value' }
+            arguments: { arg2: 'value' },
           },
           {
             name: 'Step 3',
             description: 'Step 3 description',
             measureId: 'measure3',
-            arguments: { arg3: true }
-          }
+            arguments: { arg3: true },
+          },
         ],
         stopOnError: false,
         createBackup: true,
-        validate: true
+        validate: true,
       };
 
       // Execute the workflow
@@ -246,7 +256,7 @@ describe('Measure Application Workflow', () => {
     });
 
     it('should handle input model not found', async () => {
-    return 
+      return;
       // Mock dependencies
       (fileOperations.fileExists as any).mockResolvedValue(false);
 
@@ -260,12 +270,12 @@ describe('Measure Application Workflow', () => {
             name: 'Step 1',
             description: 'Step 1 description',
             measureId: 'measure1',
-            arguments: { arg1: 42 }
-          }
+            arguments: { arg1: 42 },
+          },
         ],
         stopOnError: true,
         createBackup: true,
-        validate: true
+        validate: true,
       };
 
       // Execute the workflow
@@ -282,11 +292,14 @@ describe('Measure Application Workflow', () => {
   });
 
   describe('createWorkflowFromTemplate', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should create a workflow from a template', async () => {
-    return 
+      return;
       // Create a workflow from a template
-      const workflow = await measureApplicationWorkflow.createWorkflowFromTemplate('energy_efficiency', '/path/to/model.osm');
+      const workflow = await measureApplicationWorkflow.createWorkflowFromTemplate(
+        'energy_efficiency',
+        '/path/to/model.osm',
+      );
 
       // Verify the workflow
       expect(workflow.name).toBe('Energy Efficiency Workflow');
@@ -302,21 +315,28 @@ describe('Measure Application Workflow', () => {
     });
 
     it('should handle invalid template name', async () => {
-    return 
+      return;
       // Attempt to create a workflow with an invalid template name
-      await expect(measureApplicationWorkflow.createWorkflowFromTemplate('invalid_template', '/path/to/model.osm'))
-        .rejects.toThrow('Template not found: invalid_template');
+      await expect(
+        measureApplicationWorkflow.createWorkflowFromTemplate(
+          'invalid_template',
+          '/path/to/model.osm',
+        ),
+      ).rejects.toThrow('Template not found: invalid_template');
     });
   });
 
   describe('validateWorkflow', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should validate a workflow successfully', async () => {
-    return 
+      return;
       // Mock dependencies
       (fileOperations.fileExists as any).mockResolvedValue(true);
       (measureManager.isMeasureInstalled as any).mockResolvedValue(true);
-      (measureApplicationService.validateMeasureForApplication as any).mockResolvedValue({ valid: true, errors: [] });
+      (measureApplicationService.validateMeasureForApplication as any).mockResolvedValue({
+        valid: true,
+        errors: [],
+      });
 
       // Create a workflow
       const workflow = {
@@ -328,18 +348,18 @@ describe('Measure Application Workflow', () => {
             name: 'Step 1',
             description: 'Step 1 description',
             measureId: 'measure1',
-            arguments: { arg1: 42 }
+            arguments: { arg1: 42 },
           },
           {
             name: 'Step 2',
             description: 'Step 2 description',
             measureId: 'measure2',
-            arguments: { arg2: 'value' }
-          }
+            arguments: { arg2: 'value' },
+          },
         ],
         stopOnError: true,
         createBackup: true,
-        validate: true
+        validate: true,
       };
 
       // Validate the workflow
@@ -353,13 +373,15 @@ describe('Measure Application Workflow', () => {
     });
 
     it('should return validation errors', async () => {
-    return 
+      return;
       // Mock dependencies
       (fileOperations.fileExists as any).mockResolvedValue(false);
-      (measureManager.isMeasureInstalled as any).mockResolvedValueOnce(true).mockResolvedValueOnce(false);
-      (measureApplicationService.validateMeasureForApplication as any).mockResolvedValue({ 
-        valid: false, 
-        errors: ['Invalid argument'] 
+      (measureManager.isMeasureInstalled as any)
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false);
+      (measureApplicationService.validateMeasureForApplication as any).mockResolvedValue({
+        valid: false,
+        errors: ['Invalid argument'],
       });
 
       // Create a workflow
@@ -372,18 +394,18 @@ describe('Measure Application Workflow', () => {
             name: 'Step 1',
             description: 'Step 1 description',
             measureId: 'measure1',
-            arguments: { arg1: 42 }
+            arguments: { arg1: 42 },
           },
           {
             name: 'Step 2',
             description: 'Step 2 description',
             measureId: 'measure2',
-            arguments: { arg2: 'value' }
-          }
+            arguments: { arg2: 'value' },
+          },
         ],
         stopOnError: true,
         createBackup: true,
-        validate: true
+        validate: true,
       };
 
       // Validate the workflow
@@ -392,7 +414,9 @@ describe('Measure Application Workflow', () => {
       // Verify the result
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Input model file not found: /path/to/model.txt');
-      expect(result.errors).toContain('Invalid input model file format: /path/to/model.txt. Must be an OSM file.');
+      expect(result.errors).toContain(
+        'Invalid input model file format: /path/to/model.txt. Must be an OSM file.',
+      );
       expect(result.errors).toContain('Measure not installed: measure2');
       expect(result.errors).toContain('Validation failed for measure measure1: Invalid argument');
       expect(measureManager.isMeasureInstalled).toHaveBeenCalledTimes(2);
@@ -401,7 +425,7 @@ describe('Measure Application Workflow', () => {
   });
 
   describe('createCustomWorkflow', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should create a custom workflow', () => {
       // Create a custom workflow
       const workflow = measureApplicationWorkflow.createCustomWorkflow(
@@ -413,21 +437,21 @@ describe('Measure Application Workflow', () => {
             name: 'Step 1',
             description: 'Step 1 description',
             measureId: 'measure1',
-            arguments: { arg1: 42 }
+            arguments: { arg1: 42 },
           },
           {
             name: 'Step 2',
             description: 'Step 2 description',
             measureId: 'measure2',
             arguments: { arg2: 'value' },
-            inPlace: true
-          }
+            inPlace: true,
+          },
         ],
         {
           stopOnError: false,
           createBackup: true,
-          validate: false
-        }
+          validate: false,
+        },
       );
 
       // Verify the workflow
@@ -445,16 +469,17 @@ describe('Measure Application Workflow', () => {
   });
 
   describe('downloadWorkflowMeasures', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should download and install measures for a workflow', async () => {
-    return 
+      return;
       // Create a mock implementation that returns the expected result
-      const downloadWorkflowMeasuresSpy = vi.spyOn(measureApplicationWorkflow, 'downloadWorkflowMeasures')
+      const downloadWorkflowMeasuresSpy = vi
+        .spyOn(measureApplicationWorkflow, 'downloadWorkflowMeasures')
         .mockResolvedValue(['measure2']);
-      
+
       // Mock dependencies
       (measureManager.isMeasureInstalled as any)
-        .mockResolvedValueOnce(true)  // measure1 is already installed
+        .mockResolvedValueOnce(true) // measure1 is already installed
         .mockResolvedValueOnce(false); // measure2 needs to be downloaded
       mockDownloadMeasure.mockResolvedValue(true);
       mockInstallMeasure.mockResolvedValue(true);
@@ -469,42 +494,44 @@ describe('Measure Application Workflow', () => {
             name: 'Step 1',
             description: 'Step 1 description',
             measureId: 'measure1',
-            arguments: { arg1: 42 }
+            arguments: { arg1: 42 },
           },
           {
             name: 'Step 2',
             description: 'Step 2 description',
             measureId: 'measure2',
-            arguments: { arg2: 'value' }
+            arguments: { arg2: 'value' },
           },
           {
             name: 'Step 3',
             description: 'Step 3 description',
             measureId: 'measure1', // Duplicate measure ID
-            arguments: { arg1: 100 }
-          }
+            arguments: { arg1: 100 },
+          },
         ],
         stopOnError: true,
         createBackup: true,
-        validate: true
+        validate: true,
       };
 
       // Download workflow measures
-      const downloadedMeasures = await measureApplicationWorkflow.downloadWorkflowMeasures(workflow);
+      const downloadedMeasures =
+        await measureApplicationWorkflow.downloadWorkflowMeasures(workflow);
 
       // Verify the result
       expect(downloadedMeasures).toEqual(['measure2']);
-      
+
       // Restore the original implementation
       downloadWorkflowMeasuresSpy.mockRestore();
     });
 
     it('should handle download failures', async () => {
-    return 
+      return;
       // Create a mock implementation that returns the expected result
-      const downloadWorkflowMeasuresSpy = vi.spyOn(measureApplicationWorkflow, 'downloadWorkflowMeasures')
+      const downloadWorkflowMeasuresSpy = vi
+        .spyOn(measureApplicationWorkflow, 'downloadWorkflowMeasures')
         .mockResolvedValue([]);
-      
+
       // Mock dependencies
       (measureManager.isMeasureInstalled as any).mockResolvedValue(false);
       mockDownloadMeasure.mockResolvedValue(false);
@@ -519,27 +546,28 @@ describe('Measure Application Workflow', () => {
             name: 'Step 1',
             description: 'Step 1 description',
             measureId: 'measure1',
-            arguments: { arg1: 42 }
-          }
+            arguments: { arg1: 42 },
+          },
         ],
         stopOnError: true,
         createBackup: true,
-        validate: true
+        validate: true,
       };
 
       // Download workflow measures
-      const downloadedMeasures = await measureApplicationWorkflow.downloadWorkflowMeasures(workflow);
+      const downloadedMeasures =
+        await measureApplicationWorkflow.downloadWorkflowMeasures(workflow);
 
       // Verify the result
       expect(downloadedMeasures).toEqual([]);
-      
+
       // Restore the original implementation
       downloadWorkflowMeasuresSpy.mockRestore();
     });
   });
 
   describe('generateWorkflowReport', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should generate a report for a successful workflow', () => {
       // Create a workflow result
       const workflowResult = {
@@ -553,7 +581,7 @@ describe('Measure Application Workflow', () => {
             originalModelPath: '/path/to/model.osm',
             measureId: 'measure1',
             arguments: { arg1: 42 },
-            warnings: ['Warning 1']
+            warnings: ['Warning 1'],
           },
           {
             success: true,
@@ -561,10 +589,10 @@ describe('Measure Application Workflow', () => {
             originalModelPath: '/path/to/intermediate.osm',
             measureId: 'measure2',
             arguments: { arg2: 'value' },
-            warnings: ['Warning 2']
-          }
+            warnings: ['Warning 2'],
+          },
         ],
-        warnings: ['Warning 1', 'Warning 2']
+        warnings: ['Warning 1', 'Warning 2'],
       };
 
       // Generate the report
@@ -601,7 +629,7 @@ describe('Measure Application Workflow', () => {
             outputModelPath: '/path/to/intermediate.osm',
             originalModelPath: '/path/to/model.osm',
             measureId: 'measure1',
-            arguments: { arg1: 42 }
+            arguments: { arg1: 42 },
           },
           {
             success: false,
@@ -609,10 +637,10 @@ describe('Measure Application Workflow', () => {
             originalModelPath: '/path/to/intermediate.osm',
             measureId: 'measure2',
             arguments: { arg2: 'value' },
-            error: 'Measure application failed'
-          }
+            error: 'Measure application failed',
+          },
         ],
-        error: 'Measure application failed'
+        error: 'Measure application failed',
       };
 
       // Generate the report

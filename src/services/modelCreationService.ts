@@ -1,6 +1,6 @@
 /**
  * Model Creation Service
- * 
+ *
  * This service provides functionality for creating OpenStudio models from templates
  * and initializing models with common settings.
  */
@@ -36,7 +36,7 @@ export interface ModelCreationResult {
   /** Path to the created model */
   modelPath?: string;
   /** Additional data */
-  data?: any;
+  data?: unknown;
 }
 
 /**
@@ -51,34 +51,34 @@ export class ModelCreationService {
   public async createModel(options: ModelInitOptions): Promise<ModelCreationResult> {
     try {
       logger.info({ options }, 'Creating new model from template');
-      
+
       // Determine output path
       const outputDirectory = options.outputDirectory || config.tempDir;
       const modelName = options.modelName || `model_${Date.now()}.osm`;
       const outputPath = path.join(outputDirectory, modelName);
-      
+
       // Ensure output directory exists
       await fileOperations.ensureDirectory(outputDirectory);
-      
+
       // Create model from template
       const result = await modelTemplates.createModelFromTemplate(
         options.templateType,
         outputPath,
-        options.templateOptions
+        options.templateOptions,
       );
-      
+
       if (!result.success) {
         return {
           success: false,
           error: result.error || 'Failed to create model from template',
         };
       }
-      
+
       // Apply default measures if requested
       if (options.includeDefaultMeasures) {
         await this.applyDefaultMeasures(outputPath, options.templateType);
       }
-      
+
       return {
         success: true,
         modelPath: outputPath,
@@ -86,14 +86,14 @@ export class ModelCreationService {
       };
     } catch (error) {
       logger.error({ options, error }, 'Error creating model from template');
-      
+
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
       };
     }
   }
-  
+
   /**
    * Apply default measures to a model based on template type
    * @param modelPath Path to the model
@@ -104,12 +104,12 @@ export class ModelCreationService {
     // This is a placeholder for future implementation
     // In a real implementation, we would apply default measures based on the template type
     logger.info({ modelPath, templateType }, 'Applying default measures to model');
-    
+
     // For now, we'll just log that this would apply measures
     // In the future, this would use the measure application functionality
     // that will be implemented in task 6.3
   }
-  
+
   /**
    * Get available template types
    * @returns Array of available template types
@@ -117,7 +117,7 @@ export class ModelCreationService {
   public getAvailableTemplateTypes(): TemplateType[] {
     return modelTemplates.getAvailableTemplateTypes();
   }
-  
+
   /**
    * Get available building types for a template
    * @param templateType Template type
@@ -126,7 +126,7 @@ export class ModelCreationService {
   public getAvailableBuildingTypes(templateType: TemplateType): string[] {
     return modelTemplates.getAvailableBuildingTypes(templateType);
   }
-  
+
   /**
    * Get available building vintages
    * @returns Array of available building vintages
@@ -134,7 +134,7 @@ export class ModelCreationService {
   public getAvailableBuildingVintages(): string[] {
     return modelTemplates.getAvailableBuildingVintages();
   }
-  
+
   /**
    * Get available climate zones
    * @returns Array of available climate zones
@@ -142,7 +142,7 @@ export class ModelCreationService {
   public getAvailableClimateZones(): string[] {
     return modelTemplates.getAvailableClimateZones();
   }
-  
+
   /**
    * Get default template options for a template type
    * @param templateType Template type
