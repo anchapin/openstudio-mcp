@@ -81,13 +81,13 @@ export class ResponseFormatter {
       result: {},
     };
 
-    // Type assertion to allow property access
-    const resultObj = response.result as Record<string, unknown>;
-
     // Add the result data
     if (result.data) {
-      response.result = result.data;
+      response.result = { ...result.data };
     }
+
+    // Type assertion to allow property access
+    const resultObj = response.result as Record<string, unknown>;
 
     // Process output if requested
     if (mergedOptions.processOutput && result.output) {
