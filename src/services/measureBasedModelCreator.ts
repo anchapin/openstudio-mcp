@@ -85,7 +85,8 @@ export class MeasureBasedModelCreator {
       if (!measureAvailable) {
         return {
           success: false,
-          errors: ['Failed to download/install create bar measure from BCL'],
+          errors: ['Failed to ensure create bar measure is available'],
+          warnings: [],
         };
       }
 
@@ -524,7 +525,7 @@ export class MeasureBasedModelCreator {
       return {
         success: result.success,
         errors: result.error ? [result.error] : [],
-        warnings: result.warnings || [],
+        warnings: [],
       };
     } catch (error) {
       logger.error('Error running create bar measure', error);
@@ -597,7 +598,7 @@ export class MeasureBasedModelCreator {
       return {
         success: result.success,
         errors: result.error ? [result.error] : [],
-        warnings: result.warnings || [],
+        warnings: [],
       };
     } catch (error) {
       logger.error('Error validating model', error);

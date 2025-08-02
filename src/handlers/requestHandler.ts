@@ -1100,13 +1100,7 @@ export class RequestHandler {
       // Download required measures if requested
       if (params.downloadMeasures) {
         const downloadedMeasures = await measureApplicationWorkflow.downloadWorkflowMeasures(
-          params.workflow as {
-            id: string;
-            name: string;
-            description: string;
-            inputModelPath: string;
-            steps: unknown[];
-          },
+          params.workflow as import('../services/measureApplicationWorkflow').MeasureWorkflow,
         );
 
         if (downloadedMeasures.length > 0) {
@@ -1116,13 +1110,7 @@ export class RequestHandler {
 
       // Execute the workflow
       const result = await measureApplicationWorkflow.executeMeasureWorkflow(
-        params.workflow as {
-          id: string;
-          name: string;
-          description: string;
-          inputModelPath: string;
-          steps: unknown[];
-        },
+        params.workflow as import('../services/measureApplicationWorkflow').MeasureWorkflow,
       );
 
       // Generate a report if requested

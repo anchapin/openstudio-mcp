@@ -48,9 +48,39 @@ const defaultOptions: MeasureApplicationOptions = {
   throwOnError: false,
 };
 
-/**
- * Measure application result
- */
+/**\n * Measure argument definition\n */
+export interface MeasureArgument {
+  name: string;
+  displayName?: string;
+  type: string;
+  required: boolean;
+  defaultValue?: unknown;
+}
+
+/**\n * Measure definition\n */
+export interface MeasureDefinition {
+  uuid: string;
+  name: string;
+  arguments: MeasureArgument[];
+}
+
+/**\n * Measure argument definition\n */
+export interface MeasureArgument {
+  name: string;
+  displayName?: string;
+  type: string;
+  required: boolean;
+  defaultValue?: unknown;
+}
+
+/**\n * Measure definition\n */
+export interface MeasureDefinition {
+  uuid: string;
+  name: string;
+  arguments: MeasureArgument[];
+}
+
+/**\n * Measure application result\n */
 export interface MeasureApplicationResult {
   /** Whether the measure application was successful */
   success: boolean;
@@ -135,7 +165,7 @@ export async function validateMeasureForApplication(
     }
 
     // Find the measure in the list
-    const measures = result.data as unknown[];
+    const measures = result.data as MeasureDefinition[];
     const measure = measures.find((m) => m.uuid === measureId || m.name === measureId);
 
     if (!measure) {
@@ -266,7 +296,12 @@ export async function applyMeasure(
     }
 
     // Apply the measure
-    const result = await openStudioCommands.applyMeasure(modelPath, measurePath, args, outputPath);
+    const result = await openStudioCommands.applyMeasure(
+      modelPath,
+      measurePath,
+      args as Record<string, string | number | boolean>,
+      outputPath,
+    );
 
     if (!result.success) {
       logger.error({ modelPath, measureId, error: result.error }, 'Failed to apply measure');
@@ -462,7 +497,7 @@ export async function mapMeasureParameters(
     }
 
     // Find the measure in the list
-    const measures = result.data as unknown[];
+    const measures = result.data as MeasureDefinition[];
     const measure = measures.find((m) => m.uuid === measureId || m.name === measureId);
 
     if (!measure) {
@@ -485,9 +520,9 @@ export async function mapMeasureParameters(
       const arg = measure.arguments.find(
         (a) =>
           a.name === key ||
-          a.displayName === key ||
+          (a.displayName && a.displayName === key) ||
           a.name.toLowerCase() === key.toLowerCase() ||
-          a.displayName.toLowerCase() === key.toLowerCase(),
+          (a.displayName && a.displayName.toLowerCase() === key.toLowerCase()),
       );
 
       if (arg) {
