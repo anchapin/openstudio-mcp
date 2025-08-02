@@ -222,7 +222,7 @@ export class OutputProcessor {
       }
     }
 
-    if (typeof output === 'object') {
+    if (typeof output === 'object' && output !== null) {
       return output;
     }
 
@@ -296,7 +296,7 @@ export class OutputProcessor {
 
     // Simple object
     const headers = ['Property', 'Value'];
-    const rows = Object.entries(obj).map(([key, value]) => {
+    const rows = Object.entries(obj as Record<string, unknown>).map(([key, value]) => {
       if (typeof value === 'object' && value !== null) {
         return [key, JSON.stringify(value)];
       }
@@ -367,17 +367,18 @@ export class OutputProcessor {
    */
   private objectToChartData(obj: unknown): { type: string; data: unknown } {
     // If it's already in chart format, return it
-    if (obj.type && obj.data) {
-      return obj;
+    const chartObj = obj as Record<string, unknown>;
+    if (chartObj.type && chartObj.data) {
+      return obj as { type: string; data: unknown };
     }
 
     // Try to determine if it's time series data
-    if (obj.timestamps || obj.dates || obj.times) {
-      const labels = obj.timestamps || obj.dates || obj.times || [];
+    if (chartObj.timestamps || chartObj.dates || chartObj.times) {
+      const labels = chartObj.timestamps || chartObj.dates || chartObj.times || [];
       const datasets: unknown[] = [];
 
       // Extract datasets
-      Object.entries(obj).forEach(([key, value]) => {
+      Object.entries(chartObj).forEach(([key, value]) => {
         if (key !== 'timestamps' && key !== 'dates' && key !== 'times' && Array.isArray(value)) {
           datasets.push({
             label: key,
@@ -408,7 +409,7 @@ export class OutputProcessor {
     }
 
     // If it's a simple object with properties, it might be bar chart data
-    if (typeof obj === 'object' && !Array.isArray(obj)) {
+    if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
       const labels = Object.keys(obj);
       const data = Object.values(obj);
 

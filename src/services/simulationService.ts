@@ -5,9 +5,9 @@
  * OpenStudio simulations.
  */
 import { logger, openStudioCommands, visualizationHelpers } from '../utils';
+import { OpenStudioSimulationResults, OpenStudioModelInfo } from '../utils/openStudioCommands';
 import path from 'path';
 import fs from 'fs';
-import { getProcessResourceUsage } from '../utils/resourceMonitor';
 
 /**
  * Simulation parameters
@@ -223,15 +223,16 @@ export async function runSimulation(parameters: SimulationParameters): Promise<S
 
       // Copy data from the command result
       if (result.data) {
-        simulationResult.errors = result.data.errors || [];
-        simulationResult.warnings = result.data.warnings || [];
-        simulationResult.eui = result.data.eui;
-        simulationResult.totalSiteEnergy = result.data.totalSiteEnergy;
-        simulationResult.totalSourceEnergy = result.data.totalSourceEnergy;
-        simulationResult.electricityConsumption = result.data.electricityConsumption;
-        simulationResult.naturalGasConsumption = result.data.naturalGasConsumption;
-        simulationResult.districtHeatingConsumption = result.data.districtHeatingConsumption;
-        simulationResult.districtCoolingConsumption = result.data.districtCoolingConsumption;
+        const simulationData = result.data as OpenStudioSimulationResults;
+        simulationResult.errors = simulationData.errors || [];
+        simulationResult.warnings = simulationData.warnings || [];
+        simulationResult.eui = simulationData.eui;
+        simulationResult.totalSiteEnergy = simulationData.totalSiteEnergy;
+        simulationResult.totalSourceEnergy = simulationData.totalSourceEnergy;
+        simulationResult.electricityConsumption = simulationData.electricityConsumption;
+        simulationResult.naturalGasConsumption = simulationData.naturalGasConsumption;
+        simulationResult.districtHeatingConsumption = simulationData.districtHeatingConsumption;
+        simulationResult.districtCoolingConsumption = simulationData.districtCoolingConsumption;
       }
 
       logger.info(
@@ -409,16 +410,16 @@ export async function configureSimulationParameters(
     };
 
     // Use the model's weather file if available
-    if (modelInfo.data?.weatherFile) {
-      parameters.weatherFile = modelInfo.data.weatherFile;
+    const modelData = modelInfo.data as OpenStudioModelInfo;
+    if (modelData?.weatherFile) {
+      parameters.weatherFile = modelData.weatherFile;
     }
 
     // Configure options based on model complexity
     const options: SimulationParameters['options'] = {};
 
     // Determine if the model is complex
-    const isComplex =
-      (modelInfo.data?.spaces || 0) > 50 || (modelInfo.data?.thermalZones || 0) > 20;
+    const isComplex = (modelData?.spaces || 0) > 50 || (modelData?.thermalZones || 0) > 20;
 
     if (isComplex) {
       // For complex models, use parallel processing and higher resource limits
@@ -449,51 +450,6 @@ export async function configureSimulationParameters(
       },
     };
   }
-}
-
-/**
- * Monitor a running simulation
- * @param simulationId Simulation ID
- * @param processId Process ID
- */
-function _monitorSimulation(_simulationId: string, _processId: number): void {
-  const simulation = activeSimulations.get(simulationId);
-
-  if (!simulation) {
-    return;
-  }
-
-  // Set up monitoring interval
-  const monitorInterval = setInterval(async () => {
-    try {
-      // Get resource usage
-      const usage = await getProcessResourceUsage(processId);
-
-      if (usage) {
-        // Update simulation result with resource usage
-        simulation.result.cpuUsage = usage.cpuUsage;
-        simulation.result.memoryUsage = usage.memoryUsage;
-
-        logger.debug(
-          {
-            simulationId,
-            processId,
-            cpuUsage: usage.cpuUsage,
-            memoryUsage: usage.memoryUsage,
-          },
-          'Simulation resource usage',
-        );
-      }
-    } catch (error) {
-      logger.warn({ simulationId, processId, error }, 'Error monitoring simulation');
-
-      // Stop monitoring if the process no longer exists
-      clearInterval(monitorInterval);
-    }
-  }, 5000); // Check every 5 seconds
-
-  // Store the monitor interval
-  simulation.monitorInterval = monitorInterval;
 }
 
 /**
