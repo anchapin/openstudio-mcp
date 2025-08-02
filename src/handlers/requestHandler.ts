@@ -336,11 +336,11 @@ export class RequestHandler {
 
       // Create the model using the model creation service
       const result = await modelCreationService.createModel({
-        templateType: params.templateType,
-        templateOptions: params.options || {},
-        outputDirectory: path.dirname(params.path),
-        modelName: path.basename(params.path),
-        includeDefaultMeasures: params.includeDefaultMeasures || false,
+        templateType: params.templateType as 'empty' | 'office' | 'residential',
+        templateOptions: (params.options as Record<string, unknown>) || {},
+        outputDirectory: path.dirname(params.path as string),
+        modelName: path.basename(params.path as string),
+        includeDefaultMeasures: (params.includeDefaultMeasures as boolean) || false,
       });
 
       if (!result.success) {
@@ -358,7 +358,7 @@ export class RequestHandler {
           modelPath: result.modelPath,
           templateType: params.templateType,
           options: params.options || {},
-          ...result.data,
+          ...(result.data as Record<string, unknown>),
         },
       };
     } catch (error) {
@@ -392,7 +392,7 @@ export class RequestHandler {
 
       // For now, we'll just get model info as a way to "open" the model
       // In a more advanced implementation, we might want to load the model into memory
-      const result = await openStudioCommands.getModelInfo(params.path);
+      const result = await openStudioCommands.getModelInfo(params.path as string);
 
       return {
         success: result.success,
@@ -455,7 +455,9 @@ export class RequestHandler {
 
       if (params.autoConfig) {
         // Auto-configure simulation parameters based on model analysis
-        simulationParams = await simulationService.configureSimulationParameters(params.modelPath);
+        simulationParams = await simulationService.configureSimulationParameters(
+          params.modelPath as string,
+        );
 
         // Override with any explicitly provided parameters
         if (params.weatherFile) {
@@ -544,10 +546,10 @@ export class RequestHandler {
       }
 
       // Search for measures using the BCL API client
-      const measures = await this.bclApiClient.searchMeasures(params.query);
+      const measures = await this.bclApiClient.searchMeasures(params.query as string);
 
       // Apply limit if specified
-      const limit = params.limit ? parseInt(params.limit, 10) : undefined;
+      const limit = params.limit ? parseInt(params.limit as string, 10) : undefined;
       const limitedMeasures = limit ? measures.slice(0, limit) : measures;
 
       return {
@@ -589,7 +591,7 @@ export class RequestHandler {
       }
 
       // Download the measure using the BCL API client
-      const downloadSuccess = await this.bclApiClient.downloadMeasure(params.measureId);
+      const downloadSuccess = await this.bclApiClient.downloadMeasure(params.measureId as string);
 
       if (!downloadSuccess) {
         return {
@@ -600,7 +602,7 @@ export class RequestHandler {
       }
 
       // Install the measure
-      const installSuccess = await this.bclApiClient.installMeasure(params.measureId);
+      const installSuccess = await this.bclApiClient.installMeasure(params.measureId as string);
 
       if (!installSuccess) {
         return {
@@ -661,13 +663,13 @@ export class RequestHandler {
         .default;
 
       // Map user parameters to measure arguments if needed
-      let measureArgs = params.arguments || {};
+      let measureArgs = (params.arguments as Record<string, unknown>) || {};
 
       if (params.mapParameters) {
         try {
           measureArgs = await measureApplicationService.mapMeasureParameters(
-            params.measureId,
-            params.arguments || {},
+            params.measureId as string,
+            (params.arguments as Record<string, unknown>) || {},
           );
         } catch (error) {
           logger.warn(
@@ -685,15 +687,15 @@ export class RequestHandler {
       if (params.downloadIfNeeded) {
         // Apply the measure, downloading it if needed
         const result = await measureApplicationService.downloadAndApplyMeasure(
-          params.modelPath,
-          params.measureId,
+          params.modelPath as string,
+          params.measureId as string,
           measureArgs,
           {
             createBackup: params.createBackup !== false,
             validateModel: params.validateModel !== false,
             validateMeasure: params.validateMeasure !== false,
             inPlace: params.inPlace === true,
-            outputPath: params.outputPath,
+            outputPath: params.outputPath as string | undefined,
           },
         );
 
@@ -715,15 +717,15 @@ export class RequestHandler {
       } else {
         // Apply the measure directly
         const result = await measureApplicationService.applyMeasure(
-          params.modelPath,
-          params.measureId,
+          params.modelPath as string,
+          params.measureId as string,
           measureArgs,
           {
             createBackup: params.createBackup !== false,
             validateModel: params.validateModel !== false,
             validateMeasure: params.validateMeasure !== false,
             inPlace: params.inPlace === true,
-            outputPath: params.outputPath,
+            outputPath: params.outputPath as string | undefined,
           },
         );
 
@@ -774,8 +776,8 @@ export class RequestHandler {
 
       // Get model information using the OpenStudio CLI command mapping
       const result = await openStudioCommands.getModelInfo(
-        params.modelPath,
-        params.detailLevel || 'basic',
+        params.modelPath as string,
+        (params.detailLevel as 'basic' | 'detailed' | 'complete') || 'basic',
       );
 
       return {
@@ -814,10 +816,13 @@ export class RequestHandler {
       }
 
       // Get measure recommendations based on context and model path (if provided)
-      const measures = await this.bclApiClient.recommendMeasures(params.context, params.modelPath);
+      const measures = await this.bclApiClient.recommendMeasures(
+        params.context as string,
+        params.modelPath as string | undefined,
+      );
 
       // Apply limit if specified
-      const limit = params.limit ? parseInt(params.limit, 10) : undefined;
+      const limit = params.limit ? parseInt(params.limit as string, 10) : undefined;
       const limitedMeasures = limit ? measures.slice(0, limit) : measures;
 
       // Prepare response data
@@ -880,7 +885,7 @@ export class RequestHandler {
       const simulationService = (await import('../services/simulationService')).default;
 
       // Get the simulation status
-      const simulationResult = simulationService.getSimulationStatus(params.simulationId);
+      const simulationResult = simulationService.getSimulationStatus(params.simulationId as string);
 
       if (!simulationResult) {
         return {
@@ -950,7 +955,7 @@ export class RequestHandler {
       const simulationService = (await import('../services/simulationService')).default;
 
       // Cancel the simulation
-      const cancelled = simulationService.cancelSimulation(params.simulationId);
+      const cancelled = simulationService.cancelSimulation(params.simulationId as string);
 
       if (!cancelled) {
         return {
@@ -1009,16 +1014,23 @@ export class RequestHandler {
       if (params.templateName) {
         // Create from template
         workflow = await measureApplicationWorkflow.createWorkflowFromTemplate(
-          params.templateName,
-          params.modelPath,
+          params.templateName as string,
+          params.modelPath as string,
         );
       } else if (params.steps && Array.isArray(params.steps)) {
         // Create custom workflow
         workflow = measureApplicationWorkflow.createCustomWorkflow(
-          params.name || 'Custom Workflow',
-          params.description || 'Custom measure application workflow',
-          params.modelPath,
-          params.steps,
+          (params.name as string) || 'Custom Workflow',
+          (params.description as string) || 'Custom measure application workflow',
+          params.modelPath as string,
+          params.steps as {
+            name: string;
+            description: string;
+            measureId: string;
+            arguments: Record<string, unknown>;
+            inPlace?: boolean;
+            outputPath?: string;
+          }[],
           {
             stopOnError: params.stopOnError !== false,
             createBackup: params.createBackup !== false,
@@ -1088,7 +1100,13 @@ export class RequestHandler {
       // Download required measures if requested
       if (params.downloadMeasures) {
         const downloadedMeasures = await measureApplicationWorkflow.downloadWorkflowMeasures(
-          params.workflow,
+          params.workflow as {
+            id: string;
+            name: string;
+            description: string;
+            inputModelPath: string;
+            steps: unknown[];
+          },
         );
 
         if (downloadedMeasures.length > 0) {
@@ -1097,7 +1115,15 @@ export class RequestHandler {
       }
 
       // Execute the workflow
-      const result = await measureApplicationWorkflow.executeMeasureWorkflow(params.workflow);
+      const result = await measureApplicationWorkflow.executeMeasureWorkflow(
+        params.workflow as {
+          id: string;
+          name: string;
+          description: string;
+          inputModelPath: string;
+          steps: unknown[];
+        },
+      );
 
       // Generate a report if requested
       let report;
@@ -1108,7 +1134,7 @@ export class RequestHandler {
       return {
         success: result.success,
         output: result.success
-          ? `Successfully executed workflow: ${params.workflow.name}`
+          ? `Successfully executed workflow: ${(params.workflow as { name: string }).name}`
           : `Workflow execution failed: ${result.error}`,
         error: result.error,
         data: {
@@ -1163,8 +1189,8 @@ export class RequestHandler {
 
         // Create workflow from template
         const workflow = await measureApplicationWorkflow.createWorkflowFromTemplate(
-          params.templateName,
-          params.modelPath,
+          params.templateName as string,
+          params.modelPath as string,
         );
 
         return {
@@ -1178,7 +1204,12 @@ export class RequestHandler {
       } else if (params.workflow) {
         // Custom workflow provided directly
         // Validate required parameters for custom workflow
-        if (!params.workflow.name || !params.workflow.inputModelPath || !params.workflow.steps) {
+        const workflowCheck = params.workflow as {
+          name?: string;
+          inputModelPath?: string;
+          steps?: unknown[];
+        };
+        if (!workflowCheck.name || !workflowCheck.inputModelPath || !workflowCheck.steps) {
           return {
             success: false,
             output: '',
@@ -1187,15 +1218,31 @@ export class RequestHandler {
         }
 
         // Create custom workflow
+        const workflowObj = params.workflow as {
+          name: string;
+          description?: string;
+          inputModelPath: string;
+          steps: unknown[];
+          stopOnError?: boolean;
+          createBackup?: boolean;
+          validate?: boolean;
+        };
         const workflow = measureApplicationWorkflow.createCustomWorkflow(
-          params.workflow.name,
-          params.workflow.description || `Custom workflow for ${params.workflow.inputModelPath}`,
-          params.workflow.inputModelPath,
-          params.workflow.steps,
+          workflowObj.name,
+          workflowObj.description || `Custom workflow for ${workflowObj.inputModelPath}`,
+          workflowObj.inputModelPath,
+          workflowObj.steps as {
+            name: string;
+            description: string;
+            measureId: string;
+            arguments: Record<string, unknown>;
+            inPlace?: boolean;
+            outputPath?: string;
+          }[],
           {
-            stopOnError: params.workflow.stopOnError,
-            createBackup: params.workflow.createBackup,
-            validate: params.workflow.validate,
+            stopOnError: workflowObj.stopOnError,
+            createBackup: workflowObj.createBackup,
+            validate: workflowObj.validate,
           },
         );
 

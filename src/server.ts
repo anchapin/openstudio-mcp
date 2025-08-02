@@ -75,7 +75,8 @@ export async function startServer(port: number = config.server.port): Promise<ht
         type: 'object',
         properties: cap.parameters,
         required: Object.keys(cap.parameters as Record<string, unknown>).filter(
-          (key) => (cap.parameters as Record<string, unknown>)[key].required,
+          (key) =>
+            ((cap.parameters as Record<string, unknown>)[key] as { required?: boolean }).required,
         ),
       },
     }));

@@ -30,16 +30,20 @@ export class OpenStudioCommandProcessor implements CommandProcessor {
     try {
       // Prepare command execution options
       const options = {
-        cwd: params.workingDirectory,
-        env: params.env,
-        timeout: params.timeout || config.openStudio.timeout,
-        memoryLimit: params.memoryLimit || 2048, // Default to 2GB memory limit
-        niceness: params.niceness || 10, // Default to lower priority
+        cwd: params.workingDirectory as string | undefined,
+        env: params.env as Record<string, string> | undefined,
+        timeout: (params.timeout as number) || config.openStudio.timeout,
+        memoryLimit: (params.memoryLimit as number) || 2048, // Default to 2GB memory limit
+        niceness: (params.niceness as number) || 10, // Default to lower priority
         restricted: params.restricted !== false, // Default to restricted mode
       };
 
       // Execute the command with args if provided
-      const result = await commandExecutor.executeCommand(command, params.args || [], options);
+      const result = await commandExecutor.executeCommand(
+        command,
+        (params.args as string[]) || [],
+        options,
+      );
 
       return {
         success: result.success,
