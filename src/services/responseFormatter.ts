@@ -81,9 +81,12 @@ export class ResponseFormatter {
       result: {},
     };
 
+    // Type assertion to allow property access
+    const resultObj = response.result as Record<string, unknown>;
+
     // Add the result data
     if (result.data) {
-      response.result = { ...response.result, ...result.data };
+      response.result = result.data;
     }
 
     // Process output if requested
@@ -102,9 +105,9 @@ export class ResponseFormatter {
 
       // Add processed output to the response
       if (processedOutput && processedOutput.summary !== undefined) {
-        response.result.processedOutput = {
+        resultObj.processedOutput = {
           summary: processedOutput.summary,
-        };
+        } as Record<string, unknown>;
 
         // Include highlights if requested
         if (
@@ -112,26 +115,28 @@ export class ResponseFormatter {
           processedOutput.highlights &&
           processedOutput.highlights.length > 0
         ) {
-          response.result.processedOutput.highlights = processedOutput.highlights;
+          (resultObj.processedOutput as Record<string, unknown>).highlights =
+            processedOutput.highlights;
         }
 
         // Include formatted output
         if (processedOutput.formatted !== undefined) {
-          response.result.processedOutput.formatted = processedOutput.formatted;
+          (resultObj.processedOutput as Record<string, unknown>).formatted =
+            processedOutput.formatted;
         }
       } else {
-        response.result.processedOutput = {
+        resultObj.processedOutput = {
           summary: 'No output available',
-        };
+        } as Record<string, unknown>;
       }
 
       // Include raw output if requested
       if (mergedOptions.includeRawOutput) {
-        response.result.output = result.output;
+        resultObj.output = result.output;
       }
     } else if (mergedOptions.includeRawOutput && result.output) {
       // Include raw output if requested and not processing
-      response.result.output = result.output;
+      resultObj.output = result.output;
     }
 
     // Include metadata if requested
@@ -152,7 +157,7 @@ export class ResponseFormatter {
 
       // Only add metadata if there are properties
       if (Object.keys(metadata).length > 0) {
-        response.result._metadata = metadata;
+        resultObj._metadata = metadata;
       }
     }
 
@@ -217,7 +222,8 @@ export class ResponseFormatter {
         if (!response.error.details) {
           response.error.details = { originalMessage: errorMessage };
         } else if (typeof response.error.details === 'object') {
-          response.error.details.originalMessage = errorMessage;
+          const detailsObj = response.error.details as Record<string, unknown>;
+          detailsObj.originalMessage = errorMessage;
         }
       }
 
@@ -232,7 +238,8 @@ export class ResponseFormatter {
         if (!response.error.details) {
           response.error.details = { highlights: processedOutput.highlights };
         } else if (typeof response.error.details === 'object') {
-          response.error.details.highlights = processedOutput.highlights;
+          const detailsObj = response.error.details as Record<string, unknown>;
+          detailsObj.highlights = processedOutput.highlights;
         }
       }
     }
@@ -312,8 +319,9 @@ export class ResponseFormatter {
     // Add metadata to the appropriate location
     if (responseCopy.status === 'success') {
       responseCopy.result = responseCopy.result || {};
-      responseCopy.result._metadata = {
-        ...(responseCopy.result._metadata || {}),
+      const resultCopyObj = responseCopy.result as Record<string, unknown>;
+      resultCopyObj._metadata = {
+        ...((resultCopyObj._metadata as Record<string, unknown>) || {}),
         ...metadata,
       };
     } else {
