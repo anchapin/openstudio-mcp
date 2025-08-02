@@ -61,7 +61,7 @@ export interface MeasureApplicationResult {
   /** Measure ID */
   measureId: string;
   /** Measure arguments used */
-  arguments: Record<string, any>;
+  arguments: Record<string, unknown>;
   /** Error message if the application failed */
   error?: string;
   /** Command output */
@@ -81,7 +81,7 @@ export interface MeasureApplicationResult {
 export async function validateMeasureForApplication(
   measureId: string,
   modelPath: string,
-  args: Record<string, any>,
+  args: Record<string, unknown>,
   options: MeasureApplicationOptions = {},
 ): Promise<{ valid: boolean; errors: string[] }> {
   const errors: string[] = [];
@@ -135,7 +135,7 @@ export async function validateMeasureForApplication(
     }
 
     // Find the measure in the list
-    const measures = result.data as any[];
+    const measures = result.data as unknown[];
     const measure = measures.find((m) => m.uuid === measureId || m.name === measureId);
 
     if (!measure) {
@@ -207,7 +207,7 @@ export async function validateMeasureForApplication(
 export async function applyMeasure(
   modelPath: string,
   measureId: string,
-  args: Record<string, any>,
+  args: Record<string, unknown>,
   options: MeasureApplicationOptions = {},
 ): Promise<MeasureApplicationResult> {
   const opts = { ...defaultOptions, ...options };
@@ -355,7 +355,7 @@ export async function applyMeasure(
  */
 export async function applyMeasuresInSequence(
   modelPath: string,
-  measures: Array<{ measureId: string; arguments: Record<string, any> }>,
+  measures: Array<{ measureId: string; arguments: Record<string, unknown> }>,
   options: MeasureApplicationOptions = {},
 ): Promise<MeasureApplicationResult[]> {
   const results: MeasureApplicationResult[] = [];
@@ -439,9 +439,9 @@ export async function applyMeasuresInSequence(
  */
 export async function mapMeasureParameters(
   measureId: string,
-  userParams: Record<string, any>,
+  userParams: Record<string, unknown>,
   options: { measuresDir?: string } = {},
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   try {
     logger.info({ measureId, userParams }, 'Mapping measure parameters');
 
@@ -462,7 +462,7 @@ export async function mapMeasureParameters(
     }
 
     // Find the measure in the list
-    const measures = result.data as any[];
+    const measures = result.data as unknown[];
     const measure = measures.find((m) => m.uuid === measureId || m.name === measureId);
 
     if (!measure) {
@@ -470,7 +470,7 @@ export async function mapMeasureParameters(
     }
 
     // Map user parameters to measure arguments
-    const mappedArgs: Record<string, any> = {};
+    const mappedArgs: Record<string, unknown> = {};
 
     // First, set default values for all arguments
     for (const arg of measure.arguments) {
@@ -538,7 +538,7 @@ export async function mapMeasureParameters(
 export async function downloadAndApplyMeasure(
   modelPath: string,
   measureId: string,
-  args: Record<string, any>,
+  args: Record<string, unknown>,
   options: MeasureApplicationOptions = {},
 ): Promise<MeasureApplicationResult> {
   try {
@@ -628,7 +628,7 @@ export interface MeasureApplicationWorkflow {
     /** Measure ID */
     measureId: string;
     /** Measure arguments */
-    arguments: Record<string, any>;
+    arguments: Record<string, unknown>;
     /** Optional description of this step */
     description?: string;
   }>;

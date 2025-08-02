@@ -5,11 +5,9 @@
  * OpenStudio simulations.
  */
 import { logger, openStudioCommands, visualizationHelpers } from '../utils';
-import { CommandResult } from '../interfaces';
 import path from 'path';
 import fs from 'fs';
-import config from '../config';
-import { createResourceMonitor, getProcessResourceUsage } from '../utils/resourceMonitor';
+import { getProcessResourceUsage } from '../utils/resourceMonitor';
 
 /**
  * Simulation parameters
@@ -205,11 +203,7 @@ export async function runSimulation(parameters: SimulationParameters): Promise<S
     // Add the model path
     args.push(parameters.modelPath);
 
-    // Set up execution options
-    const executionOptions = {
-      timeout: parameters.options?.timeout || config.openStudio.timeout || 600000, // 10 minutes default
-      memoryLimit: parameters.options?.memoryLimit || 4096, // 4GB default
-    };
+    // Set up execution options - currently unused but kept for future extension
 
     // Run the simulation
     const result = await openStudioCommands.runSimulation(
@@ -429,7 +423,8 @@ export async function configureSimulationParameters(
     if (isComplex) {
       // For complex models, use parallel processing and higher resource limits
       options.parallel = true;
-      options.jobs = Math.max(1, Math.floor(require('os').cpus().length / 2)); // Use half of available CPUs
+      const os = await import('os');
+      options.jobs = Math.max(1, Math.floor(os.cpus().length / 2)); // Use half of available CPUs
       options.timeout = 1800000; // 30 minutes
       options.memoryLimit = 8192; // 8GB
     } else {
@@ -461,7 +456,7 @@ export async function configureSimulationParameters(
  * @param simulationId Simulation ID
  * @param processId Process ID
  */
-function monitorSimulation(simulationId: string, processId: number): void {
+function _monitorSimulation(_simulationId: string, _processId: number): void {
   const simulation = activeSimulations.get(simulationId);
 
   if (!simulation) {
@@ -506,7 +501,7 @@ function monitorSimulation(simulationId: string, processId: number): void {
  * @param simulationResult Simulation result
  * @returns Visualization data for the simulation result
  */
-export function generateVisualizationData(simulationResult: SimulationResult): any {
+export function generateVisualizationData(simulationResult: SimulationResult): unknown {
   return visualizationHelpers.formatSimulationResultForAPI(simulationResult);
 }
 

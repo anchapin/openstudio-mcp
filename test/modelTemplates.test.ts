@@ -1,9 +1,8 @@
 /**
  * Tests for model templates functionality
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import path from 'path';
-import fs from 'fs';
 import { modelTemplates } from '../src/utils';
 
 // Mock dependencies
@@ -246,7 +245,7 @@ describe('Model Templates', () => {
       const getAvailableBuildingTypesSpy = vi.spyOn(modelTemplates, 'getAvailableBuildingTypes');
       getAvailableBuildingTypesSpy.mockImplementation(() => []);
 
-      const types = modelTemplates.getAvailableBuildingTypes('unknown' as any);
+      const types = modelTemplates.getAvailableBuildingTypes('unknown' as never);
 
       expect(types).toEqual([]);
     });

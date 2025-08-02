@@ -1,18 +1,14 @@
 /**
  * Tests for the OSM file processor module
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   validateOSMFile,
   extractOSMInformation,
-  extractDetailedOSMInformation,
   modifyOSMWithMeasure,
-  convertOSMFile,
-  mergeOSMFiles,
 } from '../src/utils/osmFileProcessor';
 import * as commandExecutor from '../src/utils/commandExecutor';
 import * as fileOperations from '../src/utils/fileOperations';
-import fs from 'fs';
 
 // Mock the command executor
 vi.mock('../src/utils/commandExecutor', async () => ({

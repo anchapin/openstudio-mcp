@@ -617,7 +617,7 @@ export async function extractDetailedOSMInformation(
 export async function modifyOSMWithMeasure(
   osmFilePath: string,
   measurePath: string,
-  measureArgs: Record<string, any>,
+  measureArgs: Record<string, unknown>,
   outputPath?: string,
   options: OSMProcessingOptions = {},
 ): Promise<OpenStudioCommandResult> {

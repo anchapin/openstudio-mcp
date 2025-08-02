@@ -18,7 +18,7 @@ export interface ResponseMetadata {
   requestId?: string;
   serverVersion?: string;
   openStudioVersion?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -174,7 +174,7 @@ export class ResponseFormatter {
     requestType: string,
     error: string | Error,
     code: string = 'COMMAND_FAILED',
-    details?: any,
+    details?: unknown,
     options: ResponseFormatterOptions = {},
   ): MCPResponse {
     const mergedOptions = { ...this.defaultOptions, ...options };

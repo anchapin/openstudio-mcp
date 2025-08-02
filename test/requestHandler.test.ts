@@ -7,9 +7,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { RequestHandler } from '../src/handlers/requestHandler';
 import { MCPRequest } from '../src/interfaces';
 import { validateRequest } from '../src/utils/validation';
-import { OpenStudioCommandProcessor } from '../src/services/commandProcessor';
-import { BCLApiClient } from '../src/services/bclApiClient';
-import logger from '../src/utils/logger';
 
 describe('RequestHandler', () => {
   vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout

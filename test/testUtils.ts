@@ -49,7 +49,7 @@ function deleteDirectoryContents(dirPath: string, excludeDirs: string[] = []): v
         fs.unlinkSync(filePath);
       }
     } catch (err) {
-      console.error(`Error cleaning up ${filePath}:`, err);
+      // Silently handle cleanup errors in tests
     }
   }
 }
@@ -64,8 +64,8 @@ export function cleanupTestDirectories(): void {
       deleteDirectoryContents(testConfig.bcl.tempDir, ['measures']);
     }
 
-    console.log('Test directories cleaned up successfully');
+    // Test directories cleaned up successfully
   } catch (err) {
-    console.error('Error during test directory cleanup:', err);
+    // Silently handle cleanup errors in tests
   }
 }

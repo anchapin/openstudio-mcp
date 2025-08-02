@@ -3,7 +3,6 @@
  */
 import { expect } from 'chai';
 import sinon from 'sinon';
-import path from 'path';
 import { ModelCreationService } from '../src/services/modelCreationService';
 import { modelTemplates } from '../src/utils';
 

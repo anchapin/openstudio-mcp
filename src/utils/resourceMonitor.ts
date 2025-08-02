@@ -241,8 +241,8 @@ export class ProcessResourceMonitor {
       if (process.platform !== 'win32') {
         try {
           // This is a simplified approach - in production, use a proper process monitoring library
-          const { exec } = require('child_process');
-          const { promisify } = require('util');
+          const { exec } = await import('child_process');
+          const { promisify } = await import('util');
           const execAsync = promisify(exec);
 
           // Use ps command to get memory usage
@@ -288,7 +288,8 @@ export async function getProcessResourceUsage(pid: number): Promise<ProcessResou
     // This is a simplified implementation
     // For production use, consider using a more robust solution like node-ps-list
 
-    const currentCpuUsage = process.cpuUsage();
+    // Currently unused but kept for future extension
+    // const currentCpuUsage = process.cpuUsage();
     const totalMemory = os.totalmem();
     const currentMemory = process.memoryUsage();
 

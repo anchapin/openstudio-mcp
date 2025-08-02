@@ -2,7 +2,6 @@
  * Simulation service tests
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import path from 'path';
 
 // Mock dependencies before importing the module
 vi.mock('../src/utils/openStudioCommands', async () => {

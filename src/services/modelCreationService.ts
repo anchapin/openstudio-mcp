@@ -36,7 +36,7 @@ export interface ModelCreationResult {
   /** Path to the created model */
   modelPath?: string;
   /** Additional data */
-  data?: any;
+  data?: unknown;
 }
 
 /**

@@ -30,7 +30,7 @@ export class ConfigManager {
    */
   public getConfigDir(): string {
     // If running as a packaged executable, use the user's home directory
-    if ((process as any).pkg) {
+    if ((process as unknown as { pkg?: boolean }).pkg) {
       const homeDir = process.env.HOME || process.env.USERPROFILE || '';
       return path.join(homeDir, '.openstudio-mcp-server');
     }
@@ -74,7 +74,7 @@ export class ConfigManager {
       dotenv.config({ path: defaultConfigPath });
     } else {
       // If running as a packaged executable, check the user's home directory
-      if ((process as any).pkg) {
+      if ((process as unknown as { pkg?: boolean }).pkg) {
         const homeDir = process.env.HOME || process.env.USERPROFILE || '';
         const homeConfigPath = path.join(homeDir, '.openstudio-mcp-server', 'config');
 

@@ -23,7 +23,7 @@ export interface MeasureWorkflowStep {
   /** Measure ID */
   measureId: string;
   /** Measure arguments */
-  arguments: Record<string, any>;
+  arguments: Record<string, unknown>;
   /** Whether to apply the measure in-place */
   inPlace?: boolean;
   /** Custom output path */
@@ -493,7 +493,7 @@ export function createCustomWorkflow(
     name: string;
     description: string;
     measureId: string;
-    arguments: Record<string, any>;
+    arguments: Record<string, unknown>;
     inPlace?: boolean;
     outputPath?: string;
   }>,

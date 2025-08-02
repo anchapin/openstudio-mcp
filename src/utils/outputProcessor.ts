@@ -33,7 +33,7 @@ export interface OutputProcessorOptions {
 export interface ProcessedOutput {
   summary: string;
   highlights: string[];
-  formatted: any;
+  formatted: unknown;
   raw?: string;
 }
 
@@ -165,9 +165,9 @@ export class OutputProcessor {
    * @returns Formatted output
    */
   public formatOutput(
-    output: any,
+    output: unknown,
     format: OutputFormat = this.defaultOptions.format || OutputFormat.TEXT,
-  ): any {
+  ): unknown {
     try {
       switch (format) {
         case OutputFormat.JSON:
@@ -191,7 +191,7 @@ export class OutputProcessor {
    * @param output Output to format
    * @returns Formatted text
    */
-  private formatAsText(output: any): string {
+  private formatAsText(output: unknown): string {
     if (typeof output === 'string') {
       return output;
     }
@@ -212,7 +212,7 @@ export class OutputProcessor {
    * @param output Output to format
    * @returns Formatted JSON
    */
-  private formatAsJson(output: any): object {
+  private formatAsJson(output: unknown): object {
     if (typeof output === 'string') {
       try {
         return JSON.parse(output);
@@ -234,7 +234,7 @@ export class OutputProcessor {
    * @param output Output to format
    * @returns Table data
    */
-  private formatAsTable(output: any): { headers: string[]; rows: any[][] } {
+  private formatAsTable(output: unknown): { headers: string[]; rows: unknown[][] } {
     // Default empty table
     const defaultTable = { headers: [], rows: [] };
 
@@ -277,7 +277,7 @@ export class OutputProcessor {
    * @param obj Object to convert
    * @returns Table data
    */
-  private objectToTable(obj: any): { headers: string[]; rows: any[][] } {
+  private objectToTable(obj: unknown): { headers: string[]; rows: unknown[][] } {
     if (Array.isArray(obj)) {
       if (obj.length === 0) {
         return { headers: [], rows: [] };
@@ -311,7 +311,7 @@ export class OutputProcessor {
    * @param text Text to convert
    * @returns Table data
    */
-  private textToTable(text: string): { headers: string[]; rows: any[][] } {
+  private textToTable(text: string): { headers: string[]; rows: unknown[][] } {
     const lines = text.trim().split('\n');
 
     if (lines.length === 0) {
@@ -333,7 +333,7 @@ export class OutputProcessor {
    * @param output Output to format
    * @returns Chart data
    */
-  private formatAsChartData(output: any): { type: string; data: any } {
+  private formatAsChartData(output: unknown): { type: string; data: unknown } {
     // Default to line chart
     const defaultChart = { type: 'line', data: { labels: [], datasets: [] } };
 
@@ -365,7 +365,7 @@ export class OutputProcessor {
    * @param obj Object to convert
    * @returns Chart data
    */
-  private objectToChartData(obj: any): { type: string; data: any } {
+  private objectToChartData(obj: unknown): { type: string; data: unknown } {
     // If it's already in chart format, return it
     if (obj.type && obj.data) {
       return obj;
@@ -374,7 +374,7 @@ export class OutputProcessor {
     // Try to determine if it's time series data
     if (obj.timestamps || obj.dates || obj.times) {
       const labels = obj.timestamps || obj.dates || obj.times || [];
-      const datasets: any[] = [];
+      const datasets: unknown[] = [];
 
       // Extract datasets
       Object.entries(obj).forEach(([key, value]) => {
@@ -436,7 +436,7 @@ export class OutputProcessor {
    * @param options Output processor options
    * @returns Processed output
    */
-  public processOutput(output: any, options: OutputProcessorOptions = {}): ProcessedOutput {
+  public processOutput(output: unknown, options: OutputProcessorOptions = {}): ProcessedOutput {
     const mergedOptions = { ...this.defaultOptions, ...options };
 
     // Handle null or undefined input
