@@ -1,7 +1,6 @@
 import { startServer } from './server';
 import { configManager } from './utils/configManager';
 import { logger } from './utils';
-import path from 'path';
 import fs from 'fs';
 
 // Parse command line arguments

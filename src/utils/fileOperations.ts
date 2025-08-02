@@ -1,9 +1,9 @@
 /**
  * Secure file operations module
- * 
+ *
  * This module provides secure file operations with proper permissions,
  * temporary file management, and cleanup procedures.
- * 
+ *
  * Security features:
  * - Path validation to prevent directory traversal
  * - Permission checks for file operations
@@ -85,7 +85,7 @@ export function validatePath(filePath: string): { valid: boolean; error?: string
 
   // Normalize path for consistent validation
   const normalizedPath = path.normalize(filePath);
-  
+
   // Check for path traversal attempts
   if (normalizedPath.includes('..')) {
     return { valid: false, error: 'Path contains directory traversal patterns' };
@@ -100,15 +100,15 @@ export function validatePath(filePath: string): { valid: boolean; error?: string
   if (path.isAbsolute(normalizedPath)) {
     // Get allowed directories from config
     const allowedDirs = config.fileOperations?.allowedDirectories || [];
-    
+
     // If no allowed directories are configured, allow all paths in test environments
     if (allowedDirs.length === 0 && process.env.NODE_ENV === 'test') {
       return { valid: true };
     }
-    
+
     // Check if path is within allowed directories
-    const isAllowed = allowedDirs.some(dir => normalizedPath.startsWith(dir));
-    
+    const isAllowed = allowedDirs.some((dir) => normalizedPath.startsWith(dir));
+
     if (!isAllowed) {
       return { valid: false, error: 'Path is outside allowed directories' };
     }
@@ -169,7 +169,9 @@ export async function ensureDirectory(dirPath: string, recursive = true): Promis
     logger.debug({ dirPath }, 'Created directory');
   } catch (error) {
     logger.error({ dirPath, error }, 'Failed to create directory');
-    throw new Error(`Failed to create directory: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to create directory: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -183,14 +185,14 @@ export async function ensureDirectory(dirPath: string, recursive = true): Promis
 export function generateTempFilePath(
   prefix = 'openstudio-mcp-',
   suffix = '',
-  tempDir?: string
+  tempDir?: string,
 ): string {
   // Generate a random string
   const randomString = crypto.randomBytes(16).toString('hex');
-  
+
   // Use custom temp directory or system temp directory
   const tempDirectory = tempDir || os.tmpdir();
-  
+
   // Generate temporary file path
   return path.join(tempDirectory, `${prefix}${randomString}${suffix}`);
 }
@@ -203,32 +205,30 @@ export function generateTempFilePath(
  */
 export async function createTempFile(
   content: string | Buffer,
-  options: FileOperationOptions = {}
+  options: FileOperationOptions = {},
 ): Promise<string> {
   const opts = { ...defaultOptions, ...options };
-  
+
   // Generate temporary file path
-  const tempFilePath = generateTempFilePath(
-    'openstudio-mcp-',
-    '',
-    opts.tempDir
-  );
-  
+  const tempFilePath = generateTempFilePath('openstudio-mcp-', '', opts.tempDir);
+
   try {
     // Write content to temporary file
     await writeFileAsync(tempFilePath, content, {
       encoding: opts.encoding,
       mode: opts.mode,
     });
-    
+
     // Register temporary file for cleanup
     temporaryFiles.add(tempFilePath);
-    
+
     logger.debug({ tempFilePath }, 'Created temporary file');
     return tempFilePath;
   } catch (error) {
     logger.error({ tempFilePath, error }, 'Failed to create temporary file');
-    throw new Error(`Failed to create temporary file: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to create temporary file: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -240,10 +240,10 @@ export async function createTempFile(
  */
 export async function readFile(
   filePath: string,
-  options: FileOperationOptions = {}
+  options: FileOperationOptions = {},
 ): Promise<string | Buffer> {
   const opts = { ...defaultOptions, ...options };
-  
+
   // Validate path
   const validation = validatePath(filePath);
   if (!validation.valid) {
@@ -252,14 +252,16 @@ export async function readFile(
 
   try {
     // Check if file exists
-    if (!await fileExists(filePath)) {
+    if (!(await fileExists(filePath))) {
       throw new Error(`File not found: ${filePath}`);
     }
 
     // Check file size
     const stats = await statAsync(filePath);
     if (opts.maxSize && stats.size > opts.maxSize) {
-      throw new Error(`File size exceeds maximum allowed size (${stats.size} > ${opts.maxSize} bytes)`);
+      throw new Error(
+        `File size exceeds maximum allowed size (${stats.size} > ${opts.maxSize} bytes)`,
+      );
     }
 
     // Read file
@@ -271,7 +273,9 @@ export async function readFile(
     return content;
   } catch (error) {
     logger.error({ filePath, error }, 'Failed to read file');
-    throw new Error(`Failed to read file: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to read file: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -285,10 +289,10 @@ export async function readFile(
 export async function writeFile(
   filePath: string,
   content: string | Buffer,
-  options: FileOperationOptions = {}
+  options: FileOperationOptions = {},
 ): Promise<void> {
   const opts = { ...defaultOptions, ...options };
-  
+
   // Validate path
   const validation = validatePath(filePath);
   if (!validation.valid) {
@@ -297,7 +301,7 @@ export async function writeFile(
 
   try {
     // Check if file exists and overwrite is not allowed
-    if (!opts.overwrite && await fileExists(filePath)) {
+    if (!opts.overwrite && (await fileExists(filePath))) {
       throw new Error(`File already exists: ${filePath}`);
     }
 
@@ -309,7 +313,9 @@ export async function writeFile(
 
     // Check content size
     if (opts.maxSize && content.length > opts.maxSize) {
-      throw new Error(`Content size exceeds maximum allowed size (${content.length} > ${opts.maxSize} bytes)`);
+      throw new Error(
+        `Content size exceeds maximum allowed size (${content.length} > ${opts.maxSize} bytes)`,
+      );
     }
 
     // If using temporary file for atomic write
@@ -318,21 +324,21 @@ export async function writeFile(
       const tempFilePath = generateTempFilePath(
         'openstudio-mcp-',
         path.extname(filePath),
-        path.dirname(filePath)
+        path.dirname(filePath),
       );
-      
+
       // Write to temporary file
       await writeFileAsync(tempFilePath, content, {
         encoding: opts.encoding,
         mode: opts.mode,
       });
-      
+
       // Move temporary file to destination
       await copyFileAsync(tempFilePath, filePath);
-      
+
       // Delete temporary file
       await unlinkAsync(tempFilePath);
-      
+
       logger.debug({ filePath, tempFilePath }, 'Wrote file using temporary file');
     } else {
       // Write directly to destination
@@ -340,12 +346,14 @@ export async function writeFile(
         encoding: opts.encoding,
         mode: opts.mode,
       });
-      
+
       logger.debug({ filePath }, 'Wrote file directly');
     }
   } catch (error) {
     logger.error({ filePath, error }, 'Failed to write file');
-    throw new Error(`Failed to write file: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to write file: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -359,10 +367,10 @@ export async function writeFile(
 export async function appendFile(
   filePath: string,
   content: string | Buffer,
-  options: FileOperationOptions = {}
+  options: FileOperationOptions = {},
 ): Promise<void> {
   const opts = { ...defaultOptions, ...options };
-  
+
   // Validate path
   const validation = validatePath(filePath);
   if (!validation.valid) {
@@ -377,7 +385,7 @@ export async function appendFile(
     }
 
     // Check if file exists and create if it doesn't
-    if (!await fileExists(filePath)) {
+    if (!(await fileExists(filePath))) {
       await writeFileAsync(filePath, '', {
         encoding: opts.encoding,
         mode: opts.mode,
@@ -388,9 +396,11 @@ export async function appendFile(
     if (opts.maxSize) {
       const stats = await statAsync(filePath);
       const newSize = stats.size + content.length;
-      
+
       if (newSize > opts.maxSize) {
-        throw new Error(`Resulting file size would exceed maximum allowed size (${newSize} > ${opts.maxSize} bytes)`);
+        throw new Error(
+          `Resulting file size would exceed maximum allowed size (${newSize} > ${opts.maxSize} bytes)`,
+        );
       }
     }
 
@@ -398,11 +408,13 @@ export async function appendFile(
     await appendFileAsync(filePath, content, {
       encoding: opts.encoding,
     });
-    
+
     logger.debug({ filePath }, 'Appended to file');
   } catch (error) {
     logger.error({ filePath, error }, 'Failed to append to file');
-    throw new Error(`Failed to append to file: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to append to file: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -420,7 +432,7 @@ export async function deleteFile(filePath: string): Promise<void> {
 
   try {
     // Check if file exists
-    if (!await fileExists(filePath)) {
+    if (!(await fileExists(filePath))) {
       logger.debug({ filePath }, 'File not found, skipping deletion');
       return;
     }
@@ -428,14 +440,16 @@ export async function deleteFile(filePath: string): Promise<void> {
     // Delete file
     await unlinkAsync(filePath);
     logger.debug({ filePath }, 'Deleted file');
-    
+
     // Remove from temporary files registry if it was registered
     if (temporaryFiles.has(filePath)) {
       temporaryFiles.delete(filePath);
     }
   } catch (error) {
     logger.error({ filePath, error }, 'Failed to delete file');
-    throw new Error(`Failed to delete file: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to delete file: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -449,16 +463,16 @@ export async function deleteFile(filePath: string): Promise<void> {
 export async function copyFile(
   sourcePath: string,
   destinationPath: string,
-  options: FileOperationOptions = {}
+  options: FileOperationOptions = {},
 ): Promise<void> {
   const opts = { ...defaultOptions, ...options };
-  
+
   // Validate paths
   const sourceValidation = validatePath(sourcePath);
   if (!sourceValidation.valid) {
     throw new Error(`Invalid source path: ${sourceValidation.error}`);
   }
-  
+
   const destValidation = validatePath(destinationPath);
   if (!destValidation.valid) {
     throw new Error(`Invalid destination path: ${destValidation.error}`);
@@ -466,12 +480,12 @@ export async function copyFile(
 
   try {
     // Check if source file exists
-    if (!await fileExists(sourcePath)) {
+    if (!(await fileExists(sourcePath))) {
       throw new Error(`Source file not found: ${sourcePath}`);
     }
 
     // Check if destination file exists and overwrite is not allowed
-    if (!opts.overwrite && await fileExists(destinationPath)) {
+    if (!opts.overwrite && (await fileExists(destinationPath))) {
       throw new Error(`Destination file already exists: ${destinationPath}`);
     }
 
@@ -485,7 +499,9 @@ export async function copyFile(
     if (opts.maxSize) {
       const stats = await statAsync(sourcePath);
       if (stats.size > opts.maxSize) {
-        throw new Error(`File size exceeds maximum allowed size (${stats.size} > ${opts.maxSize} bytes)`);
+        throw new Error(
+          `File size exceeds maximum allowed size (${stats.size} > ${opts.maxSize} bytes)`,
+        );
       }
     }
 
@@ -494,7 +510,9 @@ export async function copyFile(
     logger.debug({ sourcePath, destinationPath }, 'Copied file');
   } catch (error) {
     logger.error({ sourcePath, destinationPath, error }, 'Failed to copy file');
-    throw new Error(`Failed to copy file: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to copy file: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -508,14 +526,14 @@ export async function copyFile(
 export async function moveFile(
   sourcePath: string,
   destinationPath: string,
-  options: FileOperationOptions = {}
+  options: FileOperationOptions = {},
 ): Promise<void> {
   const opts = { ...defaultOptions, ...options };
-  
+
   try {
     // Copy file
     await copyFile(sourcePath, destinationPath, opts);
-    
+
     // Delete source file if not preserving original
     if (!opts.preserveOriginal) {
       await deleteFile(sourcePath);
@@ -523,7 +541,7 @@ export async function moveFile(
     } else {
       logger.debug({ sourcePath, destinationPath }, 'Copied file (preserving original)');
     }
-    
+
     // Update temporary files registry if it was registered
     if (temporaryFiles.has(sourcePath) && !opts.preserveOriginal) {
       temporaryFiles.delete(sourcePath);
@@ -531,7 +549,9 @@ export async function moveFile(
     }
   } catch (error) {
     logger.error({ sourcePath, destinationPath, error }, 'Failed to move file');
-    throw new Error(`Failed to move file: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to move file: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -549,7 +569,7 @@ export async function listFiles(dirPath: string): Promise<string[]> {
 
   try {
     // Check if directory exists
-    if (!await directoryExists(dirPath)) {
+    if (!(await directoryExists(dirPath))) {
       throw new Error(`Directory not found: ${dirPath}`);
     }
 
@@ -559,7 +579,9 @@ export async function listFiles(dirPath: string): Promise<string[]> {
     return files;
   } catch (error) {
     logger.error({ dirPath, error }, 'Failed to list files in directory');
-    throw new Error(`Failed to list files in directory: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to list files in directory: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -571,17 +593,17 @@ export async function listFiles(dirPath: string): Promise<string[]> {
  */
 export async function createTempDirectory(
   prefix = 'openstudio-mcp-',
-  tempDir?: string
+  tempDir?: string,
 ): Promise<string> {
   // Generate a random string
   const randomString = crypto.randomBytes(16).toString('hex');
-  
+
   // Use custom temp directory or system temp directory
   const tempDirectory = tempDir || os.tmpdir();
-  
+
   // Generate temporary directory path
   const tempDirPath = path.join(tempDirectory, `${prefix}${randomString}`);
-  
+
   try {
     // Create directory
     await mkdirAsync(tempDirPath, { recursive: true });
@@ -589,7 +611,9 @@ export async function createTempDirectory(
     return tempDirPath;
   } catch (error) {
     logger.error({ tempDirPath, error }, 'Failed to create temporary directory');
-    throw new Error(`Failed to create temporary directory: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to create temporary directory: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -607,19 +631,19 @@ export async function deleteDirectory(dirPath: string): Promise<void> {
 
   try {
     // Check if directory exists
-    if (!await directoryExists(dirPath)) {
+    if (!(await directoryExists(dirPath))) {
       logger.debug({ dirPath }, 'Directory not found, skipping deletion');
       return;
     }
 
     // List files in directory
     const files = await readdirAsync(dirPath);
-    
+
     // Delete each file/subdirectory
     for (const file of files) {
       const filePath = path.join(dirPath, file);
       const stats = await statAsync(filePath);
-      
+
       if (stats.isDirectory()) {
         // Recursively delete subdirectory
         await deleteDirectory(filePath);
@@ -628,13 +652,15 @@ export async function deleteDirectory(dirPath: string): Promise<void> {
         await deleteFile(filePath);
       }
     }
-    
+
     // Delete empty directory
     await rmdirAsync(dirPath);
     logger.debug({ dirPath }, 'Deleted directory');
   } catch (error) {
     logger.error({ dirPath, error }, 'Failed to delete directory');
-    throw new Error(`Failed to delete directory: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to delete directory: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -644,20 +670,20 @@ export async function deleteDirectory(dirPath: string): Promise<void> {
  */
 export async function cleanupTemporaryFiles(): Promise<void> {
   logger.info(`Cleaning up ${temporaryFiles.size} temporary files`);
-  
+
   const promises: Promise<void>[] = [];
-  
+
   for (const filePath of temporaryFiles) {
     promises.push(
-      deleteFile(filePath).catch(error => {
+      deleteFile(filePath).catch((error) => {
         logger.error({ filePath, error }, 'Failed to delete temporary file during cleanup');
-      })
+      }),
     );
   }
-  
+
   await Promise.all(promises);
   temporaryFiles.clear();
-  
+
   logger.info('Temporary file cleanup complete');
 }
 
@@ -672,7 +698,7 @@ process.on('exit', () => {
       logger.error({ filePath, error }, 'Failed to delete temporary file on exit');
     }
   }
-  
+
   temporaryFiles.clear();
 });
 

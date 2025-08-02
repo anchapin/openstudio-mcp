@@ -14,8 +14,8 @@ vi.mock('../src/utils/commandExecutor', async () => {
     executeOpenStudioCommand: vi.fn(),
     default: {
       ...actual.default,
-      executeOpenStudioCommand: vi.fn()
-    }
+      executeOpenStudioCommand: vi.fn(),
+    },
   };
 });
 
@@ -56,8 +56,8 @@ vi.mock('../src/utils/fileOperations', async () => {
       listFiles: vi.fn(),
       createTempDirectory: vi.fn(),
       deleteDirectory: vi.fn(),
-      cleanupTemporaryFiles: vi.fn()
-    }
+      cleanupTemporaryFiles: vi.fn(),
+    },
   };
 });
 
@@ -68,8 +68,8 @@ vi.mock('../src/utils/validation', async () => {
     isPathSafe: vi.fn().mockReturnValue(true),
     default: {
       ...actual.default,
-      isPathSafe: vi.fn().mockReturnValue(true)
-    }
+      isPathSafe: vi.fn().mockReturnValue(true),
+    },
   };
 });
 
@@ -80,9 +80,9 @@ describe('Model Templates', () => {
   });
 
   describe('createModelFromTemplate', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should create an empty model', async () => {
-    return 
+      return;
       // Mock createModelFromTemplate to use our implementation
       const createModelFromTemplateSpy = vi.spyOn(modelTemplates, 'createModelFromTemplate');
       createModelFromTemplateSpy.mockImplementation(async () => {
@@ -92,8 +92,8 @@ describe('Model Templates', () => {
           error: undefined,
           data: {
             modelPath: '/tmp/test-model.osm',
-            templateType: 'empty'
-          }
+            templateType: 'empty',
+          },
         };
       });
 
@@ -105,7 +105,7 @@ describe('Model Templates', () => {
     });
 
     it('should create a standard model', async () => {
-    return 
+      return;
       // Mock createModelFromTemplate to use our implementation
       const createModelFromTemplateSpy = vi.spyOn(modelTemplates, 'createModelFromTemplate');
       createModelFromTemplateSpy.mockImplementation(async () => {
@@ -121,9 +121,9 @@ describe('Model Templates', () => {
               buildingVintage: '90.1-2013',
               climateZone: 'ASHRAE 169-2013-5A',
               floorArea: 2000,
-              numStories: 5
-            }
-          }
+              numStories: 5,
+            },
+          },
         };
       });
 
@@ -133,7 +133,7 @@ describe('Model Templates', () => {
         buildingVintage: '90.1-2013',
         climateZone: 'ASHRAE 169-2013-5A',
         floorArea: 2000,
-        numStories: 5
+        numStories: 5,
       };
 
       const result = await modelTemplates.createModelFromTemplate('office', outputPath, options);
@@ -143,14 +143,14 @@ describe('Model Templates', () => {
     });
 
     it('should handle invalid output path', async () => {
-    return 
+      return;
       // Mock createModelFromTemplate to use our implementation
       const createModelFromTemplateSpy = vi.spyOn(modelTemplates, 'createModelFromTemplate');
       createModelFromTemplateSpy.mockImplementation(async () => {
         return {
           success: false,
           output: '',
-          error: 'Invalid output path: ../../../etc/passwd'
+          error: 'Invalid output path: ../../../etc/passwd',
         };
       });
 
@@ -162,14 +162,14 @@ describe('Model Templates', () => {
     });
 
     it('should handle command execution errors', async () => {
-    return 
+      return;
       // Mock createModelFromTemplate to use our implementation
       const createModelFromTemplateSpy = vi.spyOn(modelTemplates, 'createModelFromTemplate');
       createModelFromTemplateSpy.mockImplementation(async () => {
         return {
           success: false,
           output: '',
-          error: 'Command failed'
+          error: 'Command failed',
         };
       });
 
@@ -182,16 +182,16 @@ describe('Model Templates', () => {
   });
 
   describe('getAvailableTemplateTypes', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should return all available template types', () => {
       // Mock getAvailableTemplateTypes to use our implementation
       const getAvailableTemplateTypesSpy = vi.spyOn(modelTemplates, 'getAvailableTemplateTypes');
       getAvailableTemplateTypesSpy.mockImplementation(() => {
         return ['empty', 'office', 'residential', 'retail', 'warehouse', 'school', 'hospital'];
       });
-      
+
       const types = modelTemplates.getAvailableTemplateTypes();
-      
+
       expect(types).toContain('empty');
       expect(types).toContain('office');
       expect(types).toContain('residential');
@@ -204,7 +204,7 @@ describe('Model Templates', () => {
   });
 
   describe('getAvailableBuildingTypes', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should return building types for office template', () => {
       // Mock getAvailableBuildingTypes to use our implementation
       const getAvailableBuildingTypesSpy = vi.spyOn(modelTemplates, 'getAvailableBuildingTypes');
@@ -214,9 +214,9 @@ describe('Model Templates', () => {
         }
         return [];
       });
-      
+
       const types = modelTemplates.getAvailableBuildingTypes('office');
-      
+
       expect(types).toContain('SmallOffice');
       expect(types).toContain('MediumOffice');
       expect(types).toContain('LargeOffice');
@@ -232,9 +232,9 @@ describe('Model Templates', () => {
         }
         return [];
       });
-      
+
       const types = modelTemplates.getAvailableBuildingTypes('residential');
-      
+
       expect(types).toContain('MidriseApartment');
       expect(types).toContain('HighriseApartment');
       expect(types).toContain('SingleFamily');
@@ -245,18 +245,21 @@ describe('Model Templates', () => {
       // Mock getAvailableBuildingTypes to use our implementation
       const getAvailableBuildingTypesSpy = vi.spyOn(modelTemplates, 'getAvailableBuildingTypes');
       getAvailableBuildingTypesSpy.mockImplementation(() => []);
-      
+
       const types = modelTemplates.getAvailableBuildingTypes('unknown' as any);
-      
+
       expect(types).toEqual([]);
     });
   });
 
   describe('getAvailableBuildingVintages', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should return all available building vintages', () => {
       // Mock getAvailableBuildingVintages to use our implementation
-      const getAvailableBuildingVintagesSpy = vi.spyOn(modelTemplates, 'getAvailableBuildingVintages');
+      const getAvailableBuildingVintagesSpy = vi.spyOn(
+        modelTemplates,
+        'getAvailableBuildingVintages',
+      );
       getAvailableBuildingVintagesSpy.mockImplementation(() => {
         return [
           'DOE Ref Pre-1980',
@@ -266,12 +269,12 @@ describe('Model Templates', () => {
           '90.1-2010',
           '90.1-2013',
           '90.1-2016',
-          '90.1-2019'
+          '90.1-2019',
         ];
       });
-      
+
       const vintages = modelTemplates.getAvailableBuildingVintages();
-      
+
       expect(vintages).toContain('DOE Ref Pre-1980');
       expect(vintages).toContain('90.1-2013');
       expect(vintages).toContain('90.1-2019');
@@ -280,7 +283,7 @@ describe('Model Templates', () => {
   });
 
   describe('getAvailableClimateZones', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should return all available climate zones', () => {
       // Mock getAvailableClimateZones to use our implementation
       const getAvailableClimateZonesSpy = vi.spyOn(modelTemplates, 'getAvailableClimateZones');
@@ -301,12 +304,12 @@ describe('Model Templates', () => {
           'ASHRAE 169-2013-6A',
           'ASHRAE 169-2013-6B',
           'ASHRAE 169-2013-7A',
-          'ASHRAE 169-2013-8A'
+          'ASHRAE 169-2013-8A',
         ];
       });
-      
+
       const zones = modelTemplates.getAvailableClimateZones();
-      
+
       expect(zones).toContain('ASHRAE 169-2013-1A');
       expect(zones).toContain('ASHRAE 169-2013-5A');
       expect(zones).toContain('ASHRAE 169-2013-8A');

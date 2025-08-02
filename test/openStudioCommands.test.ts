@@ -11,16 +11,20 @@ vi.mock('../src/utils/commandExecutor', () => ({
 
 // Define the functions we're testing
 const createModel = async (templateType, outputPath, options = {}) => {
-  const result = await executeOpenStudioCommand('openstudio',
+  const result = await executeOpenStudioCommand(
+    'openstudio',
     ['create', 'model', '--template', templateType, '--output', outputPath],
-    options);
+    options,
+  );
   return result;
 };
 
 const runSimulation = async (workflowPath, options = {}) => {
-  const result = await executeOpenStudioCommand('openstudio',
+  const result = await executeOpenStudioCommand(
+    'openstudio',
     ['run', '--workflow', workflowPath],
-    options);
+    options,
+  );
   return result;
 };
 
@@ -56,7 +60,7 @@ describe('OpenStudio Commands', () => {
       stdout: 'Model created successfully',
       stderr: '',
       command: 'openstudio',
-      args: ['create', 'model', '--template', 'empty', '--output', '/path/to/model.osm']
+      args: ['create', 'model', '--template', 'empty', '--output', '/path/to/model.osm'],
     });
 
     const result = await createModel('empty', '/path/to/model.osm');
@@ -65,7 +69,7 @@ describe('OpenStudio Commands', () => {
     expect(executeOpenStudioCommand).toHaveBeenCalledWith(
       expect.stringContaining('openstudio'),
       expect.arrayContaining(['create', 'model']),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -77,7 +81,7 @@ describe('OpenStudio Commands', () => {
       stdout: 'Simulation completed successfully',
       stderr: '',
       command: 'openstudio',
-      args: ['run', '--workflow', '/path/to/model.osw']
+      args: ['run', '--workflow', '/path/to/model.osw'],
     });
 
     const result = await runSimulation('/path/to/model.osw');
@@ -86,7 +90,7 @@ describe('OpenStudio Commands', () => {
     expect(executeOpenStudioCommand).toHaveBeenCalledWith(
       expect.stringContaining('openstudio'),
       expect.arrayContaining(['run']),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -98,7 +102,7 @@ describe('OpenStudio Commands', () => {
       stdout: 'Measure applied successfully',
       stderr: '',
       command: 'openstudio',
-      args: ['apply', 'measure', '--path', '/path/to/measure', '--model', '/path/to/model.osm']
+      args: ['apply', 'measure', '--path', '/path/to/measure', '--model', '/path/to/model.osm'],
     });
 
     const result = await applyMeasure('/path/to/measure', '/path/to/model.osm', {});
@@ -107,7 +111,7 @@ describe('OpenStudio Commands', () => {
     expect(executeOpenStudioCommand).toHaveBeenCalledWith(
       expect.stringContaining('openstudio'),
       expect.arrayContaining(['apply', 'measure']),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 });

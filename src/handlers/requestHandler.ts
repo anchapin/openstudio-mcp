@@ -2,7 +2,7 @@
  * Request handler for MCP requests
  */
 import { MCPRequest, MCPResponse, CommandResult } from '../interfaces';
-import { logger, commandExecutor, openStudioCommands } from '../utils';
+import { logger, openStudioCommands } from '../utils';
 import { validateRequest, getValidationSchema } from '../utils/validation';
 import { OpenStudioCommandProcessor } from '../services/commandProcessor';
 import { BCLApiClient } from '../services/bclApiClient';
@@ -12,7 +12,7 @@ import path from 'path';
 /**
  * Handler function type
  */
-type RequestHandlerFunction = (params: any) => Promise<CommandResult>;
+type RequestHandlerFunction = (params: Record<string, unknown>) => Promise<CommandResult>;
 
 /**
  * Handler metadata
@@ -46,107 +46,107 @@ export class RequestHandler {
   private registerDefaultHandlers(): void {
     // Register model handlers
     this.registerHandler(
-      'openstudio.model.create', 
+      'openstudio.model.create',
       this.handleModelCreate.bind(this),
       getValidationSchema('openstudio.model.create') || {},
-      'Create a new OpenStudio model'
+      'Create a new OpenStudio model',
     );
-    
+
     this.registerHandler(
-      'openstudio.model.open', 
+      'openstudio.model.open',
       this.handleModelOpen.bind(this),
       getValidationSchema('openstudio.model.open') || {},
-      'Open an existing OpenStudio model'
+      'Open an existing OpenStudio model',
     );
-    
+
     this.registerHandler(
-      'openstudio.model.save', 
+      'openstudio.model.save',
       this.handleModelSave.bind(this),
       getValidationSchema('openstudio.model.save') || {},
-      'Save an OpenStudio model'
+      'Save an OpenStudio model',
     );
-    
+
     this.registerHandler(
-      'openstudio.model.info', 
+      'openstudio.model.info',
       this.handleModelInfo.bind(this),
       getValidationSchema('openstudio.model.info') || {},
-      'Get information about an OpenStudio model'
+      'Get information about an OpenStudio model',
     );
-    
+
     // Register simulation handlers
     this.registerHandler(
-      'openstudio.simulation.run', 
+      'openstudio.simulation.run',
       this.handleSimulationRun.bind(this),
       getValidationSchema('openstudio.simulation.run') || {},
-      'Run an OpenStudio simulation'
+      'Run an OpenStudio simulation',
     );
-    
+
     this.registerHandler(
-      'openstudio.simulation.status', 
+      'openstudio.simulation.status',
       this.handleSimulationStatus.bind(this),
       getValidationSchema('openstudio.simulation.status') || {},
-      'Get the status of a simulation'
+      'Get the status of a simulation',
     );
-    
+
     this.registerHandler(
-      'openstudio.simulation.cancel', 
+      'openstudio.simulation.cancel',
       this.handleSimulationCancel.bind(this),
       getValidationSchema('openstudio.simulation.cancel') || {},
-      'Cancel a running simulation'
+      'Cancel a running simulation',
     );
-    
+
     // Register BCL handlers
     this.registerHandler(
-      'openstudio.bcl.search', 
+      'openstudio.bcl.search',
       this.handleBclSearch.bind(this),
       getValidationSchema('openstudio.bcl.search') || {},
-      'Search for measures in the Building Component Library'
+      'Search for measures in the Building Component Library',
     );
-    
+
     this.registerHandler(
-      'openstudio.bcl.download', 
+      'openstudio.bcl.download',
       this.handleBclDownload.bind(this),
       getValidationSchema('openstudio.bcl.download') || {},
-      'Download a measure from the Building Component Library'
+      'Download a measure from the Building Component Library',
     );
-    
+
     this.registerHandler(
-      'openstudio.bcl.recommend', 
+      'openstudio.bcl.recommend',
       this.handleBclRecommend.bind(this),
       getValidationSchema('openstudio.bcl.recommend') || {},
-      'Get measure recommendations based on context'
+      'Get measure recommendations based on context',
     );
-    
+
     // Register measure handlers
     this.registerHandler(
-      'openstudio.measure.apply', 
+      'openstudio.measure.apply',
       this.handleMeasureApply.bind(this),
       getValidationSchema('openstudio.measure.apply') || {},
-      'Apply a measure to an OpenStudio model'
+      'Apply a measure to an OpenStudio model',
     );
-    
+
     // Register measure workflow handlers
     this.registerHandler(
-      'openstudio.measure.workflow.create', 
+      'openstudio.measure.workflow.create',
       this.handleMeasureWorkflowCreate.bind(this),
       getValidationSchema('openstudio.measure.workflow.create') || {},
-      'Create a measure application workflow'
+      'Create a measure application workflow',
     );
-    
+
     this.registerHandler(
-      'openstudio.measure.workflow.execute', 
+      'openstudio.measure.workflow.execute',
       this.handleMeasureWorkflowExecute.bind(this),
       getValidationSchema('openstudio.measure.workflow.execute') || {},
-      'Execute a measure application workflow'
+      'Execute a measure application workflow',
     );
-    
+
     this.registerHandler(
-      'openstudio.measure.workflow.validate', 
+      'openstudio.measure.workflow.validate',
       this.handleMeasureWorkflowValidate.bind(this),
       getValidationSchema('openstudio.measure.workflow.validate') || {},
-      'Validate a measure application workflow'
+      'Validate a measure application workflow',
     );
-    
+
     logger.info(`Registered ${this.handlers.size} request handlers`);
   }
 
@@ -158,15 +158,15 @@ export class RequestHandler {
    * @param description Description of the handler
    */
   public registerHandler(
-    requestType: string, 
+    requestType: string,
     handler: RequestHandlerFunction,
     schema: object,
-    description: string
+    description: string,
   ): void {
-    this.handlers.set(requestType, { 
-      handler, 
+    this.handlers.set(requestType, {
+      handler,
       schema,
-      description
+      description,
     });
     logger.debug(`Registered handler for ${requestType}: ${description}`);
   }
@@ -195,16 +195,19 @@ export class RequestHandler {
    */
   public async handleRequest(request: MCPRequest): Promise<MCPResponse> {
     logger.info({ requestId: request.id, requestType: request.type }, 'Processing request');
-    
+
     // Validate the request
     const validationResult = validateRequest(request);
     if (!validationResult.valid) {
-      logger.warn({ 
-        requestId: request.id, 
-        requestType: request.type,
-        errors: validationResult.errors 
-      }, 'Request validation failed');
-      
+      logger.warn(
+        {
+          requestId: request.id,
+          requestType: request.type,
+          errors: validationResult.errors,
+        },
+        'Request validation failed',
+      );
+
       return {
         id: request.id,
         type: request.type,
@@ -212,8 +215,8 @@ export class RequestHandler {
         error: {
           code: validationResult.errorCode || 'INVALID_REQUEST',
           message: 'Invalid request format or parameters',
-          details: validationResult.errors
-        }
+          details: validationResult.errors,
+        },
       };
     }
 
@@ -229,44 +232,53 @@ export class RequestHandler {
           code: 'UNKNOWN_REQUEST_TYPE',
           message: `Unknown request type: ${request.type}`,
           details: {
-            availableTypes: Array.from(this.handlers.keys())
-          }
-        }
+            availableTypes: Array.from(this.handlers.keys()),
+          },
+        },
       };
     }
 
     try {
       // Execute the handler
-      logger.info({ 
-        requestId: request.id,
-        requestType: request.type 
-      }, 'Executing handler');
-      
+      logger.info(
+        {
+          requestId: request.id,
+          requestType: request.type,
+        },
+        'Executing handler',
+      );
+
       const result = await handlerMetadata.handler(request.params);
 
       // Return the response
       if (result.success) {
-        logger.info({ 
-          requestId: request.id,
-          requestType: request.type 
-        }, 'Request processed successfully');
-        
+        logger.info(
+          {
+            requestId: request.id,
+            requestType: request.type,
+          },
+          'Request processed successfully',
+        );
+
         return {
           id: request.id,
           type: request.type,
           status: 'success',
           result: {
             output: result.output,
-            data: result.data
-          }
+            data: result.data,
+          },
         };
       } else {
-        logger.warn({ 
-          requestId: request.id,
-          requestType: request.type,
-          error: result.error 
-        }, 'Command execution failed');
-        
+        logger.warn(
+          {
+            requestId: request.id,
+            requestType: request.type,
+            error: result.error,
+          },
+          'Command execution failed',
+        );
+
         return {
           id: request.id,
           type: request.type,
@@ -274,17 +286,20 @@ export class RequestHandler {
           error: {
             code: 'COMMAND_FAILED',
             message: result.error || 'Command execution failed',
-            details: result
-          }
+            details: result,
+          },
         };
       }
     } catch (error) {
-      logger.error({ 
-        requestId: request.id,
-        requestType: request.type,
-        error: error instanceof Error ? error.message : String(error)
-      }, 'Error executing handler');
-      
+      logger.error(
+        {
+          requestId: request.id,
+          requestType: request.type,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Error executing handler',
+      );
+
       return {
         id: request.id,
         type: request.type,
@@ -292,8 +307,8 @@ export class RequestHandler {
         error: {
           code: 'INTERNAL_ERROR',
           message: 'Internal server error',
-          details: error instanceof Error ? error.message : String(error)
-        }
+          details: error instanceof Error ? error.message : String(error),
+        },
       };
     }
   }
@@ -303,9 +318,9 @@ export class RequestHandler {
    * @param params Request parameters
    * @returns Command result
    */
-  private async handleModelCreate(params: any): Promise<CommandResult> {
+  private async handleModelCreate(params: Record<string, unknown>): Promise<CommandResult> {
     logger.info({ params }, 'Model create request received');
-    
+
     try {
       // Validate required parameters
       if (!params.templateType || !params.path) {
@@ -315,10 +330,10 @@ export class RequestHandler {
           error: 'Missing required parameters: templateType and path are required',
         };
       }
-      
+
       // Import the model creation service
       const modelCreationService = (await import('../services/modelCreationService')).default;
-      
+
       // Create the model using the model creation service
       const result = await modelCreationService.createModel({
         templateType: params.templateType,
@@ -327,7 +342,7 @@ export class RequestHandler {
         modelName: path.basename(params.path),
         includeDefaultMeasures: params.includeDefaultMeasures || false,
       });
-      
+
       if (!result.success) {
         return {
           success: false,
@@ -335,7 +350,7 @@ export class RequestHandler {
           error: result.error || 'Failed to create model',
         };
       }
-      
+
       return {
         success: true,
         output: `Successfully created model at ${result.modelPath}`,
@@ -348,7 +363,7 @@ export class RequestHandler {
       };
     } catch (error) {
       logger.error({ params, error }, 'Error creating model');
-      
+
       return {
         success: false,
         output: '',
@@ -362,9 +377,9 @@ export class RequestHandler {
    * @param params Request parameters
    * @returns Command result
    */
-  private async handleModelOpen(params: any): Promise<CommandResult> {
+  private async handleModelOpen(params: Record<string, unknown>): Promise<CommandResult> {
     logger.info({ params }, 'Model open request received');
-    
+
     try {
       // Validate required parameters
       if (!params.path) {
@@ -374,11 +389,11 @@ export class RequestHandler {
           error: 'Missing required parameter: path is required',
         };
       }
-      
+
       // For now, we'll just get model info as a way to "open" the model
       // In a more advanced implementation, we might want to load the model into memory
       const result = await openStudioCommands.getModelInfo(params.path);
-      
+
       return {
         success: result.success,
         output: result.output,
@@ -390,7 +405,7 @@ export class RequestHandler {
       };
     } catch (error) {
       logger.error({ params, error }, 'Error opening model');
-      
+
       return {
         success: false,
         output: '',
@@ -404,13 +419,13 @@ export class RequestHandler {
    * @param params Request parameters
    * @returns Command result
    */
-  private async handleModelSave(params: any): Promise<CommandResult> {
+  private async handleModelSave(params: Record<string, unknown>): Promise<CommandResult> {
     // This is a placeholder that will be implemented in a future task
     logger.info({ params }, 'Model save request received');
     return {
       success: true,
       output: 'Model save operation not yet implemented',
-      data: { params }
+      data: { params },
     };
   }
 
@@ -419,9 +434,9 @@ export class RequestHandler {
    * @param params Request parameters
    * @returns Command result
    */
-  private async handleSimulationRun(params: any): Promise<CommandResult> {
+  private async handleSimulationRun(params: Record<string, unknown>): Promise<CommandResult> {
     logger.info({ params }, 'Simulation run request received');
-    
+
     try {
       // Validate required parameters
       if (!params.modelPath) {
@@ -431,30 +446,30 @@ export class RequestHandler {
           error: 'Missing required parameter: modelPath is required',
         };
       }
-      
+
       // Import the simulation service
       const simulationService = (await import('../services/simulationService')).default;
-      
+
       // Configure simulation parameters if not provided
       let simulationParams;
-      
+
       if (params.autoConfig) {
         // Auto-configure simulation parameters based on model analysis
         simulationParams = await simulationService.configureSimulationParameters(params.modelPath);
-        
+
         // Override with any explicitly provided parameters
         if (params.weatherFile) {
           simulationParams.weatherFile = params.weatherFile;
         }
-        
+
         if (params.outputDirectory) {
           simulationParams.outputDirectory = params.outputDirectory;
         }
-        
+
         if (params.options) {
           simulationParams.options = {
             ...simulationParams.options,
-            ...params.options
+            ...params.options,
           };
         }
       } else {
@@ -463,16 +478,16 @@ export class RequestHandler {
           modelPath: params.modelPath,
           weatherFile: params.weatherFile,
           outputDirectory: params.outputDirectory,
-          options: params.options
+          options: params.options,
         };
       }
-      
+
       // Run the simulation
       const simulationResult = await simulationService.runSimulation(simulationParams);
-      
+
       // Process the simulation results
       const processedResult = simulationService.processSimulationResults(simulationResult);
-      
+
       return {
         success: processedResult.status === 'complete',
         output: processedResult.output || '',
@@ -491,17 +506,17 @@ export class RequestHandler {
             electricityConsumption: processedResult.electricityConsumption,
             naturalGasConsumption: processedResult.naturalGasConsumption,
             districtHeatingConsumption: processedResult.districtHeatingConsumption,
-            districtCoolingConsumption: processedResult.districtCoolingConsumption
+            districtCoolingConsumption: processedResult.districtCoolingConsumption,
           },
           resourceUsage: {
             cpuUsage: processedResult.cpuUsage,
-            memoryUsage: processedResult.memoryUsage
-          }
-        }
+            memoryUsage: processedResult.memoryUsage,
+          },
+        },
       };
     } catch (error) {
       logger.error({ params, error }, 'Error running simulation');
-      
+
       return {
         success: false,
         output: '',
@@ -515,9 +530,9 @@ export class RequestHandler {
    * @param params Request parameters
    * @returns Command result
    */
-  private async handleBclSearch(params: any): Promise<CommandResult> {
+  private async handleBclSearch(params: Record<string, unknown>): Promise<CommandResult> {
     logger.info({ params }, 'BCL search request received');
-    
+
     try {
       // Validate required parameters
       if (!params.query) {
@@ -527,26 +542,26 @@ export class RequestHandler {
           error: 'Missing required parameter: query is required',
         };
       }
-      
+
       // Search for measures using the BCL API client
       const measures = await this.bclApiClient.searchMeasures(params.query);
-      
+
       // Apply limit if specified
       const limit = params.limit ? parseInt(params.limit, 10) : undefined;
       const limitedMeasures = limit ? measures.slice(0, limit) : measures;
-      
+
       return {
         success: true,
         output: `Found ${limitedMeasures.length} measures matching query: ${params.query}`,
         data: {
           measures: limitedMeasures,
           totalFound: measures.length,
-          query: params.query
+          query: params.query,
         },
       };
     } catch (error) {
       logger.error({ params, error }, 'Error searching BCL measures');
-      
+
       return {
         success: false,
         output: '',
@@ -560,9 +575,9 @@ export class RequestHandler {
    * @param params Request parameters
    * @returns Command result
    */
-  private async handleBclDownload(params: any): Promise<CommandResult> {
+  private async handleBclDownload(params: Record<string, unknown>): Promise<CommandResult> {
     logger.info({ params }, 'BCL download request received');
-    
+
     try {
       // Validate required parameters
       if (!params.measureId) {
@@ -572,10 +587,10 @@ export class RequestHandler {
           error: 'Missing required parameter: measureId is required',
         };
       }
-      
+
       // Download the measure using the BCL API client
       const downloadSuccess = await this.bclApiClient.downloadMeasure(params.measureId);
-      
+
       if (!downloadSuccess) {
         return {
           success: false,
@@ -583,10 +598,10 @@ export class RequestHandler {
           error: `Failed to download measure with ID: ${params.measureId}`,
         };
       }
-      
+
       // Install the measure
       const installSuccess = await this.bclApiClient.installMeasure(params.measureId);
-      
+
       if (!installSuccess) {
         return {
           success: false,
@@ -594,19 +609,19 @@ export class RequestHandler {
           error: `Failed to install measure with ID: ${params.measureId}`,
         };
       }
-      
+
       return {
         success: true,
         output: `Successfully downloaded and installed measure with ID: ${params.measureId}`,
         data: {
           measureId: params.measureId,
           installed: true,
-          location: `${config.bcl.measuresDir}/${params.measureId}`
+          location: `${config.bcl.measuresDir}/${params.measureId}`,
         },
       };
     } catch (error) {
       logger.error({ params, error }, 'Error downloading BCL measure');
-      
+
       return {
         success: false,
         output: '',
@@ -620,9 +635,9 @@ export class RequestHandler {
    * @param params Request parameters
    * @returns Command result
    */
-  private async handleMeasureApply(params: any): Promise<CommandResult> {
+  private async handleMeasureApply(params: Record<string, unknown>): Promise<CommandResult> {
     logger.info({ params }, 'Measure apply request received');
-    
+
     try {
       // Validate required parameters
       if (!params.modelPath) {
@@ -632,7 +647,7 @@ export class RequestHandler {
           error: 'Missing required parameter: modelPath is required',
         };
       }
-      
+
       if (!params.measureId) {
         return {
           success: false,
@@ -640,28 +655,32 @@ export class RequestHandler {
           error: 'Missing required parameter: measureId is required',
         };
       }
-      
+
       // Import the measure application service
-      const measureApplicationService = (await import('../services/measureApplicationService')).default;
-      
+      const measureApplicationService = (await import('../services/measureApplicationService'))
+        .default;
+
       // Map user parameters to measure arguments if needed
       let measureArgs = params.arguments || {};
-      
+
       if (params.mapParameters) {
         try {
           measureArgs = await measureApplicationService.mapMeasureParameters(
             params.measureId,
-            params.arguments || {}
+            params.arguments || {},
           );
         } catch (error) {
-          logger.warn({ 
-            measureId: params.measureId, 
-            arguments: params.arguments,
-            error: error instanceof Error ? error.message : String(error)
-          }, 'Error mapping measure parameters, using original arguments');
+          logger.warn(
+            {
+              measureId: params.measureId,
+              arguments: params.arguments,
+              error: error instanceof Error ? error.message : String(error),
+            },
+            'Error mapping measure parameters, using original arguments',
+          );
         }
       }
-      
+
       // Determine if we should download the measure from BCL if not installed
       if (params.downloadIfNeeded) {
         // Apply the measure, downloading it if needed
@@ -675,13 +694,13 @@ export class RequestHandler {
             validateMeasure: params.validateMeasure !== false,
             inPlace: params.inPlace === true,
             outputPath: params.outputPath,
-          }
+          },
         );
-        
+
         return {
           success: result.success,
-          output: result.success 
-            ? `Successfully applied measure ${params.measureId} to model ${params.modelPath}` 
+          output: result.success
+            ? `Successfully applied measure ${params.measureId} to model ${params.modelPath}`
             : `Failed to apply measure: ${result.error}`,
           error: result.error,
           data: {
@@ -690,8 +709,8 @@ export class RequestHandler {
             measureId: result.measureId,
             arguments: result.arguments,
             warnings: result.warnings,
-            output: result.output
-          }
+            output: result.output,
+          },
         };
       } else {
         // Apply the measure directly
@@ -705,13 +724,13 @@ export class RequestHandler {
             validateMeasure: params.validateMeasure !== false,
             inPlace: params.inPlace === true,
             outputPath: params.outputPath,
-          }
+          },
         );
-        
+
         return {
           success: result.success,
-          output: result.success 
-            ? `Successfully applied measure ${params.measureId} to model ${params.modelPath}` 
+          output: result.success
+            ? `Successfully applied measure ${params.measureId} to model ${params.modelPath}`
             : `Failed to apply measure: ${result.error}`,
           error: result.error,
           data: {
@@ -720,13 +739,13 @@ export class RequestHandler {
             measureId: result.measureId,
             arguments: result.arguments,
             warnings: result.warnings,
-            output: result.output
-          }
+            output: result.output,
+          },
         };
       }
     } catch (error) {
       logger.error({ params, error }, 'Error applying measure');
-      
+
       return {
         success: false,
         output: '',
@@ -740,9 +759,9 @@ export class RequestHandler {
    * @param params Request parameters
    * @returns Command result
    */
-  private async handleModelInfo(params: any): Promise<CommandResult> {
+  private async handleModelInfo(params: Record<string, unknown>): Promise<CommandResult> {
     logger.info({ params }, 'Model info request received');
-    
+
     try {
       // Validate required parameters
       if (!params.modelPath) {
@@ -752,13 +771,13 @@ export class RequestHandler {
           error: 'Missing required parameter: modelPath is required',
         };
       }
-      
+
       // Get model information using the OpenStudio CLI command mapping
       const result = await openStudioCommands.getModelInfo(
         params.modelPath,
-        params.detailLevel || 'basic'
+        params.detailLevel || 'basic',
       );
-      
+
       return {
         success: result.success,
         output: result.output,
@@ -767,7 +786,7 @@ export class RequestHandler {
       };
     } catch (error) {
       logger.error({ params, error }, 'Error getting model information');
-      
+
       return {
         success: false,
         output: '',
@@ -781,9 +800,9 @@ export class RequestHandler {
    * @param params Request parameters
    * @returns Command result
    */
-  private async handleBclRecommend(params: any): Promise<CommandResult> {
+  private async handleBclRecommend(params: Record<string, unknown>): Promise<CommandResult> {
     logger.info({ params }, 'BCL recommend request received');
-    
+
     try {
       // Validate required parameters
       if (!params.context) {
@@ -793,44 +812,44 @@ export class RequestHandler {
           error: 'Missing required parameter: context is required',
         };
       }
-      
+
       // Get measure recommendations based on context and model path (if provided)
       const measures = await this.bclApiClient.recommendMeasures(params.context, params.modelPath);
-      
+
       // Apply limit if specified
       const limit = params.limit ? parseInt(params.limit, 10) : undefined;
       const limitedMeasures = limit ? measures.slice(0, limit) : measures;
-      
+
       // Prepare response data
       const responseData: any = {
         measures: limitedMeasures,
         totalFound: measures.length,
-        context: params.context
+        context: params.context,
       };
-      
+
       // Include model path in response if provided
       if (params.modelPath) {
         responseData.modelPath = params.modelPath;
         responseData.modelBasedRecommendation = true;
       }
-      
+
       // Include information about automatically downloaded measures
       const downloadedMeasures = limitedMeasures.slice(0, 3);
       if (downloadedMeasures.length > 0) {
-        responseData.downloadedMeasures = downloadedMeasures.map(m => ({
+        responseData.downloadedMeasures = downloadedMeasures.map((m) => ({
           id: m.id,
-          name: m.name
+          name: m.name,
         }));
       }
-      
+
       return {
         success: true,
         output: `Found ${limitedMeasures.length} recommended measures based on context${params.modelPath ? ' and model analysis' : ''}`,
-        data: responseData
+        data: responseData,
       };
     } catch (error) {
       logger.error({ params, error }, 'Error recommending BCL measures');
-      
+
       return {
         success: false,
         output: '',
@@ -838,15 +857,15 @@ export class RequestHandler {
       };
     }
   }
-  
+
   /**
    * Handler for openstudio.simulation.status
    * @param params Request parameters
    * @returns Command result
    */
-  private async handleSimulationStatus(params: any): Promise<CommandResult> {
+  private async handleSimulationStatus(params: Record<string, unknown>): Promise<CommandResult> {
     logger.info({ params }, 'Simulation status request received');
-    
+
     try {
       // Validate required parameters
       if (!params.simulationId) {
@@ -856,13 +875,13 @@ export class RequestHandler {
           error: 'Missing required parameter: simulationId is required',
         };
       }
-      
+
       // Import the simulation service
       const simulationService = (await import('../services/simulationService')).default;
-      
+
       // Get the simulation status
       const simulationResult = simulationService.getSimulationStatus(params.simulationId);
-      
+
       if (!simulationResult) {
         return {
           success: false,
@@ -870,7 +889,7 @@ export class RequestHandler {
           error: `Simulation with ID ${params.simulationId} not found`,
         };
       }
-      
+
       return {
         success: true,
         output: `Simulation status: ${simulationResult.status}`,
@@ -890,17 +909,17 @@ export class RequestHandler {
             electricityConsumption: simulationResult.electricityConsumption,
             naturalGasConsumption: simulationResult.naturalGasConsumption,
             districtHeatingConsumption: simulationResult.districtHeatingConsumption,
-            districtCoolingConsumption: simulationResult.districtCoolingConsumption
+            districtCoolingConsumption: simulationResult.districtCoolingConsumption,
           },
           resourceUsage: {
             cpuUsage: simulationResult.cpuUsage,
-            memoryUsage: simulationResult.memoryUsage
-          }
-        }
+            memoryUsage: simulationResult.memoryUsage,
+          },
+        },
       };
     } catch (error) {
       logger.error({ params, error }, 'Error getting simulation status');
-      
+
       return {
         success: false,
         output: '',
@@ -908,15 +927,15 @@ export class RequestHandler {
       };
     }
   }
-  
+
   /**
    * Handler for openstudio.simulation.cancel
    * @param params Request parameters
    * @returns Command result
    */
-  private async handleSimulationCancel(params: any): Promise<CommandResult> {
+  private async handleSimulationCancel(params: Record<string, unknown>): Promise<CommandResult> {
     logger.info({ params }, 'Simulation cancel request received');
-    
+
     try {
       // Validate required parameters
       if (!params.simulationId) {
@@ -926,13 +945,13 @@ export class RequestHandler {
           error: 'Missing required parameter: simulationId is required',
         };
       }
-      
+
       // Import the simulation service
       const simulationService = (await import('../services/simulationService')).default;
-      
+
       // Cancel the simulation
       const cancelled = simulationService.cancelSimulation(params.simulationId);
-      
+
       if (!cancelled) {
         return {
           success: false,
@@ -940,18 +959,18 @@ export class RequestHandler {
           error: `Failed to cancel simulation with ID ${params.simulationId}. The simulation may not exist or may have already completed.`,
         };
       }
-      
+
       return {
         success: true,
         output: `Successfully cancelled simulation with ID ${params.simulationId}`,
         data: {
           simulationId: params.simulationId,
-          cancelled: true
-        }
+          cancelled: true,
+        },
       };
     } catch (error) {
       logger.error({ params, error }, 'Error cancelling simulation');
-      
+
       return {
         success: false,
         output: '',
@@ -965,9 +984,11 @@ export class RequestHandler {
    * @param params Request parameters
    * @returns Command result
    */
-  private async handleMeasureWorkflowCreate(params: any): Promise<CommandResult> {
+  private async handleMeasureWorkflowCreate(
+    params: Record<string, unknown>,
+  ): Promise<CommandResult> {
     logger.info({ params }, 'Measure workflow create request received');
-    
+
     try {
       // Validate required parameters
       if (!params.modelPath) {
@@ -977,18 +998,19 @@ export class RequestHandler {
           error: 'Missing required parameter: modelPath is required',
         };
       }
-      
+
       // Import the measure application workflow module
-      const measureApplicationWorkflow = (await import('../services/measureApplicationWorkflow')).default;
-      
+      const measureApplicationWorkflow = (await import('../services/measureApplicationWorkflow'))
+        .default;
+
       let workflow;
-      
+
       // Create workflow from template or custom steps
       if (params.templateName) {
         // Create from template
         workflow = await measureApplicationWorkflow.createWorkflowFromTemplate(
           params.templateName,
-          params.modelPath
+          params.modelPath,
         );
       } else if (params.steps && Array.isArray(params.steps)) {
         // Create custom workflow
@@ -1001,7 +1023,7 @@ export class RequestHandler {
             stopOnError: params.stopOnError !== false,
             createBackup: params.createBackup !== false,
             validate: params.validate !== false,
-          }
+          },
         );
       } else {
         return {
@@ -1010,26 +1032,27 @@ export class RequestHandler {
           error: 'Either templateName or steps must be provided',
         };
       }
-      
+
       // Download required measures if requested
       if (params.downloadMeasures) {
-        const downloadedMeasures = await measureApplicationWorkflow.downloadWorkflowMeasures(workflow);
-        
+        const downloadedMeasures =
+          await measureApplicationWorkflow.downloadWorkflowMeasures(workflow);
+
         if (downloadedMeasures.length > 0) {
           logger.info({ downloadedMeasures }, 'Downloaded measures for workflow');
         }
       }
-      
+
       return {
         success: true,
         output: `Successfully created measure application workflow: ${workflow.name}`,
         data: {
-          workflow
-        }
+          workflow,
+        },
       };
     } catch (error) {
       logger.error({ params, error }, 'Error creating measure workflow');
-      
+
       return {
         success: false,
         output: '',
@@ -1037,15 +1060,17 @@ export class RequestHandler {
       };
     }
   }
-  
+
   /**
    * Handler for openstudio.measure.workflow.execute
    * @param params Request parameters
    * @returns Command result
    */
-  private async handleMeasureWorkflowExecute(params: any): Promise<CommandResult> {
+  private async handleMeasureWorkflowExecute(
+    params: Record<string, unknown>,
+  ): Promise<CommandResult> {
     logger.info({ params }, 'Measure workflow execute request received');
-    
+
     try {
       // Validate required parameters
       if (!params.workflow) {
@@ -1055,42 +1080,45 @@ export class RequestHandler {
           error: 'Missing required parameter: workflow is required',
         };
       }
-      
+
       // Import the measure application workflow module
-      const measureApplicationWorkflow = (await import('../services/measureApplicationWorkflow')).default;
-      
+      const measureApplicationWorkflow = (await import('../services/measureApplicationWorkflow'))
+        .default;
+
       // Download required measures if requested
       if (params.downloadMeasures) {
-        const downloadedMeasures = await measureApplicationWorkflow.downloadWorkflowMeasures(params.workflow);
-        
+        const downloadedMeasures = await measureApplicationWorkflow.downloadWorkflowMeasures(
+          params.workflow,
+        );
+
         if (downloadedMeasures.length > 0) {
           logger.info({ downloadedMeasures }, 'Downloaded measures for workflow');
         }
       }
-      
+
       // Execute the workflow
       const result = await measureApplicationWorkflow.executeMeasureWorkflow(params.workflow);
-      
+
       // Generate a report if requested
       let report;
       if (params.generateReport) {
         report = measureApplicationWorkflow.generateWorkflowReport(result);
       }
-      
+
       return {
         success: result.success,
-        output: result.success 
-          ? `Successfully executed workflow: ${params.workflow.name}` 
+        output: result.success
+          ? `Successfully executed workflow: ${params.workflow.name}`
           : `Workflow execution failed: ${result.error}`,
         error: result.error,
         data: {
           workflowResult: result,
-          report
-        }
+          report,
+        },
       };
     } catch (error) {
       logger.error({ params, error }, 'Error executing measure workflow');
-      
+
       return {
         success: false,
         output: '',
@@ -1098,15 +1126,17 @@ export class RequestHandler {
       };
     }
   }
-  
+
   /**
    * Handler for openstudio.measure.workflow.validate
    * @param params Request parameters
    * @returns Command result
    */
-  private async handleMeasureWorkflowValidate(params: any): Promise<CommandResult> {
+  private async handleMeasureWorkflowValidate(
+    params: Record<string, unknown>,
+  ): Promise<CommandResult> {
     logger.info({ params }, 'Measure workflow validate request received');
-    
+
     try {
       // Validate required parameters
       if (!params.workflow) {
@@ -1116,10 +1146,10 @@ export class RequestHandler {
           error: 'Missing required parameter: workflow is required',
         };
       }
-      
+
       // Import the measure application workflow module
       const measureApplicationWorkflow = await import('../services/measureApplicationWorkflow');
-      
+
       // Check if we're creating from a template or custom workflow
       if (params.templateName) {
         // Validate required parameters for template workflow
@@ -1130,20 +1160,20 @@ export class RequestHandler {
             error: 'Missing required parameter: modelPath is required for template workflows',
           };
         }
-        
+
         // Create workflow from template
         const workflow = await measureApplicationWorkflow.createWorkflowFromTemplate(
           params.templateName,
-          params.modelPath
+          params.modelPath,
         );
-        
+
         return {
           success: true,
           output: `Successfully created ${workflow.name} workflow for model ${params.modelPath}`,
           data: {
             workflow,
-            templateName: params.templateName
-          }
+            templateName: params.templateName,
+          },
         };
       } else if (params.workflow) {
         // Custom workflow provided directly
@@ -1155,7 +1185,7 @@ export class RequestHandler {
             error: 'Invalid workflow: name, inputModelPath, and steps are required',
           };
         }
-        
+
         // Create custom workflow
         const workflow = measureApplicationWorkflow.createCustomWorkflow(
           params.workflow.name,
@@ -1165,14 +1195,14 @@ export class RequestHandler {
           {
             stopOnError: params.workflow.stopOnError,
             createBackup: params.workflow.createBackup,
-            validate: params.workflow.validate
-          }
+            validate: params.workflow.validate,
+          },
         );
-        
+
         return {
           success: true,
           output: `Successfully created custom workflow ${workflow.name} for model ${workflow.inputModelPath}`,
-          data: { workflow }
+          data: { workflow },
         };
       } else {
         return {
@@ -1183,7 +1213,7 @@ export class RequestHandler {
       }
     } catch (error) {
       logger.error({ params, error }, 'Error creating measure workflow');
-      
+
       return {
         success: false,
         output: '',
@@ -1191,5 +1221,4 @@ export class RequestHandler {
       };
     }
   }
-
 }

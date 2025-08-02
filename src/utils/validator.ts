@@ -24,14 +24,14 @@ ajv.addFormat('file-path', {
   validate: (path: string) => {
     // Basic path validation - could be enhanced for platform-specific rules
     return !path.includes('..') && isPathSafe(path);
-  }
+  },
 });
 
 ajv.addFormat('command', {
   type: 'string',
   validate: (command: string) => {
     return isCommandSafe(command);
-  }
+  },
 });
 
 // Base schema for all MCP requests
@@ -77,17 +77,17 @@ export function validateMCPRequest(request: unknown): request is MCPRequest {
 export function generateRequestSchema(
   type: string,
   requiredParams: Record<string, { type: string; description: string }>,
-  optionalParams: Record<string, { type: string; description: string }> = {}
+  optionalParams: Record<string, { type: string; description: string }> = {},
 ): JSONSchemaType<MCPRequest> {
   // Clone the base schema
   const schema = JSON.parse(JSON.stringify(baseRequestSchema)) as JSONSchemaType<MCPRequest>;
-  
+
   // Set the type
   schema.properties.type = { type: 'string', enum: [type] };
-  
+
   // Add required parameters
   schema.properties.params.required = Object.keys(requiredParams);
-  
+
   // Add parameter properties
   for (const [name, config] of Object.entries(requiredParams)) {
     schema.properties.params.properties[name] = {
@@ -95,7 +95,7 @@ export function generateRequestSchema(
       description: config.description,
     };
   }
-  
+
   // Add optional parameters
   for (const [name, config] of Object.entries(optionalParams)) {
     schema.properties.params.properties[name] = {
@@ -104,7 +104,7 @@ export function generateRequestSchema(
       nullable: true,
     };
   }
-  
+
   return schema;
 }
 
@@ -118,11 +118,11 @@ export function generateRequestSchema(
 export function createRequestValidator(
   type: string,
   requiredParams: Record<string, { type: string; description: string }>,
-  optionalParams: Record<string, { type: string; description: string }> = {}
+  optionalParams: Record<string, { type: string; description: string }> = {},
 ): (request: unknown) => request is MCPRequest {
   const schema = generateRequestSchema(type, requiredParams, optionalParams);
   const validate = ajv.compile(schema);
-  
+
   return (request: unknown): request is MCPRequest => {
     const valid = validate(request);
     if (!valid) {

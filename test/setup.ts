@@ -10,10 +10,10 @@ beforeAll(() => {
 // Clean up test directories after all tests
 afterAll(() => {
   cleanupTestDirectories();
-  
+
   // Make sure all mocks are restored
   vi.restoreAllMocks();
-  
+
   // Force garbage collection if possible
   if (global.gc) {
     global.gc();
@@ -25,15 +25,15 @@ vi.mock('fs', async () => {
   const actual = await vi.importActual('fs');
   const readdirMock = vi.fn();
   readdirMock.mockResolvedValue = vi.fn().mockReturnValue(readdirMock);
-  
+
   const statMock = vi.fn();
   statMock.mockImplementation = vi.fn().mockReturnValue(statMock);
   statMock.mockResolvedValue = vi.fn().mockReturnValue(statMock);
-  
+
   const existsSyncMock = vi.fn();
   const readFileSyncMock = vi.fn();
   const writeFileSyncMock = vi.fn();
-  
+
   return {
     ...actual,
     existsSync: existsSyncMock,
@@ -63,7 +63,7 @@ import testConfig from './testConfig';
 
 // Mock config before logger
 vi.mock('../src/config', () => ({
-  default: testConfig
+  default: testConfig,
 }));
 
 // Mock pino first to prevent logger initialization issues
@@ -76,11 +76,11 @@ vi.mock('pino', () => {
     trace: vi.fn(),
     fatal: vi.fn(),
     child: vi.fn().mockReturnThis(),
-    level: 'info'
+    level: 'info',
   };
   return {
     default: vi.fn(() => mockLogger),
-    __esModule: true
+    __esModule: true,
   };
 });
 
@@ -94,12 +94,12 @@ vi.mock('../src/utils/logger', () => {
     trace: vi.fn(),
     fatal: vi.fn(),
     child: vi.fn().mockReturnThis(),
-    level: 'info'
+    level: 'info',
   };
 
   return {
     default: loggerMock,
-    __esModule: true
+    __esModule: true,
   };
 });
 
@@ -113,7 +113,7 @@ vi.mock('../src/utils/index', () => {
     trace: vi.fn(),
     fatal: vi.fn(),
     child: vi.fn().mockReturnThis(),
-    level: 'info'
+    level: 'info',
   };
 
   return {
@@ -141,29 +141,38 @@ vi.mock('../src/utils/index', () => {
         summary: 'Processed output summary',
         details: output,
         warnings: [],
-        errors: []
+        errors: [],
       })),
       extractWarnings: vi.fn(() => []),
       extractErrors: vi.fn(() => []),
-      formatOutput: vi.fn((output) => output)
+      formatOutput: vi.fn((output) => output),
     },
     modelTemplates: {
-      createModelFromTemplate: vi.fn(() => Promise.resolve({
-        success: true,
-        output: 'Model created successfully',
-        data: { modelPath: '/path/to/model.osm' }
-      })),
+      createModelFromTemplate: vi.fn(() =>
+        Promise.resolve({
+          success: true,
+          output: 'Model created successfully',
+          data: { modelPath: '/path/to/model.osm' },
+        }),
+      ),
       getAvailableTemplates: vi.fn(() => ['office', 'residential']),
       getTemplateOptions: vi.fn(() => ({})),
       validateTemplateOptions: vi.fn(() => ({ valid: true })),
-      getAvailableTemplateTypes: vi.fn(() => ['empty', 'office', 'residential', 'retail', 'warehouse', 'school']),
+      getAvailableTemplateTypes: vi.fn(() => [
+        'empty',
+        'office',
+        'residential',
+        'retail',
+        'warehouse',
+        'school',
+      ]),
       getAvailableBuildingTypes: vi.fn((templateType) => {
         if (templateType === 'office') return ['SmallOffice', 'MediumOffice', 'LargeOffice'];
         if (templateType === 'residential') return ['SingleFamily', 'Apartment'];
         return [];
       }),
       getAvailableBuildingVintages: vi.fn(() => ['Pre1980', '1980-2004', 'Post2004']),
-      getAvailableClimateZones: vi.fn(() => ['1A', '2A', '3A', '4A', '5A'])
+      getAvailableClimateZones: vi.fn(() => ['1A', '2A', '3A', '4A', '5A']),
     },
     validation: {
       validateRequest: vi.fn((request) => {
@@ -177,8 +186,8 @@ vi.mock('../src/utils/index', () => {
       validateOutputPath: vi.fn(() => ({ valid: true })),
       validateSimulationOptions: vi.fn(() => ({ valid: true })),
       isPathSafe: vi.fn(() => true),
-      getValidationSchema: vi.fn(() => ({}))
-    }
+      getValidationSchema: vi.fn(() => ({})),
+    },
   };
 });
 
@@ -197,46 +206,46 @@ vi.mock('../src/utils/fileOperations', async () => {
     copyFile: vi.fn(),
     moveFile: vi.fn(),
     isPathInAllowedDirectories: vi.fn(() => true),
-    getAbsolutePath: vi.fn(path => path),
+    getAbsolutePath: vi.fn((path) => path),
     listFiles: vi.fn(),
     listDirectories: vi.fn(),
     validatePath: vi.fn(() => ({ valid: true })),
     generateTempFilePath: vi.fn(),
     createTempFile: vi.fn(),
     createTempDirectory: vi.fn(),
-    deleteDirectory: vi.fn()
+    deleteDirectory: vi.fn(),
   };
-  
+
   return {
     default: fileOperationsMock,
-    ...fileOperationsMock
+    ...fileOperationsMock,
   };
 });
 
 // Mock WebSocket
 vi.mock('ws', () => {
-  const MockWebSocket = function() {
+  const MockWebSocket = function () {
     return {
       on: vi.fn(),
       send: vi.fn(),
       close: vi.fn(),
       terminate: vi.fn(),
-      readyState: 1
+      readyState: 1,
     };
   };
-  
+
   MockWebSocket.CONNECTING = 0;
   MockWebSocket.OPEN = 1;
   MockWebSocket.CLOSING = 2;
   MockWebSocket.CLOSED = 3;
-  
+
   return {
     default: MockWebSocket,
     WebSocket: MockWebSocket,
     Server: vi.fn(() => ({
       on: vi.fn(),
-      close: vi.fn()
-    }))
+      close: vi.fn(),
+    })),
   };
 });
 
@@ -247,20 +256,20 @@ vi.mock('axios', async () => {
     post: vi.fn(),
     interceptors: {
       request: { use: vi.fn() },
-      response: { use: vi.fn() }
-    }
+      response: { use: vi.fn() },
+    },
   };
-  
+
   const mockAxios = {
     get: vi.fn(),
     post: vi.fn(),
     create: vi.fn(() => mockAxiosInstance),
-    isAxiosError: vi.fn((error) => error && error.isAxiosError === true)
+    isAxiosError: vi.fn((error) => error && error.isAxiosError === true),
   };
-  
+
   return {
     default: mockAxios,
-    ...mockAxios
+    ...mockAxios,
   };
 });
 
@@ -274,10 +283,10 @@ vi.mock('../src/utils/openStudioCommands', async () => {
     getSimulationStatus: vi.fn(),
     stopSimulation: vi.fn(),
   };
-  
+
   return {
     default: commandsMock,
-    ...commandsMock
+    ...commandsMock,
   };
 });
 
@@ -291,7 +300,7 @@ vi.mock('../src/utils/commandExecutor', async () => {
   const getActiveProcessesMock = vi.fn(() => []);
   const checkOpenStudioAvailabilityMock = vi.fn(() => Promise.resolve(true));
   const getOpenStudioVersionMock = vi.fn(() => Promise.resolve('3.5.0'));
-  
+
   return {
     default: {
       executeCommand: executeCommandMock,
@@ -331,7 +340,7 @@ vi.mock('../src/utils/validation', () => {
     validateOutputPath: vi.fn(() => ({ valid: true })),
     validateSimulationOptions: vi.fn(() => ({ valid: true })),
     isPathSafe: vi.fn(() => true),
-    getValidationSchema: vi.fn(() => ({}))
+    getValidationSchema: vi.fn(() => ({})),
   };
 
   return {
@@ -342,7 +351,7 @@ vi.mock('../src/utils/validation', () => {
     validateOutputPath: validationMock.validateOutputPath,
     validateSimulationOptions: validationMock.validateSimulationOptions,
     isPathSafe: validationMock.isPathSafe,
-    default: validationMock
+    default: validationMock,
   };
 });
 
@@ -357,12 +366,12 @@ vi.mock('../src/services/measureManager', async () => {
     getMeasureInfo: vi.fn(() => Promise.resolve({})),
     validateMeasure: vi.fn(() => Promise.resolve({ valid: true })),
     downloadMeasure: vi.fn(() => Promise.resolve()),
-    updateMeasure: vi.fn(() => Promise.resolve())
+    updateMeasure: vi.fn(() => Promise.resolve()),
   };
 
   return {
     default: measureManagerMock,
-    ...measureManagerMock
+    ...measureManagerMock,
   };
 });
 
@@ -382,14 +391,16 @@ vi.mock('../src/services/fileOperations', async () => {
     appendFile: vi.fn(() => Promise.resolve()),
     listFiles: vi.fn(() => Promise.resolve([])),
     getFileStats: vi.fn(() => Promise.resolve({ size: 1024, mtime: new Date() })),
-    generateTempFilePath: vi.fn((prefix = 'temp', extension = '.tmp') => `/tmp/${prefix}-${Date.now()}${extension}`),
+    generateTempFilePath: vi.fn(
+      (prefix = 'temp', extension = '.tmp') => `/tmp/${prefix}-${Date.now()}${extension}`,
+    ),
     createTempFile: vi.fn(() => Promise.resolve('/tmp/temp-file.tmp')),
-    createTempDirectory: vi.fn(() => Promise.resolve('/tmp/temp-dir'))
+    createTempDirectory: vi.fn(() => Promise.resolve('/tmp/temp-dir')),
   };
 
   return {
     default: fileOpsMock,
-    ...fileOpsMock
+    ...fileOpsMock,
   };
 });
 
@@ -403,28 +414,30 @@ vi.mock('../src/services/bclApiClient', async () => {
     authenticate: vi.fn(() => Promise.resolve()),
     isAuthenticated: vi.fn(() => true),
     recommendMeasures: vi.fn(() => Promise.resolve([])),
-    updateMeasure: vi.fn(() => Promise.resolve(true))
+    updateMeasure: vi.fn(() => Promise.resolve(true)),
   }));
 
   return {
     default: BCLApiClientMock,
-    BCLApiClient: BCLApiClientMock
+    BCLApiClient: BCLApiClientMock,
   };
 });
 
 // Mock command processor
 vi.mock('../src/services/commandProcessor', async () => {
   const CommandProcessorMock = vi.fn().mockImplementation(() => ({
-    processCommand: vi.fn((command, args) => Promise.resolve({
-      success: true,
-      output: 'Command processed successfully',
-      data: { result: 'success' }
-    }))
+    processCommand: vi.fn((_command, _args) =>
+      Promise.resolve({
+        success: true,
+        output: 'Command processed successfully',
+        data: { result: 'success' },
+      }),
+    ),
   }));
 
   return {
     default: CommandProcessorMock,
-    OpenStudioCommandProcessor: CommandProcessorMock
+    OpenStudioCommandProcessor: CommandProcessorMock,
   };
 });
 
@@ -436,10 +449,10 @@ beforeEach(() => {
 // Global afterEach hook
 afterEach(() => {
   vi.restoreAllMocks();
-  
+
   // Clear all timers to prevent hanging tests
   vi.clearAllTimers();
-  
+
   // Force garbage collection if possible to clean up WebSocket connections
   if (global.gc) {
     global.gc();

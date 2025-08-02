@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { 
-  formatEnergyConsumptionByFuelType, 
-  formatSimulationSummary, 
+import {
+  formatEnergyConsumptionByFuelType,
+  formatSimulationSummary,
   generateSimulationDashboardHTML,
   formatSimulationResultForAPI,
-  generateSimulationResultsCSV
+  generateSimulationResultsCSV,
 } from '../src/utils/visualizationHelpers';
 import { SimulationResult, SimulationStatus } from '../src/services/simulationService';
 
@@ -16,7 +16,7 @@ describe('Visualization Helpers', () => {
     status: SimulationStatus.COMPLETE,
     parameters: {
       modelPath: '/path/to/model.osm',
-      outputDirectory: '/path/to/output'
+      outputDirectory: '/path/to/output',
     },
     startTime: new Date('2023-01-01T10:00:00Z'),
     endTime: new Date('2023-01-01T10:05:00Z'),
@@ -33,15 +33,20 @@ describe('Visualization Helpers', () => {
     districtCoolingConsumption: 80.7,
     cpuUsage: 50,
     memoryUsage: 2048,
-    output: 'Simulation output text'
+    output: 'Simulation output text',
   };
 
   describe('formatEnergyConsumptionByFuelType', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should format energy consumption by fuel type correctly', () => {
       const result = formatEnergyConsumptionByFuelType(mockSimulationResult);
-      
-      expect(result.labels).toEqual(['Electricity', 'Natural Gas', 'District Heating', 'District Cooling']);
+
+      expect(result.labels).toEqual([
+        'Electricity',
+        'Natural Gas',
+        'District Heating',
+        'District Cooling',
+      ]);
       expect(result.values).toEqual([45000, 200.5, 100.2, 80.7]);
       expect(result.units).toEqual(['kWh', 'GJ', 'GJ', 'GJ']);
       expect(result.colors.length).toBe(4);
@@ -51,11 +56,11 @@ describe('Visualization Helpers', () => {
       const partialResult: SimulationResult = {
         ...mockSimulationResult,
         electricityConsumption: undefined,
-        naturalGasConsumption: undefined
+        naturalGasConsumption: undefined,
       };
 
       const result = formatEnergyConsumptionByFuelType(partialResult);
-      
+
       expect(result.labels).toEqual(['District Heating', 'District Cooling']);
       expect(result.values).toEqual([100.2, 80.7]);
       expect(result.units).toEqual(['GJ', 'GJ']);
@@ -64,10 +69,10 @@ describe('Visualization Helpers', () => {
   });
 
   describe('formatSimulationSummary', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should format simulation summary correctly', () => {
       const result = formatSimulationSummary(mockSimulationResult);
-      
+
       expect(result.eui).toBe(120.5);
       expect(result.totalSiteEnergy).toBe(500.3);
       expect(result.totalSourceEnergy).toBe(750.8);
@@ -82,10 +87,10 @@ describe('Visualization Helpers', () => {
   });
 
   describe('generateSimulationDashboardHTML', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should generate HTML dashboard', () => {
       const html = generateSimulationDashboardHTML(mockSimulationResult);
-      
+
       expect(html).toContain('<!DOCTYPE html>');
       expect(html).toContain('Simulation Results Dashboard');
       expect(html).toContain('Energy Use Intensity');
@@ -105,27 +110,32 @@ describe('Visualization Helpers', () => {
   });
 
   describe('formatSimulationResultForAPI', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should format simulation result for API response', () => {
       const result = formatSimulationResultForAPI(mockSimulationResult);
-      
+
       expect(result.id).toBe('sim-123456');
       expect(result.status).toBe(SimulationStatus.COMPLETE);
       expect(result.duration).toBe(300000);
       expect(result.summary.eui).toBe(120.5);
       expect(result.summary.totalSiteEnergy).toBe(500.3);
       expect(result.summary.electricityConsumption).toBe(45000);
-      expect(result.energyByFuelType.labels).toEqual(['Electricity', 'Natural Gas', 'District Heating', 'District Cooling']);
+      expect(result.energyByFuelType.labels).toEqual([
+        'Electricity',
+        'Natural Gas',
+        'District Heating',
+        'District Cooling',
+      ]);
       expect(result.warnings).toEqual(['Warning 1']);
       expect(result.errors).toEqual(['Error 1', 'Error 2']);
     });
   });
 
   describe('generateSimulationResultsCSV', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should generate CSV data for simulation results', () => {
       const csv = generateSimulationResultsCSV(mockSimulationResult);
-      
+
       expect(csv).toContain('Metric,Value,Unit');
       expect(csv).toContain('Energy Use Intensity,120.5,kWh/m²/year');
       expect(csv).toContain('Total Site Energy,500.3,GJ');
@@ -140,11 +150,11 @@ describe('Visualization Helpers', () => {
       const partialResult: SimulationResult = {
         ...mockSimulationResult,
         eui: undefined,
-        totalSiteEnergy: undefined
+        totalSiteEnergy: undefined,
       };
 
       const csv = generateSimulationResultsCSV(partialResult);
-      
+
       expect(csv).not.toContain('Energy Use Intensity');
       expect(csv).not.toContain('Total Site Energy');
       expect(csv).toContain('Total Source Energy,750.8,GJ');

@@ -13,144 +13,152 @@ const sandbox = sinon.createSandbox();
 describe('ModelCreationService', () => {
   vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
   let modelCreationService: ModelCreationService;
-  
+
   beforeEach(() => {
     // Reset the sandbox before each test
     sandbox.restore();
-    
+
     // Create a new instance of the service
     modelCreationService = new ModelCreationService();
-    
+
     // Stub the modelTemplates.createModelFromTemplate method
     sandbox.stub(modelTemplates, 'createModelFromTemplate').resolves({
       success: true,
       output: 'Model created successfully',
       data: {
         modelPath: '/path/to/model.osm',
-        templateType: 'office'
-      }
+        templateType: 'office',
+      },
     });
   });
-  
+
   afterEach(() => {
     // Restore all stubs
     sandbox.restore();
   });
-  
+
   describe('createModel', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should create a model with default options', async () => {
-    return 
+      return;
       const result = await modelCreationService.createModel({
         templateType: 'office',
         outputDirectory: '/path/to',
-        modelName: 'model.osm'
+        modelName: 'model.osm',
       });
-      
+
       expect(result.success).to.be.true;
       expect(result.modelPath).to.equal('/path/to/model.osm');
       expect(modelTemplates.createModelFromTemplate.calledOnce).to.be.true;
       expect(modelTemplates.createModelFromTemplate.firstCall.args[0]).to.equal('office');
-      expect(modelTemplates.createModelFromTemplate.firstCall.args[1]).to.equal('/path/to/model.osm');
+      expect(modelTemplates.createModelFromTemplate.firstCall.args[1]).to.equal(
+        '/path/to/model.osm',
+      );
     });
-    
+
     it('should create a model with custom template options', async () => {
-    return 
+      return;
       const templateOptions = {
         buildingType: 'LargeOffice',
         floorArea: 10000,
-        numStories: 10
+        numStories: 10,
       };
-      
+
       const result = await modelCreationService.createModel({
         templateType: 'office',
         templateOptions,
         outputDirectory: '/path/to',
-        modelName: 'custom.osm'
+        modelName: 'custom.osm',
       });
-      
+
       expect(result.success).to.be.true;
       expect(result.modelPath).to.equal('/path/to/custom.osm');
       expect(modelTemplates.createModelFromTemplate.calledOnce).to.be.true;
       expect(modelTemplates.createModelFromTemplate.firstCall.args[0]).to.equal('office');
-      expect(modelTemplates.createModelFromTemplate.firstCall.args[1]).to.equal('/path/to/custom.osm');
-      expect(modelTemplates.createModelFromTemplate.firstCall.args[2]).to.deep.equal(templateOptions);
+      expect(modelTemplates.createModelFromTemplate.firstCall.args[1]).to.equal(
+        '/path/to/custom.osm',
+      );
+      expect(modelTemplates.createModelFromTemplate.firstCall.args[2]).to.deep.equal(
+        templateOptions,
+      );
     });
-    
+
     it('should handle errors from template creation', async () => {
-    return; //  Stub the createModelFromTemplate method to return an error
+      return; //  Stub the createModelFromTemplate method to return an error
       (modelTemplates.createModelFromTemplate as sinon.SinonStub).resolves({
         success: false,
         output: '',
-        error: 'Failed to create model'
+        error: 'Failed to create model',
       });
-      
+
       const result = await modelCreationService.createModel({
         templateType: 'office',
         outputDirectory: '/path/to',
-        modelName: 'model.osm'
+        modelName: 'model.osm',
       });
-      
+
       expect(result.success).to.be.false;
       expect(result.error).to.equal('Failed to create model from template');
     });
-    
+
     it('should handle exceptions', async () => {
-    return 
+      return;
       // Stub the createModelFromTemplate method to throw an error
-      (modelTemplates.createModelFromTemplate as sinon.SinonStub).rejects(new Error('Unexpected error'));
-      
+      (modelTemplates.createModelFromTemplate as sinon.SinonStub).rejects(
+        new Error('Unexpected error'),
+      );
+
       const result = await modelCreationService.createModel({
         templateType: 'office',
         outputDirectory: '/path/to',
-        modelName: 'model.osm'
+        modelName: 'model.osm',
       });
-      
+
       expect(result.success).to.be.false;
       expect(result.error).to.equal('Unexpected error');
     });
   });
-  
+
   describe('getDefaultTemplateOptions', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should return default options for office template', () => {
       const options = modelCreationService.getDefaultTemplateOptions('office');
-      
+
       expect(options).to.be.an('object');
       expect(options.buildingType).to.equal('MediumOffice');
       expect(options.buildingVintage).to.equal('90.1-2013');
       expect(options.floorArea).to.equal(5000);
       expect(options.numStories).to.equal(3);
     });
-    
+
     it('should return default options for residential template', () => {
       const options = modelCreationService.getDefaultTemplateOptions('residential');
-      
+
       expect(options).to.be.an('object');
       expect(options.buildingType).to.equal('MidriseApartment');
       expect(options.buildingVintage).to.equal('90.1-2013');
       expect(options.floorArea).to.equal(3000);
       expect(options.numStories).to.equal(4);
     });
-    
+
     it('should return empty object for empty template', () => {
       const options = modelCreationService.getDefaultTemplateOptions('empty');
-      
+
       expect(options).to.be.an('object');
       expect(Object.keys(options)).to.have.lengthOf(0);
     });
   });
-  
+
   describe('getAvailableTemplateTypes', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should return all available template types', () => {
       // Stub the modelTemplates.getAvailableTemplateTypes method
-      sandbox.stub(modelTemplates, 'getAvailableTemplateTypes').returns([
-        'empty', 'office', 'residential', 'retail', 'warehouse', 'school', 'hospital'
-      ]);
-      
+      sandbox
+        .stub(modelTemplates, 'getAvailableTemplateTypes')
+        .returns(['empty', 'office', 'residential', 'retail', 'warehouse', 'school', 'hospital']);
+
       const types = modelCreationService.getAvailableTemplateTypes();
-      
+
       expect(types).to.be.an('array');
       expect(types).to.include('empty');
       expect(types).to.include('office');
@@ -161,17 +169,17 @@ describe('ModelCreationService', () => {
       expect(types).to.include('hospital');
     });
   });
-  
+
   describe('getAvailableBuildingTypes', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should return building types for office template', () => {
       // Stub the modelTemplates.getAvailableBuildingTypes method
-      sandbox.stub(modelTemplates, 'getAvailableBuildingTypes').returns([
-        'SmallOffice', 'MediumOffice', 'LargeOffice'
-      ]);
-      
+      sandbox
+        .stub(modelTemplates, 'getAvailableBuildingTypes')
+        .returns(['SmallOffice', 'MediumOffice', 'LargeOffice']);
+
       const types = modelCreationService.getAvailableBuildingTypes('office');
-      
+
       expect(types).to.be.an('array');
       expect(types).to.include('SmallOffice');
       expect(types).to.include('MediumOffice');

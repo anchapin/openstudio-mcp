@@ -1,6 +1,6 @@
 /**
  * Visualization Helpers
- * 
+ *
  * This module provides helper functions for formatting simulation results
  * and other data for visualization purposes.
  */
@@ -88,7 +88,9 @@ export interface SimulationSummary {
  * @param simulationResult Simulation result
  * @returns Energy consumption by fuel type formatted for visualization
  */
-export function formatEnergyConsumptionByFuelType(simulationResult: SimulationResult): EnergyConsumptionByFuelType {
+export function formatEnergyConsumptionByFuelType(
+  simulationResult: SimulationResult,
+): EnergyConsumptionByFuelType {
   const labels: string[] = [];
   const values: number[] = [];
   const units: string[] = [];
@@ -130,7 +132,7 @@ export function formatEnergyConsumptionByFuelType(simulationResult: SimulationRe
     labels,
     values,
     units,
-    colors
+    colors,
   };
 }
 
@@ -152,7 +154,7 @@ export function formatSimulationSummary(simulationResult: SimulationResult): Sim
     districtCoolingConsumption: simulationResult.districtCoolingConsumption,
     simulationDuration: simulationResult.duration,
     warningCount: simulationResult.warnings.length,
-    errorCount: simulationResult.errors.length
+    errorCount: simulationResult.errors.length,
   };
 }
 
@@ -164,7 +166,7 @@ export function formatSimulationSummary(simulationResult: SimulationResult): Sim
 export function generateSimulationDashboardHTML(simulationResult: SimulationResult): string {
   const summary = formatSimulationSummary(simulationResult);
   const energyByFuelType = formatEnergyConsumptionByFuelType(simulationResult);
-  
+
   // Create a simple HTML dashboard
   return `
 <!DOCTYPE html>
@@ -277,69 +279,103 @@ export function generateSimulationDashboardHTML(simulationResult: SimulationResu
     </div>
 
     <div class="summary-cards">
-      ${summary.eui !== undefined ? `
+      ${
+        summary.eui !== undefined
+          ? `
       <div class="card">
         <h3>Energy Use Intensity</h3>
         <div class="value">${summary.eui.toFixed(2)}</div>
         <div class="unit">kWh/m²/year</div>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
 
-      ${summary.totalSiteEnergy !== undefined ? `
+      ${
+        summary.totalSiteEnergy !== undefined
+          ? `
       <div class="card">
         <h3>Total Site Energy</h3>
         <div class="value">${summary.totalSiteEnergy.toFixed(2)}</div>
         <div class="unit">GJ</div>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
 
-      ${summary.electricityConsumption !== undefined ? `
+      ${
+        summary.electricityConsumption !== undefined
+          ? `
       <div class="card">
         <h3>Electricity Consumption</h3>
         <div class="value">${summary.electricityConsumption.toFixed(2)}</div>
         <div class="unit">kWh</div>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
 
-      ${summary.naturalGasConsumption !== undefined ? `
+      ${
+        summary.naturalGasConsumption !== undefined
+          ? `
       <div class="card">
         <h3>Natural Gas Consumption</h3>
         <div class="value">${summary.naturalGasConsumption.toFixed(2)}</div>
         <div class="unit">GJ</div>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
     </div>
 
-    ${energyByFuelType.labels.length > 0 ? `
+    ${
+      energyByFuelType.labels.length > 0
+        ? `
     <div class="chart-container">
       <h2>Energy Consumption by Fuel Type</h2>
       <div id="energy-by-fuel-type-chart" style="height: 400px;"></div>
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 
-    ${simulationResult.warnings.length > 0 || simulationResult.errors.length > 0 ? `
+    ${
+      simulationResult.warnings.length > 0 || simulationResult.errors.length > 0
+        ? `
     <div class="warnings-errors">
-      ${simulationResult.warnings.length > 0 ? `
+      ${
+        simulationResult.warnings.length > 0
+          ? `
       <h2>Warnings (${simulationResult.warnings.length})</h2>
       <ul>
-        ${simulationResult.warnings.map(warning => `<li>${warning}</li>`).join('')}
+        ${simulationResult.warnings.map((warning) => `<li>${warning}</li>`).join('')}
       </ul>
-      ` : ''}
+      `
+          : ''
+      }
 
-      ${simulationResult.errors.length > 0 ? `
+      ${
+        simulationResult.errors.length > 0
+          ? `
       <h2>Errors (${simulationResult.errors.length})</h2>
       <ul>
-        ${simulationResult.errors.map(error => `<li>${error}</li>`).join('')}
+        ${simulationResult.errors.map((error) => `<li>${error}</li>`).join('')}
       </ul>
-      ` : ''}
+      `
+          : ''
+      }
     </div>
-    ` : ''}
+    `
+        : ''
+    }
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     // Energy by fuel type chart
-    ${energyByFuelType.labels.length > 0 ? `
+    ${
+      energyByFuelType.labels.length > 0
+        ? `
     const energyByFuelTypeCtx = document.getElementById('energy-by-fuel-type-chart').getContext('2d');
     new Chart(energyByFuelTypeCtx, {
       type: 'bar',
@@ -349,7 +385,7 @@ export function generateSimulationDashboardHTML(simulationResult: SimulationResu
           label: 'Energy Consumption',
           data: ${JSON.stringify(energyByFuelType.values)},
           backgroundColor: ${JSON.stringify(energyByFuelType.colors)},
-          borderColor: ${JSON.stringify(energyByFuelType.colors.map(color => color))},
+          borderColor: ${JSON.stringify(energyByFuelType.colors.map((color) => color))},
           borderWidth: 1
         }]
       },
@@ -367,7 +403,9 @@ export function generateSimulationDashboardHTML(simulationResult: SimulationResu
         }
       }
     });
-    ` : ''}
+    `
+        : ''
+    }
   </script>
 </body>
 </html>
@@ -398,15 +436,15 @@ export function formatSimulationResultForAPI(simulationResult: SimulationResult)
       districtHeatingConsumption: summary.districtHeatingConsumption,
       districtCoolingConsumption: summary.districtCoolingConsumption,
       warningCount: summary.warningCount,
-      errorCount: summary.errorCount
+      errorCount: summary.errorCount,
     },
     energyByFuelType: {
       labels: energyByFuelType.labels,
       values: energyByFuelType.values,
-      units: energyByFuelType.units
+      units: energyByFuelType.units,
     },
     warnings: simulationResult.warnings,
-    errors: simulationResult.errors
+    errors: simulationResult.errors,
   };
 }
 
@@ -417,39 +455,39 @@ export function formatSimulationResultForAPI(simulationResult: SimulationResult)
  */
 export function generateSimulationResultsCSV(simulationResult: SimulationResult): string {
   const summary = formatSimulationSummary(simulationResult);
-  
+
   // Create CSV header
   let csv = 'Metric,Value,Unit\n';
-  
+
   // Add summary metrics
   if (summary.eui !== undefined) {
     csv += `Energy Use Intensity,${summary.eui},kWh/m²/year\n`;
   }
-  
+
   if (summary.totalSiteEnergy !== undefined) {
     csv += `Total Site Energy,${summary.totalSiteEnergy},GJ\n`;
   }
-  
+
   if (summary.totalSourceEnergy !== undefined) {
     csv += `Total Source Energy,${summary.totalSourceEnergy},GJ\n`;
   }
-  
+
   if (summary.electricityConsumption !== undefined) {
     csv += `Electricity Consumption,${summary.electricityConsumption},kWh\n`;
   }
-  
+
   if (summary.naturalGasConsumption !== undefined) {
     csv += `Natural Gas Consumption,${summary.naturalGasConsumption},GJ\n`;
   }
-  
+
   if (summary.districtHeatingConsumption !== undefined) {
     csv += `District Heating Consumption,${summary.districtHeatingConsumption},GJ\n`;
   }
-  
+
   if (summary.districtCoolingConsumption !== undefined) {
     csv += `District Cooling Consumption,${summary.districtCoolingConsumption},GJ\n`;
   }
-  
+
   return csv;
 }
 
@@ -458,5 +496,5 @@ export default {
   formatSimulationSummary,
   generateSimulationDashboardHTML,
   formatSimulationResultForAPI,
-  generateSimulationResultsCSV
+  generateSimulationResultsCSV,
 };

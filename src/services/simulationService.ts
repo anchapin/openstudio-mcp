@@ -1,6 +1,6 @@
 /**
  * Simulation service
- * 
+ *
  * This service is responsible for configuring, executing, monitoring, and processing
  * OpenStudio simulations.
  */
@@ -55,7 +55,7 @@ export enum SimulationStatus {
   /** Simulation failed */
   FAILED = 'failed',
   /** Simulation was cancelled */
-  CANCELLED = 'cancelled'
+  CANCELLED = 'cancelled',
 }
 
 /**
@@ -107,11 +107,14 @@ export interface SimulationResult {
 /**
  * Active simulations
  */
-const activeSimulations = new Map<string, {
-  result: SimulationResult;
-  processId?: number;
-  monitorInterval?: NodeJS.Timeout;
-}>();
+const activeSimulations = new Map<
+  string,
+  {
+    result: SimulationResult;
+    processId?: number;
+    monitorInterval?: NodeJS.Timeout;
+  }
+>();
 
 /**
  * Generate a unique simulation ID
@@ -129,7 +132,7 @@ function generateSimulationId(): string {
 export async function runSimulation(parameters: SimulationParameters): Promise<SimulationResult> {
   // Generate a unique simulation ID
   const simulationId = generateSimulationId();
-  
+
   // Create the initial simulation result
   const simulationResult: SimulationResult = {
     id: simulationId,
@@ -138,91 +141,92 @@ export async function runSimulation(parameters: SimulationParameters): Promise<S
     startTime: new Date(),
     outputDirectory: parameters.outputDirectory || path.dirname(parameters.modelPath),
     errors: [],
-    warnings: []
+    warnings: [],
   };
-  
+
   // Store the simulation in the active simulations map
   activeSimulations.set(simulationId, {
-    result: simulationResult
+    result: simulationResult,
   });
-  
+
   try {
     logger.info({ simulationId, parameters }, 'Starting simulation');
-    
+
     // Update simulation status
     simulationResult.status = SimulationStatus.RUNNING;
-    
+
     // Prepare simulation arguments
     const args = ['--run'];
-    
+
     // Add weather file if specified
     if (parameters.weatherFile) {
       args.push('--weather', parameters.weatherFile);
     }
-    
+
     // Add output directory if specified
     if (parameters.outputDirectory) {
       args.push('--output', parameters.outputDirectory);
-      
+
       // Ensure the output directory exists
       if (!fs.existsSync(parameters.outputDirectory)) {
         fs.mkdirSync(parameters.outputDirectory, { recursive: true });
       }
     }
-    
+
     // Add design days only flag if specified
     if (parameters.options?.designDaysOnly) {
       args.push('--design-days-only');
     }
-    
+
     // Add annual simulation flag if specified
     if (parameters.options?.annualSimulation) {
       args.push('--annual');
     }
-    
+
     // Add fast run flag if specified
     if (parameters.options?.fastRun) {
       args.push('--fast');
     }
-    
+
     // Add radiative calculations flag if specified
     if (parameters.options?.includeRadiance) {
       args.push('--include-radiance');
     }
-    
+
     // Add parallel flag and jobs if specified
     if (parameters.options?.parallel) {
       args.push('--parallel');
-      
+
       if (parameters.options?.jobs && parameters.options.jobs > 0) {
         args.push('--jobs', parameters.options.jobs.toString());
       }
     }
-    
+
     // Add the model path
     args.push(parameters.modelPath);
-    
+
     // Set up execution options
     const executionOptions = {
       timeout: parameters.options?.timeout || config.openStudio.timeout || 600000, // 10 minutes default
       memoryLimit: parameters.options?.memoryLimit || 4096, // 4GB default
     };
-    
+
     // Run the simulation
     const result = await openStudioCommands.runSimulation(
       parameters.modelPath,
       parameters.weatherFile,
-      parameters.outputDirectory
+      parameters.outputDirectory,
     );
-    
+
     // Update the simulation result
     simulationResult.endTime = new Date();
-    simulationResult.duration = simulationResult.endTime.getTime() - simulationResult.startTime.getTime();
+    simulationResult.duration =
+      simulationResult.endTime.getTime() - simulationResult.startTime.getTime();
     simulationResult.output = result.output;
-    
+
     if (result.success) {
       simulationResult.status = SimulationStatus.COMPLETE;
-      
+
       // Copy data from the command result
       if (result.data) {
         simulationResult.errors = result.data.errors || [];
@@ -235,31 +239,35 @@ export async function runSimulation(parameters: SimulationParameters): Promise<S
         simulationResult.districtHeatingConsumption = result.data.districtHeatingConsumption;
         simulationResult.districtCoolingConsumption = result.data.districtCoolingConsumption;
       }
-      
-      logger.info({ simulationId, duration: simulationResult.duration }, 'Simulation completed successfully');
+
+      logger.info(
+        { simulationId, duration: simulationResult.duration },
+        'Simulation completed successfully',
+      );
     } else {
       simulationResult.status = SimulationStatus.FAILED;
       simulationResult.error = result.error;
-      
+
       logger.warn({ simulationId, error: result.error }, 'Simulation failed');
     }
-    
+
     // Remove the simulation from the active simulations map
     activeSimulations.delete(simulationId);
-    
+
     return simulationResult;
   } catch (error) {
     // Update the simulation result
     simulationResult.status = SimulationStatus.FAILED;
     simulationResult.endTime = new Date();
-    simulationResult.duration = simulationResult.endTime.getTime() - simulationResult.startTime.getTime();
+    simulationResult.duration =
+      simulationResult.endTime.getTime() - simulationResult.startTime.getTime();
     simulationResult.error = error instanceof Error ? error.message : String(error);
-    
+
     logger.error({ simulationId, error }, 'Error running simulation');
-    
+
     // Remove the simulation from the active simulations map
     activeSimulations.delete(simulationId);
-    
+
     return simulationResult;
   }
 }
@@ -279,7 +287,7 @@ export function getSimulationStatus(simulationId: string): SimulationResult | un
  * @returns Array of active simulation results
  */
 export function getActiveSimulations(): SimulationResult[] {
-  return Array.from(activeSimulations.values()).map(simulation => simulation.result);
+  return Array.from(activeSimulations.values()).map((simulation) => simulation.result);
 }
 
 /**
@@ -289,32 +297,33 @@ export function getActiveSimulations(): SimulationResult[] {
  */
 export function cancelSimulation(simulationId: string): boolean {
   const simulation = activeSimulations.get(simulationId);
-  
+
   if (!simulation) {
     return false;
   }
-  
+
   try {
     // Stop monitoring
     if (simulation.monitorInterval) {
       clearInterval(simulation.monitorInterval);
     }
-    
+
     // Kill the process if it exists
     if (simulation.processId) {
       process.kill(simulation.processId);
     }
-    
+
     // Update the simulation result
     simulation.result.status = SimulationStatus.CANCELLED;
     simulation.result.endTime = new Date();
-    simulation.result.duration = simulation.result.endTime.getTime() - simulation.result.startTime.getTime();
-    
+    simulation.result.duration =
+      simulation.result.endTime.getTime() - simulation.result.startTime.getTime();
+
     logger.info({ simulationId }, 'Simulation cancelled');
-    
+
     // Remove the simulation from the active simulations map
     activeSimulations.delete(simulationId);
-    
+
     return true;
   } catch (error) {
     logger.error({ simulationId, error }, 'Error cancelling simulation');
@@ -332,51 +341,54 @@ export function processSimulationResults(simulationResult: SimulationResult): Si
   if (simulationResult.status !== SimulationStatus.COMPLETE) {
     return simulationResult;
   }
-  
+
   try {
     // Check if the output directory exists
     if (!simulationResult.outputDirectory || !fs.existsSync(simulationResult.outputDirectory)) {
       return simulationResult;
     }
-    
+
     // Look for additional result files
     const outputDirectory = simulationResult.outputDirectory;
-    
+
     // Check for EnergyPlus output files
     const eplusOutPath = path.join(outputDirectory, 'eplusout.err');
     if (fs.existsSync(eplusOutPath)) {
       try {
         const eplusErr = fs.readFileSync(eplusOutPath, 'utf8');
-        
+
         // Extract additional warnings and errors
-        const errorMatches = eplusErr.match(/\\*\\* Severe  \\*\\* ([^\\n]+)/g);
+        const errorMatches = eplusErr.match(/\\*\\* Severe {2}\\*\\* ([^\\n]+)/g);
         if (errorMatches) {
           simulationResult.errors = [
             ...simulationResult.errors,
-            ...errorMatches.map(match => match.replace(/\\*\\* Severe  \\*\\* /, '').trim())
+            ...errorMatches.map((match) => match.replace(/\\*\\* Severe {2}\\*\\* /, '').trim()),
           ];
         }
-        
+
         const warningMatches = eplusErr.match(/\\*\\* Warning \\*\\* ([^\\n]+)/g);
         if (warningMatches) {
           simulationResult.warnings = [
             ...simulationResult.warnings,
-            ...warningMatches.map(match => match.replace(/\\*\\* Warning \\*\\* /, '').trim())
+            ...warningMatches.map((match) => match.replace(/\\*\\* Warning \\*\\* /, '').trim()),
           ];
         }
       } catch (error) {
         logger.warn({ outputDirectory, error }, 'Error reading EnergyPlus error file');
       }
     }
-    
+
     // Check for SQL output file for more detailed results
     const sqlPath = path.join(outputDirectory, 'eplusout.sql');
     if (fs.existsSync(sqlPath)) {
       // In a real implementation, we would use the OpenStudio API to read the SQL file
       // and extract more detailed results. For now, we'll just note that it exists.
-      logger.debug({ outputDirectory }, 'SQL output file found, but detailed parsing not implemented');
+      logger.debug(
+        { outputDirectory },
+        'SQL output file found, but detailed parsing not implemented',
+      );
     }
-    
+
     return simulationResult;
   } catch (error) {
     logger.error({ simulationResult, error }, 'Error processing simulation results');
@@ -389,28 +401,31 @@ export function processSimulationResults(simulationResult: SimulationResult): Si
  * @param modelPath Path to the model file
  * @returns Promise that resolves with the recommended simulation parameters
  */
-export async function configureSimulationParameters(modelPath: string): Promise<SimulationParameters> {
+export async function configureSimulationParameters(
+  modelPath: string,
+): Promise<SimulationParameters> {
   try {
     // Get model information
     const modelInfo = await openStudioCommands.getModelInfo(modelPath, 'detailed');
-    
+
     // Configure parameters based on model complexity
     const parameters: SimulationParameters = {
       modelPath,
-      outputDirectory: path.join(path.dirname(modelPath), 'run')
+      outputDirectory: path.join(path.dirname(modelPath), 'run'),
     };
-    
+
     // Use the model's weather file if available
     if (modelInfo.data?.weatherFile) {
       parameters.weatherFile = modelInfo.data.weatherFile;
     }
-    
+
     // Configure options based on model complexity
     const options: SimulationParameters['options'] = {};
-    
+
     // Determine if the model is complex
-    const isComplex = (modelInfo.data?.spaces || 0) > 50 || (modelInfo.data?.thermalZones || 0) > 20;
-    
+    const isComplex =
+      (modelInfo.data?.spaces || 0) > 50 || (modelInfo.data?.thermalZones || 0) > 20;
+
     if (isComplex) {
       // For complex models, use parallel processing and higher resource limits
       options.parallel = true;
@@ -422,21 +437,21 @@ export async function configureSimulationParameters(modelPath: string): Promise<
       options.timeout = 600000; // 10 minutes
       options.memoryLimit = 4096; // 4GB
     }
-    
+
     parameters.options = options;
-    
+
     return parameters;
   } catch (error) {
     logger.error({ modelPath, error }, 'Error configuring simulation parameters');
-    
+
     // Return default parameters
     return {
       modelPath,
       outputDirectory: path.join(path.dirname(modelPath), 'run'),
       options: {
         timeout: 600000, // 10 minutes
-        memoryLimit: 4096 // 4GB
-      }
+        memoryLimit: 4096, // 4GB
+      },
     };
   }
 }
@@ -448,37 +463,40 @@ export async function configureSimulationParameters(modelPath: string): Promise<
  */
 function monitorSimulation(simulationId: string, processId: number): void {
   const simulation = activeSimulations.get(simulationId);
-  
+
   if (!simulation) {
     return;
   }
-  
+
   // Set up monitoring interval
   const monitorInterval = setInterval(async () => {
     try {
       // Get resource usage
       const usage = await getProcessResourceUsage(processId);
-      
+
       if (usage) {
         // Update simulation result with resource usage
         simulation.result.cpuUsage = usage.cpuUsage;
         simulation.result.memoryUsage = usage.memoryUsage;
-        
-        logger.debug({ 
-          simulationId, 
-          processId, 
-          cpuUsage: usage.cpuUsage, 
-          memoryUsage: usage.memoryUsage 
-        }, 'Simulation resource usage');
+
+        logger.debug(
+          {
+            simulationId,
+            processId,
+            cpuUsage: usage.cpuUsage,
+            memoryUsage: usage.memoryUsage,
+          },
+          'Simulation resource usage',
+        );
       }
     } catch (error) {
       logger.warn({ simulationId, processId, error }, 'Error monitoring simulation');
-      
+
       // Stop monitoring if the process no longer exists
       clearInterval(monitorInterval);
     }
   }, 5000); // Check every 5 seconds
-  
+
   // Store the monitor interval
   simulation.monitorInterval = monitorInterval;
 }
@@ -516,27 +534,36 @@ export function exportResultsAsCSV(simulationResult: SimulationResult): string {
  * @param outputPath Path to save the dashboard HTML file (optional, defaults to outputDirectory/dashboard.html)
  * @returns Path to the saved dashboard file
  */
-export function saveResultsDashboard(simulationResult: SimulationResult, outputPath?: string): string {
+export function saveResultsDashboard(
+  simulationResult: SimulationResult,
+  outputPath?: string,
+): string {
   const dashboardPath = outputPath || path.join(simulationResult.outputDirectory, 'dashboard.html');
-  
+
   try {
     // Generate the dashboard HTML
     const dashboardHTML = generateHTMLDashboard(simulationResult);
-    
+
     // Ensure the directory exists
     const directory = path.dirname(dashboardPath);
     if (!fs.existsSync(directory)) {
       fs.mkdirSync(directory, { recursive: true });
     }
-    
+
     // Write the dashboard to a file
     fs.writeFileSync(dashboardPath, dashboardHTML);
-    
-    logger.info({ simulationId: simulationResult.id, dashboardPath }, 'Saved simulation results dashboard');
-    
+
+    logger.info(
+      { simulationId: simulationResult.id, dashboardPath },
+      'Saved simulation results dashboard',
+    );
+
     return dashboardPath;
   } catch (error) {
-    logger.error({ simulationId: simulationResult.id, error }, 'Error saving simulation results dashboard');
+    logger.error(
+      { simulationId: simulationResult.id, error },
+      'Error saving simulation results dashboard',
+    );
     throw error;
   }
 }
@@ -549,25 +576,28 @@ export function saveResultsDashboard(simulationResult: SimulationResult, outputP
  */
 export function saveResultsAsCSV(simulationResult: SimulationResult, outputPath?: string): string {
   const csvPath = outputPath || path.join(simulationResult.outputDirectory, 'results.csv');
-  
+
   try {
     // Generate the CSV data
     const csvData = exportResultsAsCSV(simulationResult);
-    
+
     // Ensure the directory exists
     const directory = path.dirname(csvPath);
     if (!fs.existsSync(directory)) {
       fs.mkdirSync(directory, { recursive: true });
     }
-    
+
     // Write the CSV to a file
     fs.writeFileSync(csvPath, csvData);
-    
+
     logger.info({ simulationId: simulationResult.id, csvPath }, 'Saved simulation results as CSV');
-    
+
     return csvPath;
   } catch (error) {
-    logger.error({ simulationId: simulationResult.id, error }, 'Error saving simulation results as CSV');
+    logger.error(
+      { simulationId: simulationResult.id, error },
+      'Error saving simulation results as CSV',
+    );
     throw error;
   }
 }
@@ -584,5 +614,5 @@ export default {
   generateHTMLDashboard,
   exportResultsAsCSV,
   saveResultsDashboard,
-  saveResultsAsCSV
+  saveResultsAsCSV,
 };

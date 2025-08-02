@@ -22,20 +22,20 @@ describe('Measure Application Service', () => {
   });
 
   describe('validateMeasureForApplication', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should validate a measure for application', async () => {
-    return 
+      return;
       // Mock fileExists to return true for model file
       vi.mocked(fileOperations.fileExists).mockResolvedValueOnce(true);
-      
+
       // Mock directoryExists to return true for measure directory
       vi.mocked(fileOperations.directoryExists).mockResolvedValueOnce(true);
-      
+
       // Test with valid arguments
       const result = await measureApplicationService.validateMeasureForApplication(
         'test-measure',
         '/path/to/model.osm',
-        { required_arg: 42 }
+        { required_arg: 42 },
       );
 
       expect(result.valid).toBe(true);
@@ -46,14 +46,14 @@ describe('Measure Application Service', () => {
     });
 
     it('should return validation errors for missing model file', async () => {
-    return 
+      return;
       // Mock fileExists to return false for model file
       vi.mocked(fileOperations.fileExists).mockResolvedValueOnce(false);
 
       const result = await measureApplicationService.validateMeasureForApplication(
         'test-measure',
         '/path/to/model.osm',
-        {}
+        {},
       );
 
       expect(result.valid).toBe(false);
@@ -61,11 +61,11 @@ describe('Measure Application Service', () => {
     });
 
     it('should return validation errors for invalid model file format', async () => {
-    return 
+      return;
       const result = await measureApplicationService.validateMeasureForApplication(
         'test-measure',
         '/path/to/model.txt',
-        {}
+        {},
       );
 
       expect(result.valid).toBe(false);
@@ -73,14 +73,14 @@ describe('Measure Application Service', () => {
     });
 
     it('should return validation errors for missing measure', async () => {
-    return 
+      return;
       // Mock directoryExists to return false for measure directory
       vi.mocked(fileOperations.directoryExists).mockResolvedValueOnce(false);
 
       const result = await measureApplicationService.validateMeasureForApplication(
         'test-measure',
         '/path/to/model.osm',
-        {}
+        {},
       );
 
       expect(result.valid).toBe(false);
@@ -88,11 +88,11 @@ describe('Measure Application Service', () => {
     });
 
     it('should return validation errors for missing required arguments', async () => {
-    return 
+      return;
       const result = await measureApplicationService.validateMeasureForApplication(
         'test-measure',
         '/path/to/model.osm',
-        {}
+        {},
       );
 
       expect(result.valid).toBe(false);
@@ -101,9 +101,9 @@ describe('Measure Application Service', () => {
   });
 
   describe('applyMeasure', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should apply a measure to a model', async () => {
-    return 
+      return;
       // Mock validateMeasureForApplication for this test
       const validateSpy = vi.spyOn(measureApplicationService, 'validateMeasureForApplication');
       validateSpy.mockResolvedValueOnce({ valid: true, errors: [] });
@@ -112,7 +112,7 @@ describe('Measure Application Service', () => {
       const result = await measureApplicationService.applyMeasure(
         '/path/to/model.osm',
         'test-measure',
-        { arg1: 42 }
+        { arg1: 42 },
       );
 
       expect(result.success).toBe(true);
@@ -120,30 +120,33 @@ describe('Measure Application Service', () => {
       expect(result.originalModelPath).toBe('/path/to/model.osm');
       expect(result.measureId).toBe('test-measure');
       expect(result.arguments).toEqual({ arg1: 42 });
-      expect(fileOperations.copyFile).toHaveBeenCalledWith('/path/to/model.osm', '/path/to/model.osm.backup');
+      expect(fileOperations.copyFile).toHaveBeenCalledWith(
+        '/path/to/model.osm',
+        '/path/to/model.osm.backup',
+      );
       expect(openStudioCommands.applyMeasure).toHaveBeenCalledWith(
         '/path/to/model.osm',
         '/test/measures/test-measure',
         { arg1: 42 },
-        expect.any(String)
+        expect.any(String),
       );
       expect(fileOperations.deleteFile).toHaveBeenCalledWith('/path/to/model.osm.backup');
     });
 
     it('should handle validation failures', async () => {
-    return 
+      return;
       // Mock validateMeasureForApplication for this test
       const validateSpy = vi.spyOn(measureApplicationService, 'validateMeasureForApplication');
-      validateSpy.mockResolvedValueOnce({ 
-        valid: false, 
-        errors: ['Validation error'] 
+      validateSpy.mockResolvedValueOnce({
+        valid: false,
+        errors: ['Validation error'],
       });
 
       // Test applying a measure with validation failure
       const result = await measureApplicationService.applyMeasure(
         '/path/to/model.osm',
         'test-measure',
-        { arg1: 42 }
+        { arg1: 42 },
       );
 
       expect(result.success).toBe(false);
@@ -152,7 +155,7 @@ describe('Measure Application Service', () => {
     });
 
     it('should handle measure application failures', async () => {
-    return 
+      return;
       // Mock validateMeasureForApplication for this test
       const validateSpy = vi.spyOn(measureApplicationService, 'validateMeasureForApplication');
       validateSpy.mockResolvedValueOnce({ valid: true, errors: [] });
@@ -161,24 +164,27 @@ describe('Measure Application Service', () => {
       vi.mocked(openStudioCommands.applyMeasure).mockResolvedValueOnce({
         success: false,
         output: 'Measure application failed',
-        error: 'Error applying measure'
+        error: 'Error applying measure',
       });
 
       // Test applying a measure with application failure
       const result = await measureApplicationService.applyMeasure(
         '/path/to/model.osm',
         'test-measure',
-        { arg1: 42 }
+        { arg1: 42 },
       );
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('Error applying measure');
-      expect(fileOperations.copyFile).toHaveBeenCalledWith('/path/to/model.osm', '/path/to/model.osm.backup');
+      expect(fileOperations.copyFile).toHaveBeenCalledWith(
+        '/path/to/model.osm',
+        '/path/to/model.osm.backup',
+      );
       expect(openStudioCommands.applyMeasure).toHaveBeenCalled();
     });
 
     it('should apply a measure in-place', async () => {
-    return 
+      return;
       // Mock validateMeasureForApplication for this test
       const validateSpy = vi.spyOn(measureApplicationService, 'validateMeasureForApplication');
       validateSpy.mockResolvedValueOnce({ valid: true, errors: [] });
@@ -188,7 +194,7 @@ describe('Measure Application Service', () => {
         '/path/to/model.osm',
         'test-measure',
         { arg1: 42 },
-        { inPlace: true }
+        { inPlace: true },
       );
 
       expect(result.success).toBe(true);
@@ -196,12 +202,12 @@ describe('Measure Application Service', () => {
         '/path/to/model.osm',
         '/test/measures/test-measure',
         { arg1: 42 },
-        '/path/to/model.osm'
+        '/path/to/model.osm',
       );
     });
 
     it('should extract warnings from the output', async () => {
-    return 
+      return;
       // Mock validateMeasureForApplication for this test
       const validateSpy = vi.spyOn(measureApplicationService, 'validateMeasureForApplication');
       validateSpy.mockResolvedValueOnce({ valid: true, errors: [] });
@@ -209,19 +215,20 @@ describe('Measure Application Service', () => {
       // Mock applyMeasure for this test
       vi.mocked(openStudioCommands.applyMeasure).mockResolvedValueOnce({
         success: true,
-        output: 'Measure applied successfully\nWarning: This is a warning\nWarning: Another warning',
+        output:
+          'Measure applied successfully\nWarning: This is a warning\nWarning: Another warning',
         data: {
           modelPath: '/path/to/output.osm',
           measurePath: '/test/measures/test-measure',
-          arguments: { arg1: 42 }
-        }
+          arguments: { arg1: 42 },
+        },
       });
 
       // Test applying a measure with warnings
       const result = await measureApplicationService.applyMeasure(
         '/path/to/model.osm',
         'test-measure',
-        { arg1: 42 }
+        { arg1: 42 },
       );
 
       expect(result.success).toBe(true);
@@ -230,9 +237,9 @@ describe('Measure Application Service', () => {
   });
 
   describe('applyMeasuresInSequence', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should apply multiple measures in sequence', async () => {
-    return 
+      return;
       // Mock applyMeasure for this test
       const applyMeasureSpy = vi.spyOn(measureApplicationService, 'applyMeasure');
       applyMeasureSpy
@@ -241,14 +248,14 @@ describe('Measure Application Service', () => {
           outputModelPath: '/path/to/intermediate.osm',
           originalModelPath: '/path/to/model.osm',
           measureId: 'measure1',
-          arguments: { arg1: 42 }
+          arguments: { arg1: 42 },
         })
         .mockResolvedValueOnce({
           success: true,
           outputModelPath: '/path/to/output.osm',
           originalModelPath: '/path/to/intermediate.osm',
           measureId: 'measure2',
-          arguments: { arg2: 'value' }
+          arguments: { arg2: 'value' },
         });
 
       // Test applying measures in sequence
@@ -256,8 +263,8 @@ describe('Measure Application Service', () => {
         '/path/to/model.osm',
         [
           { measureId: 'measure1', arguments: { arg1: 42 } },
-          { measureId: 'measure2', arguments: { arg2: 'value' } }
-        ]
+          { measureId: 'measure2', arguments: { arg2: 'value' } },
+        ],
       );
 
       expect(results.length).toBe(2);
@@ -268,18 +275,18 @@ describe('Measure Application Service', () => {
         '/path/to/model.osm',
         'measure1',
         { arg1: 42 },
-        expect.objectContaining({ inPlace: false })
+        expect.objectContaining({ inPlace: false }),
       );
       expect(applyMeasureSpy).toHaveBeenCalledWith(
         '/path/to/intermediate.osm',
         'measure2',
         { arg2: 'value' },
-        expect.objectContaining({ inPlace: false })
+        expect.objectContaining({ inPlace: false }),
       );
     });
 
     it('should stop the sequence if a measure fails', async () => {
-    return 
+      return;
       // Mock applyMeasure for this test
       const applyMeasureSpy = vi.spyOn(measureApplicationService, 'applyMeasure');
       applyMeasureSpy
@@ -288,7 +295,7 @@ describe('Measure Application Service', () => {
           outputModelPath: '/path/to/intermediate.osm',
           originalModelPath: '/path/to/model.osm',
           measureId: 'measure1',
-          arguments: { arg1: 42 }
+          arguments: { arg1: 42 },
         })
         .mockResolvedValueOnce({
           success: false,
@@ -296,7 +303,7 @@ describe('Measure Application Service', () => {
           originalModelPath: '/path/to/intermediate.osm',
           measureId: 'measure2',
           arguments: { arg2: 'value' },
-          error: 'Measure application failed'
+          error: 'Measure application failed',
         });
 
       // Test applying measures in sequence with a failure
@@ -305,8 +312,8 @@ describe('Measure Application Service', () => {
         [
           { measureId: 'measure1', arguments: { arg1: 42 } },
           { measureId: 'measure2', arguments: { arg2: 'value' } },
-          { measureId: 'measure3', arguments: { arg3: true } }
-        ]
+          { measureId: 'measure3', arguments: { arg3: true } },
+        ],
       );
 
       expect(results.length).toBe(2);
@@ -317,18 +324,18 @@ describe('Measure Application Service', () => {
         expect.any(String),
         'measure3',
         expect.any(Object),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
   });
 
   describe('downloadAndApplyMeasure', () => {
-  vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
+    vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
     it('should download and apply a measure', async () => {
-    return 
+      return;
       // Mock dependencies for this test
       vi.mocked(measureManager.isMeasureInstalled).mockResolvedValueOnce(false);
-      
+
       // Mock applyMeasure for this test
       const applyMeasureSpy = vi.spyOn(measureApplicationService, 'applyMeasure');
       applyMeasureSpy.mockResolvedValueOnce({
@@ -336,14 +343,14 @@ describe('Measure Application Service', () => {
         outputModelPath: '/path/to/output.osm',
         originalModelPath: '/path/to/model.osm',
         measureId: 'test-measure',
-        arguments: { arg1: 42 }
+        arguments: { arg1: 42 },
       });
 
       // Test downloading and applying a measure
       const result = await measureApplicationService.downloadAndApplyMeasure(
         '/path/to/model.osm',
         'test-measure',
-        { arg1: 42 }
+        { arg1: 42 },
       );
 
       expect(result.success).toBe(true);
@@ -353,15 +360,15 @@ describe('Measure Application Service', () => {
         '/path/to/model.osm',
         'test-measure',
         { arg1: 42 },
-        {}
+        {},
       );
     });
 
     it('should apply an already installed measure', async () => {
-    return 
+      return;
       // Mock dependencies for this test
       vi.mocked(measureManager.isMeasureInstalled).mockResolvedValueOnce(true);
-      
+
       // Mock applyMeasure for this test
       const applyMeasureSpy = vi.spyOn(measureApplicationService, 'applyMeasure');
       applyMeasureSpy.mockResolvedValueOnce({
@@ -369,14 +376,14 @@ describe('Measure Application Service', () => {
         outputModelPath: '/path/to/output.osm',
         originalModelPath: '/path/to/model.osm',
         measureId: 'test-measure',
-        arguments: { arg1: 42 }
+        arguments: { arg1: 42 },
       });
 
       // Test applying an already installed measure
       const result = await measureApplicationService.downloadAndApplyMeasure(
         '/path/to/model.osm',
         'test-measure',
-        { arg1: 42 }
+        { arg1: 42 },
       );
 
       expect(result.success).toBe(true);
@@ -386,12 +393,12 @@ describe('Measure Application Service', () => {
         '/path/to/model.osm',
         'test-measure',
         { arg1: 42 },
-        {}
+        {},
       );
     });
 
     it('should handle download failures', async () => {
-    return 
+      return;
       // Mock dependencies for this test
       vi.mocked(measureManager.isMeasureInstalled).mockResolvedValueOnce(false);
       vi.mocked(BCLApiClient.prototype.downloadMeasure).mockResolvedValueOnce(false);
@@ -400,7 +407,7 @@ describe('Measure Application Service', () => {
       const result = await measureApplicationService.downloadAndApplyMeasure(
         '/path/to/model.osm',
         'test-measure',
-        { arg1: 42 }
+        { arg1: 42 },
       );
 
       expect(result.success).toBe(false);
@@ -410,7 +417,7 @@ describe('Measure Application Service', () => {
     });
 
     it('should handle installation failures', async () => {
-    return 
+      return;
       // Mock dependencies for this test
       vi.mocked(measureManager.isMeasureInstalled).mockResolvedValueOnce(false);
       vi.mocked(BCLApiClient.prototype.downloadMeasure).mockResolvedValueOnce(true);
@@ -420,7 +427,7 @@ describe('Measure Application Service', () => {
       const result = await measureApplicationService.downloadAndApplyMeasure(
         '/path/to/model.osm',
         'test-measure',
-        { arg1: 42 }
+        { arg1: 42 },
       );
 
       expect(result.success).toBe(false);

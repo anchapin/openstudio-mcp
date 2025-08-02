@@ -13,7 +13,7 @@ import { createResourceMonitor } from '../src/utils/resourceMonitor';
 vi.mock('child_process', () => ({
   exec: vi.fn(),
   spawn: vi.fn(),
-  default: {}
+  default: {},
 }));
 
 vi.mock('fs', async () => {
@@ -23,21 +23,21 @@ vi.mock('fs', async () => {
     existsSync: vi.fn().mockReturnValue(true),
     statSync: vi.fn().mockReturnValue({
       mode: 0o755,
-      isDirectory: () => false
+      isDirectory: () => false,
     }),
-    default: {}
+    default: {},
   };
 });
 
 vi.mock('../src/utils/resourceMonitor', () => ({
   createResourceMonitor: vi.fn(),
-  default: {}
+  default: {},
 }));
 
 vi.mock('../src/utils/validation', () => ({
   isCommandSafe: vi.fn().mockReturnValue(true),
   isPathSafe: vi.fn().mockReturnValue(true),
-  default: {}
+  default: {},
 }));
 
 describe('Command Validation', () => {
@@ -50,7 +50,7 @@ describe('Command Validation', () => {
     // Mock validateCommand to use our implementation
     const validateCommandSpy = vi.spyOn(commandExecutor, 'validateCommand');
     validateCommandSpy.mockImplementation(() => ({ valid: true }));
-    
+
     const result = commandExecutor.validateCommand('openstudio');
     expect(result.valid).toBe(true);
   });
@@ -58,11 +58,11 @@ describe('Command Validation', () => {
   it('should reject disallowed commands', () => {
     // Mock validateCommand to return invalid for disallowed commands
     const validateCommandSpy = vi.spyOn(commandExecutor, 'validateCommand');
-    validateCommandSpy.mockImplementation(() => ({ 
-      valid: false, 
-      error: 'Command not allowed: rm. Only specific commands are permitted.' 
+    validateCommandSpy.mockImplementation(() => ({
+      valid: false,
+      error: 'Command not allowed: rm. Only specific commands are permitted.',
     }));
-    
+
     const result = commandExecutor.validateCommand('rm');
     expect(result.valid).toBe(false);
     expect(result.error).toContain('Command not allowed');
@@ -72,7 +72,7 @@ describe('Command Validation', () => {
     // Mock validateCommand to use our implementation
     const validateCommandSpy = vi.spyOn(commandExecutor, 'validateCommand');
     validateCommandSpy.mockImplementation(() => ({ valid: true }));
-    
+
     const result = commandExecutor.validateCommand('openstudio', ['run', '--model', 'test.osm']);
     expect(result.valid).toBe(true);
   });
@@ -80,11 +80,11 @@ describe('Command Validation', () => {
   it('should reject dangerous arguments', () => {
     // Mock validateCommand to return invalid for dangerous arguments
     const validateCommandSpy = vi.spyOn(commandExecutor, 'validateCommand');
-    validateCommandSpy.mockImplementation(() => ({ 
-      valid: false, 
-      error: 'Argument contains potentially dangerous pattern: rm -rf' 
+    validateCommandSpy.mockImplementation(() => ({
+      valid: false,
+      error: 'Argument contains potentially dangerous pattern: rm -rf',
     }));
-    
+
     const result = commandExecutor.validateCommand('openstudio', ['run', '; rm -rf /']);
     expect(result.valid).toBe(false);
     expect(result.error).toContain('potentially dangerous pattern');
@@ -98,11 +98,11 @@ describe('Command Execution', () => {
   });
 
   it('should execute a command successfully', async () => {
-    return 
+    return;
     // Mock validation to return valid
     const validateCommandSpy = vi.spyOn(commandExecutor, 'validateCommand');
     validateCommandSpy.mockReturnValue({ valid: true });
-    
+
     // Mock executeCommand to return success
     const executeCommandSpy = vi.spyOn(commandExecutor, 'executeCommand');
     executeCommandSpy.mockResolvedValue({
@@ -110,21 +110,21 @@ describe('Command Execution', () => {
       exitCode: 0,
       stdout: 'success',
       stderr: '',
-      executionTime: 100
+      executionTime: 100,
     });
-    
+
     const result = await commandExecutor.executeCommand('echo', ['test']);
-    
+
     expect(result.success).toBe(true);
     expect(result.exitCode).toBe(0);
   });
 
   it('should handle command execution errors', async () => {
-    return 
+    return;
     // Mock validation to return valid
     const validateCommandSpy = vi.spyOn(commandExecutor, 'validateCommand');
     validateCommandSpy.mockReturnValue({ valid: true });
-    
+
     // Mock executeCommand to return error
     const executeCommandSpy = vi.spyOn(commandExecutor, 'executeCommand');
     executeCommandSpy.mockResolvedValue({
@@ -133,21 +133,21 @@ describe('Command Execution', () => {
       stdout: '',
       stderr: 'error',
       error: 'Command failed',
-      executionTime: 100
+      executionTime: 100,
     });
-    
+
     const result = await commandExecutor.executeCommand('invalid', []);
-    
+
     expect(result.success).toBe(false);
     expect(result.exitCode).toBe(1);
   });
 
   it('should handle complex commands with streaming', async () => {
-    return 
+    return;
     // Mock validation to return valid
     const validateCommandSpy = vi.spyOn(commandExecutor, 'validateCommand');
     validateCommandSpy.mockReturnValue({ valid: true });
-    
+
     // Mock executeCommand to return success
     const executeCommandSpy = vi.spyOn(commandExecutor, 'executeCommand');
     executeCommandSpy.mockResolvedValue({
@@ -155,15 +155,15 @@ describe('Command Execution', () => {
       exitCode: 0,
       stdout: 'output data',
       stderr: 'error data',
-      executionTime: 100
+      executionTime: 100,
     });
-    
+
     // Execute command with streaming options
     const result = await commandExecutor.executeCommand('echo', ['test'], {
       captureStdout: true,
-      captureStderr: true
+      captureStderr: true,
     });
-    
+
     expect(result.success).toBe(true);
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toBe('output data');
@@ -171,11 +171,11 @@ describe('Command Execution', () => {
   });
 
   it('should handle process errors', async () => {
-    return 
+    return;
     // Mock validation to return valid
     const validateCommandSpy = vi.spyOn(commandExecutor, 'validateCommand');
     validateCommandSpy.mockReturnValue({ valid: true });
-    
+
     // Mock executeCommand to return error
     const executeCommandSpy = vi.spyOn(commandExecutor, 'executeCommand');
     executeCommandSpy.mockResolvedValue({
@@ -184,11 +184,11 @@ describe('Command Execution', () => {
       stdout: '',
       stderr: '',
       error: 'Process error',
-      executionTime: 100
+      executionTime: 100,
     });
-    
+
     const result = await commandExecutor.executeCommand('echo', ['test']);
-    
+
     expect(result.success).toBe(false);
     expect(result.error).toBe('Process error');
   });
@@ -201,7 +201,7 @@ describe('OpenStudio Command Execution', () => {
   });
 
   it('should execute an OpenStudio command', async () => {
-    return 
+    return;
     // Mock executeCommand to return success
     const executeCommandSpy = vi.spyOn(commandExecutor, 'executeCommand');
     executeCommandSpy.mockResolvedValue({
@@ -209,9 +209,9 @@ describe('OpenStudio Command Execution', () => {
       exitCode: 0,
       stdout: 'OpenStudio 3.5.0',
       stderr: '',
-      executionTime: 100
+      executionTime: 100,
     });
-    
+
     // Mock executeOpenStudioCommand to use our mock
     const executeOpenStudioCommandSpy = vi.spyOn(commandExecutor, 'executeOpenStudioCommand');
     executeOpenStudioCommandSpy.mockImplementation(async () => {
@@ -220,18 +220,18 @@ describe('OpenStudio Command Execution', () => {
         exitCode: 0,
         stdout: 'OpenStudio 3.5.0',
         stderr: '',
-        executionTime: 100
+        executionTime: 100,
       };
     });
-    
+
     const result = await commandExecutor.executeOpenStudioCommand('--version');
-    
+
     expect(result.success).toBe(true);
     expect(result.stdout).toBe('OpenStudio 3.5.0');
   });
 
   it('should check OpenStudio availability', async () => {
-    return 
+    return;
     // Mock executeOpenStudioCommand to return success
     const executeOpenStudioCommandSpy = vi.spyOn(commandExecutor, 'executeOpenStudioCommand');
     executeOpenStudioCommandSpy.mockResolvedValue({
@@ -239,20 +239,20 @@ describe('OpenStudio Command Execution', () => {
       exitCode: 0,
       stdout: 'OpenStudio 3.5.0',
       stderr: '',
-      executionTime: 100
+      executionTime: 100,
     });
-    
+
     // Mock checkOpenStudioAvailability to use our mock
     const checkOpenStudioAvailabilitySpy = vi.spyOn(commandExecutor, 'checkOpenStudioAvailability');
     checkOpenStudioAvailabilitySpy.mockImplementation(async () => true);
-    
+
     const result = await commandExecutor.checkOpenStudioAvailability();
-    
+
     expect(result).toBe(true);
   });
 
   it('should get OpenStudio version', async () => {
-    return 
+    return;
     // Mock executeOpenStudioCommand to return success
     const executeOpenStudioCommandSpy = vi.spyOn(commandExecutor, 'executeOpenStudioCommand');
     executeOpenStudioCommandSpy.mockResolvedValue({
@@ -260,15 +260,15 @@ describe('OpenStudio Command Execution', () => {
       exitCode: 0,
       stdout: 'OpenStudio 3.5.0',
       stderr: '',
-      executionTime: 100
+      executionTime: 100,
     });
-    
+
     // Mock getOpenStudioVersion to use our mock
     const getOpenStudioVersionSpy = vi.spyOn(commandExecutor, 'getOpenStudioVersion');
     getOpenStudioVersionSpy.mockImplementation(async () => 'OpenStudio 3.5.0');
-    
+
     const result = await commandExecutor.getOpenStudioVersion();
-    
+
     expect(result).toBe('OpenStudio 3.5.0');
   });
 });
@@ -280,55 +280,50 @@ describe('Resource Management', () => {
   });
 
   it('should track active processes', async () => {
-    return 
+    return;
     // Mock getActiveProcessCount
     const getActiveProcessCountSpy = vi.spyOn(commandExecutor, 'getActiveProcessCount');
     getActiveProcessCountSpy.mockReturnValueOnce(1).mockReturnValueOnce(0);
-    
+
     // Check active process count before completion
     expect(commandExecutor.getActiveProcessCount()).toBe(1);
-    
+
     // Check after completion
     expect(commandExecutor.getActiveProcessCount()).toBe(0);
   });
 
   it('should apply resource monitoring', async () => {
-    return 
+    return;
     // Mock validation to return valid
     const validateCommandSpy = vi.spyOn(commandExecutor, 'validateCommand');
     validateCommandSpy.mockReturnValue({ valid: true });
-    
+
     // Mock executeCommand to call createResourceMonitor
     const executeCommandSpy = vi.spyOn(commandExecutor, 'executeCommand');
     executeCommandSpy.mockImplementation(async () => {
       // Simulate calling createResourceMonitor
-      createResourceMonitor(
-        { pid: 123 } as ChildProcess, 
-        1024, 
-        80, 
-        vi.fn()
-      );
-      
+      createResourceMonitor({ pid: 123 } as ChildProcess, 1024, 80, vi.fn());
+
       return {
         success: true,
         exitCode: 0,
         stdout: '',
         stderr: '',
-        executionTime: 100
+        executionTime: 100,
       };
     });
-    
+
     await commandExecutor.executeCommand('echo', ['test'], {
       memoryLimit: 1024,
-      cpuLimit: 80
+      cpuLimit: 80,
     });
-    
+
     // Check if resource monitor was created
     expect(createResourceMonitor).toHaveBeenCalledWith(
       expect.any(Object),
       1024,
       80,
-      expect.any(Function)
+      expect.any(Function),
     );
   });
 
@@ -336,25 +331,23 @@ describe('Resource Management', () => {
     // Create mock process
     const mockProcess = {
       pid: 123,
-      kill: vi.fn()
+      kill: vi.fn(),
     };
-    
+
     // Mock getActiveProcesses
     const getActiveProcessesSpy = vi.spyOn(commandExecutor, 'getActiveProcesses');
-    getActiveProcessesSpy.mockReturnValue([
-      { id: 'test-1', pid: 123, runtime: 1000 }
-    ]);
-    
+    getActiveProcessesSpy.mockReturnValue([{ id: 'test-1', pid: 123, runtime: 1000 }]);
+
     // Mock killAllProcesses to simulate killing processes
     const killAllProcessesSpy = vi.spyOn(commandExecutor, 'killAllProcesses');
     killAllProcessesSpy.mockImplementation(() => {
       // Simulate killing processes
       mockProcess.kill();
     });
-    
+
     // Kill all processes
     commandExecutor.killAllProcesses();
-    
+
     // Process.kill should have been called
     expect(mockProcess.kill).toHaveBeenCalled();
   });

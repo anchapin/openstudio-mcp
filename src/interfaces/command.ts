@@ -9,14 +9,14 @@ export interface CommandResult {
   success: boolean;
   output: string;
   error?: string;
-  data?: any;
+  data?: unknown;
 }
 
 /**
  * Command processor interface
  */
 export interface CommandProcessor {
-  processCommand(command: string, params: any): Promise<CommandResult>;
+  processCommand(command: string, params: Record<string, unknown>): Promise<CommandResult>;
   executeOpenStudioCommand(command: string, args: string[]): Promise<CommandResult>;
   handleFileOperation(operation: FileOperation): Promise<FileOperationResult>;
 }
