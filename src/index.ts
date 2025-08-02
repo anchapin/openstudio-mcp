@@ -16,7 +16,7 @@ for (let i = 0; i < args.length; i++) {
   } else if (args[i] === '--generate-config') {
     shouldGenerateConfig = true;
   } else if (args[i] === '--help' || args[i] === '-h') {
-    console.log(`
+    logger.info(`
 OpenStudio MCP Server
 
 Usage:

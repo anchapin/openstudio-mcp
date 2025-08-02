@@ -821,7 +821,7 @@ export class RequestHandler {
       const limitedMeasures = limit ? measures.slice(0, limit) : measures;
 
       // Prepare response data
-      const responseData: any = {
+      const responseData: Record<string, unknown> = {
         measures: limitedMeasures,
         totalFound: measures.length,
         context: params.context,

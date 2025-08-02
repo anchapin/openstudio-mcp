@@ -10,8 +10,7 @@ import * as measureApplicationService from './measureApplicationService';
 import { BCLApiClient } from './bclApiClient';
 import measureManager from '../utils/measureManager';
 import fileOperations from '../utils/fileOperations';
-import openStudioCommands from '../utils/openStudioCommands';
-import { MeasureApplicationOptions, MeasureApplicationResult } from './measureApplicationService';
+import { MeasureApplicationResult } from './measureApplicationService';
 
 /**
  * Measure application workflow step

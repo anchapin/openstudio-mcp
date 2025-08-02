@@ -20,9 +20,6 @@ import fileOperations from './fileOperations';
 import config from '../config';
 
 // Promisify fs functions
-const readFileAsync = promisify(fs.readFile);
-const writeFileAsync = promisify(fs.writeFile);
-const mkdirAsync = promisify(fs.mkdir);
 const readdirAsync = promisify(fs.readdir);
 const statAsync = promisify(fs.stat);
 
