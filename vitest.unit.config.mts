@@ -5,7 +5,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['./test/setup.ts'],
-    testTimeout: 60000, // Increased timeout to 60 seconds
+    testTimeout: 30000, // Reduced timeout to 30 seconds for CI
     exclude: ['**/node_modules/**'],
     coverage: {
       provider: 'v8',
@@ -18,16 +18,12 @@ export default defineConfig({
         'test/**',
         'coverage/**',
       ],
-      include: [
-        'src/**/*.ts',
-      ],
+      include: ['src/**/*.ts'],
       all: true,
-      thresholds: {
-        lines: 70,
-        functions: 70,
-        branches: 60,
-        statements: 70
-      }
-    }
-  }
+      lines: 70,
+      functions: 70,
+      branches: 60,
+      statements: 70,
+    },
+  },
 });

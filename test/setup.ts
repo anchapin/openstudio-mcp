@@ -135,6 +135,7 @@ vi.mock('../src/utils/index', () => {
       runSimulation: vi.fn(),
       getSimulationStatus: vi.fn(),
       stopSimulation: vi.fn(),
+      createModel: vi.fn(),
     },
     outputProcessor: {
       processOutput: vi.fn((output) => ({
@@ -270,23 +271,6 @@ vi.mock('axios', async () => {
   return {
     default: mockAxios,
     ...mockAxios,
-  };
-});
-
-// Mock openStudioCommands
-vi.mock('../src/utils/openStudioCommands', async () => {
-  const commandsMock = {
-    getOpenStudioVersion: vi.fn(),
-    listMeasures: vi.fn(),
-    applyMeasure: vi.fn(),
-    runSimulation: vi.fn(),
-    getSimulationStatus: vi.fn(),
-    stopSimulation: vi.fn(),
-  };
-
-  return {
-    default: commandsMock,
-    ...commandsMock,
   };
 });
 
