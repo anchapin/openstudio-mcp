@@ -1,7 +1,7 @@
 /**
  * Request validation utilities
  */
-import Ajv, { JSONSchemaType } from 'ajv';
+import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import { MCPRequest } from '../interfaces';
 import { logger } from './index';
@@ -29,7 +29,7 @@ ajv.addFormat('file-path', {
 /**
  * Base schema for all MCP requests
  */
-const baseRequestSchema: JSONSchemaType<MCPRequest> = {
+const baseRequestSchema: Record<string, unknown> = {
   type: 'object',
   required: ['id', 'type', 'params'],
   properties: {
@@ -733,7 +733,7 @@ const validateMeasureWorkflowExecute = ajv.compile(measureWorkflowExecuteSchema)
 const validateMeasureWorkflowValidate = ajv.compile(measureWorkflowValidateSchema);
 
 // Map of request types to their parameter validators
-const requestValidators: Record<string, any> = {
+const requestValidators: Record<string, ReturnType<typeof ajv.compile>> = {
   'openstudio.model.create': validateModelCreate,
   'openstudio.model.open': validateModelOpen,
   'openstudio.model.save': validateModelSave,
@@ -859,7 +859,7 @@ export interface ValidationResult {
   valid: boolean;
   errors?: string[];
   errorCode?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 /**
@@ -881,7 +881,8 @@ export function validateRequest(request: MCPRequest): ValidationResult {
   // First validate the base request structure
   if (!validateBaseRequest(request)) {
     const errors = validateBaseRequest.errors?.map(
-      (err: any) => `${err.instancePath} ${err.message}`,
+      (err: { instancePath?: string; message?: string }) =>
+        `${err.instancePath || ''} ${err.message || ''}`,
     ) || ['Invalid request format'];
 
     logger.warn({ request, errors }, 'Invalid request format');
@@ -913,7 +914,8 @@ export function validateRequest(request: MCPRequest): ValidationResult {
 
   if (!validator(request.params)) {
     const errors = validator.errors?.map(
-      (err: any) => `params${err.instancePath} ${err.message}`,
+      (err: { instancePath?: string; message?: string }) =>
+        `params${err.instancePath || ''} ${err.message || ''}`,
     ) || ['Invalid parameters'];
 
     logger.warn({ request, errors }, 'Invalid request parameters');
@@ -931,7 +933,7 @@ export function validateRequest(request: MCPRequest): ValidationResult {
 
   // Additional security validations
   const errors: string[] = [];
-  const securityDetails: Record<string, any> = {};
+  const securityDetails: Record<string, unknown> = {};
 
   // Check all path parameters for safety to prevent command injection
   const pathParams = [
