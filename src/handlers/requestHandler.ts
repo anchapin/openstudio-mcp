@@ -1874,7 +1874,6 @@ export class RequestHandler {
       };
     }
   }
-
   /**
    * Handle measure update request
    * @param params Request parameters
@@ -1886,47 +1885,31 @@ export class RequestHandler {
 
       const request = params as unknown as MeasureUpdateRequest;
 
-      if (request.updateAll) {
-        // Update all measures
-        const results = await enhancedMeasureService.updateAllMeasures(request.options);
-        const successCount = results.filter((r) => r.success).length;
-        const failureCount = results.length - successCount;
-
-        return {
-          success: failureCount === 0,
-          output: `Updated ${successCount} measures successfully${failureCount > 0 ? `, ${failureCount} failed` : ''}`,
-          data: {
-            results,
-            summary: {
-              total: results.length,
-              successful: successCount,
-              failed: failureCount,
-            },
-          },
-        };
-      } else if (request.measureId) {
-        // Update single measure
-        const result = await enhancedMeasureService.updateMeasure(
-          request.measureId,
-          request.options,
-        );
-
-        return {
-          success: result.success,
-          output: result.message,
-          data: result,
-          error: result.error,
-        };
-      } else {
+      if (!request.options && !request.measureId && !request.updateAll) {
         return {
           success: false,
           output: '',
           error: 'Either measureId or updateAll must be specified',
         };
       }
-    } catch (error) {
-      logger.error({ params, error }, 'Error handling measure update request');
 
+      const result = await enhancedMeasureService.updateMeasures(request);
+
+      if (!result.success) {
+        return {
+          success: false,
+          output: '',
+          error: result.error || 'Measure update failed',
+        };
+      }
+
+      return {
+        success: true,
+        output: `Updated ${result.updatedMeasures?.length || 0} measures successfully`,
+        data: result,
+      };
+    } catch (error) {
+      logger.error({ error, params }, 'Error in handleMeasureUpdate');
       return {
         success: false,
         output: '',
@@ -1954,22 +1937,23 @@ export class RequestHandler {
         };
       }
 
-      const result = await enhancedMeasureService.computeMeasureArguments(
-        request.measureId,
-        request.options,
-      );
+      const result = await enhancedMeasureService.computeMeasureArguments(request);
+
+      if (!result.success) {
+        return {
+          success: false,
+          output: '',
+          error: result.error || 'Measure arguments computation failed',
+        };
+      }
 
       return {
-        success: result.success,
-        output: result.success
-          ? `Successfully computed ${result.arguments.length} arguments for measure: ${request.measureId}`
-          : `Failed to compute arguments for measure: ${request.measureId}`,
+        success: true,
+        output: `Computed arguments for measure ${request.measureId}`,
         data: result,
-        error: result.error,
       };
     } catch (error) {
-      logger.error({ params, error }, 'Error handling measure arguments computation request');
-
+      logger.error({ error, params }, 'Error in handleMeasureArgumentsCompute');
       return {
         success: false,
         output: '',
@@ -1997,22 +1981,23 @@ export class RequestHandler {
         };
       }
 
-      const result = await enhancedMeasureService.runMeasureTests(
-        request.measureId,
-        request.options,
-      );
+      const result = await enhancedMeasureService.runMeasureTests(request);
+
+      if (!result.success) {
+        return {
+          success: false,
+          output: '',
+          error: result.error || 'Measure test failed',
+        };
+      }
 
       return {
-        success: result.success,
-        output: result.success
-          ? `All tests passed for measure: ${request.measureId} (${result.testsPassed}/${result.testsExecuted} tests)`
-          : `Tests failed for measure: ${request.measureId} (${result.testsPassed}/${result.testsExecuted} tests, ${result.testsFailed} failed)`,
+        success: true,
+        output: `Ran tests for measure ${request.measureId}`,
         data: result,
-        error: result.error,
       };
     } catch (error) {
-      logger.error({ params, error }, 'Error handling measure test request');
-
+      logger.error({ error, params }, 'Error in handleMeasureTest');
       return {
         success: false,
         output: '',
