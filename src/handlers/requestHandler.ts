@@ -1926,6 +1926,7 @@ export class RequestHandler {
       }
     } catch (error) {
       logger.error({ params, error }, 'Error handling measure update request');
+
       return {
         success: false,
         output: '',
