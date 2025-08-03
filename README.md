@@ -66,7 +66,7 @@ npm run dev
 
 This project uses GitHub Actions for continuous integration and deployment:
 
-- **CI Workflow**: Automatically runs linting, building, and testing on push to master and pull requests
+- **CI Workflow**: Automatically runs linting, building, and testing on push to main and pull requests
 - **Release Workflow**: Automatically builds and packages the application when a new version tag is pushed
 - **Docker Workflow**: Builds and publishes Docker images to GitHub Container Registry
 - **Dependency Review**: Scans dependencies for security vulnerabilities on pull requests
