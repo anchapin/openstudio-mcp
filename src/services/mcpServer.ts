@@ -764,6 +764,7 @@ export class MCPServer implements MCPServerInterface {
         },
       },
     });
+
     logger.info(`Initialized ${this.capabilities.length} capabilities`);
   }
 
