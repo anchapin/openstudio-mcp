@@ -409,6 +409,126 @@ export class MCPServer implements MCPServerInterface {
       },
     });
 
+    // Register enhanced measure management capabilities
+    this.capabilities.push({
+      name: 'openstudio.measure.update',
+      description: 'Update measure metadata and files',
+      parameters: {
+        measureId: {
+          type: 'string',
+          description: 'Measure ID to update (required for single measure update)',
+          required: false,
+        },
+        updateAll: {
+          type: 'boolean',
+          description: 'Whether to update all measures in the measures directory',
+          required: false,
+        },
+        options: {
+          type: 'object',
+          description: 'Update options',
+          required: false,
+          properties: {
+            force: {
+              type: 'boolean',
+              description: 'Force update even if no changes detected',
+              required: false,
+            },
+            updateReadme: {
+              type: 'boolean',
+              description: 'Update README.md.erb files',
+              required: false,
+            },
+            updateXml: {
+              type: 'boolean',
+              description: 'Update measure.xml files',
+              required: false,
+            },
+            measuresDir: {
+              type: 'string',
+              description: 'Custom measures directory',
+              required: false,
+            },
+          },
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.measure.arguments.compute',
+      description: 'Compute measure arguments dynamically based on model context',
+      parameters: {
+        measureId: {
+          type: 'string',
+          description: 'Measure ID to compute arguments for',
+          required: true,
+        },
+        options: {
+          type: 'object',
+          description: 'Computation options',
+          required: false,
+          properties: {
+            modelPath: {
+              type: 'string',
+              description: 'Path to model file for context-aware argument computation',
+              required: false,
+            },
+            measuresDir: {
+              type: 'string',
+              description: 'Custom measures directory',
+              required: false,
+            },
+            includeEnergyPlusMeasures: {
+              type: 'boolean',
+              description: 'Include EnergyPlus measure arguments',
+              required: false,
+            },
+          },
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.measure.test',
+      description: 'Run measure tests and generate reports',
+      parameters: {
+        measureId: {
+          type: 'string',
+          description: 'Measure ID to test',
+          required: true,
+        },
+        options: {
+          type: 'object',
+          description: 'Test options',
+          required: false,
+          properties: {
+            measuresDir: {
+              type: 'string',
+              description: 'Custom measures directory',
+              required: false,
+            },
+            generateDashboard: {
+              type: 'boolean',
+              description: 'Generate test dashboard HTML report',
+              required: false,
+            },
+            testFiles: {
+              type: 'array',
+              description: 'Specific test files to run',
+              required: false,
+              items: {
+                type: 'string',
+              },
+            },
+            timeout: {
+              type: 'number',
+              description: 'Test execution timeout in seconds',
+              required: false,
+            },
+          },
+        },
+      },
+    });
     logger.info(`Initialized ${this.capabilities.length} capabilities`);
   }
 
