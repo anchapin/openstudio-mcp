@@ -279,6 +279,240 @@ export class MCPServer implements MCPServerInterface {
       },
     });
 
+    // Register model import/export capabilities
+    this.capabilities.push({
+      name: 'openstudio.model.import',
+      description: 'Import models from various formats (IDF, gbXML, IFC, SDD)',
+      parameters: {
+        importRequest: {
+          type: 'object',
+          description: 'Model import request',
+          required: true,
+          properties: {
+            filePath: {
+              type: 'string',
+              description: 'Path to the file to import',
+              required: true,
+            },
+            format: {
+              type: 'string',
+              description: 'Source file format',
+              enum: ['osm', 'idf', 'gbxml', 'ifc', 'sdd', 'json'],
+              required: true,
+            },
+            targetModelPath: {
+              type: 'string',
+              description: 'Target path for imported model',
+              required: false,
+            },
+            validationLevel: {
+              type: 'string',
+              description: 'Level of validation to perform',
+              enum: ['none', 'basic', 'strict', 'comprehensive'],
+              required: false,
+            },
+            importOptions: {
+              type: 'object',
+              description: 'Import options',
+              required: false,
+              properties: {
+                mergeWithExisting: { type: 'boolean', required: false },
+                overwriteExisting: { type: 'boolean', required: false },
+                createBackup: { type: 'boolean', required: false },
+                ignoreErrors: { type: 'boolean', required: false },
+                convertUnits: { type: 'boolean', required: false },
+                targetUnits: { type: 'string', enum: ['SI', 'IP'], required: false },
+                importGeometry: { type: 'boolean', required: false },
+                importLoads: { type: 'boolean', required: false },
+                importSchedules: { type: 'boolean', required: false },
+                importMaterials: { type: 'boolean', required: false },
+                importConstructions: { type: 'boolean', required: false },
+                importThermalZones: { type: 'boolean', required: false },
+                importHVACSystems: { type: 'boolean', required: false },
+                importPlantLoops: { type: 'boolean', required: false },
+              },
+            },
+            validateOutput: { type: 'boolean', required: false },
+            backupOriginal: { type: 'boolean', required: false },
+          },
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.model.export',
+      description: 'Export models to various formats (IDF, gbXML, JSON, CSV, PDF, HTML)',
+      parameters: {
+        exportRequest: {
+          type: 'object',
+          description: 'Model export request',
+          required: true,
+          properties: {
+            sourceModelPath: {
+              type: 'string',
+              description: 'Path to the source model file',
+              required: true,
+            },
+            filePath: {
+              type: 'string',
+              description: 'Path for the exported file',
+              required: true,
+            },
+            format: {
+              type: 'string',
+              description: 'Target export format',
+              enum: ['osm', 'idf', 'gbxml', 'ifc', 'sdd', 'json', 'csv', 'xlsx', 'pdf', 'html'],
+              required: true,
+            },
+            detailLevel: {
+              type: 'string',
+              description: 'Level of detail to include',
+              enum: ['minimal', 'standard', 'detailed', 'complete'],
+              required: false,
+            },
+            exportOptions: {
+              type: 'object',
+              description: 'Export options',
+              required: false,
+              properties: {
+                includeGeometry: { type: 'boolean', required: false },
+                includeLoads: { type: 'boolean', required: false },
+                includeSchedules: { type: 'boolean', required: false },
+                includeMaterials: { type: 'boolean', required: false },
+                includeConstructions: { type: 'boolean', required: false },
+                includeThermalZones: { type: 'boolean', required: false },
+                includeHVACSystems: { type: 'boolean', required: false },
+                includePlantLoops: { type: 'boolean', required: false },
+                includeOutputVariables: { type: 'boolean', required: false },
+                includeResults: { type: 'boolean', required: false },
+                includeMetadata: { type: 'boolean', required: false },
+                compressionLevel: { type: 'number', required: false },
+                prettyFormat: { type: 'boolean', required: false },
+                includeComments: { type: 'boolean', required: false },
+                reportOptions: {
+                  type: 'object',
+                  required: false,
+                  properties: {
+                    includeImages: { type: 'boolean', required: false },
+                    includeTables: { type: 'boolean', required: false },
+                    includeCharts: { type: 'boolean', required: false },
+                    templatePath: { type: 'string', required: false },
+                    outputFormat: {
+                      type: 'string',
+                      enum: ['pdf', 'html', 'docx'],
+                      required: false,
+                    },
+                  },
+                },
+              },
+            },
+            validateOutput: { type: 'boolean', required: false },
+            backupOriginal: { type: 'boolean', required: false },
+          },
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.model.batch_operations',
+      description: 'Perform batch import/export operations on multiple files',
+      parameters: {
+        batchRequest: {
+          type: 'object',
+          description: 'Batch operation request',
+          required: true,
+          properties: {
+            operations: {
+              type: 'array',
+              description: 'Array of import/export operations',
+              required: true,
+              items: {
+                type: 'object',
+                properties: {
+                  operation: { type: 'string', enum: ['import', 'export'], required: true },
+                  request: { type: 'object', required: true },
+                  priority: { type: 'number', required: false },
+                },
+              },
+            },
+            parallelProcessing: { type: 'boolean', required: false },
+            maxConcurrentOperations: { type: 'number', required: false },
+            continueOnError: { type: 'boolean', required: false },
+            generateReport: { type: 'boolean', required: false },
+          },
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.model.convert_format',
+      description: 'Convert between different model formats',
+      parameters: {
+        conversionRequest: {
+          type: 'object',
+          description: 'Format conversion request',
+          required: true,
+          properties: {
+            sourceFilePath: {
+              type: 'string',
+              description: 'Path to the source file',
+              required: true,
+            },
+            sourceFormat: {
+              type: 'string',
+              description: 'Source file format',
+              enum: ['osm', 'idf', 'gbxml', 'ifc', 'sdd', 'json'],
+              required: true,
+            },
+            targetFilePath: {
+              type: 'string',
+              description: 'Path for the converted file',
+              required: true,
+            },
+            targetFormat: {
+              type: 'string',
+              description: 'Target file format',
+              enum: ['osm', 'idf', 'gbxml', 'ifc', 'sdd', 'json', 'csv', 'pdf', 'html'],
+              required: true,
+            },
+            conversionOptions: {
+              type: 'object',
+              description: 'Conversion options',
+              required: false,
+              properties: {
+                validationLevel: {
+                  type: 'string',
+                  enum: ['none', 'basic', 'strict', 'comprehensive'],
+                  required: false,
+                },
+                preserveMetadata: { type: 'boolean', required: false },
+                optimizeOutput: { type: 'boolean', required: false },
+                includeValidationReport: { type: 'boolean', required: false },
+                customMappings: { type: 'object', required: false },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.model.format_capabilities',
+      description: 'Get information about supported file formats and their capabilities',
+      parameters: {
+        format: {
+          type: 'string',
+          description: 'Specific format to get capabilities for (optional)',
+          enum: ['osm', 'idf', 'gbxml', 'ifc', 'sdd', 'json', 'csv', 'xlsx', 'pdf', 'html'],
+          required: false,
+        },
+        includeAll: {
+          type: 'boolean',
+          description: 'Include capabilities for all supported formats',
+          required: false,
+        },
+      },
+    });
     // Register workflow capabilities
     this.capabilities.push({
       name: 'openstudio.workflow.run',
@@ -529,6 +763,7 @@ export class MCPServer implements MCPServerInterface {
         },
       },
     });
+
     logger.info(`Initialized ${this.capabilities.length} capabilities`);
   }
 
