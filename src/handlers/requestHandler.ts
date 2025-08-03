@@ -2,10 +2,18 @@
  * Request handler for MCP requests
  */
 import { MCPRequest, MCPResponse, CommandResult } from '../interfaces';
+import {
+  ModelImportMCPRequest,
+  ModelExportMCPRequest,
+  BatchImportExportMCPRequest,
+  FormatConversionMCPRequest,
+  GetFormatCapabilitiesMCPRequest,
+} from '../interfaces/modelImportExport';
 import { logger, openStudioCommands } from '../utils';
 import { validateRequest, getValidationSchema } from '../utils/validation';
 import { OpenStudioCommandProcessor } from '../services/commandProcessor';
 import { BCLApiClient } from '../services/bclApiClient';
+import { ModelImportExportService } from '../services/modelImportExportService';
 import config from '../config';
 import path from 'path';
 
@@ -30,6 +38,7 @@ export class RequestHandler {
   private handlers: Map<string, HandlerMetadata> = new Map();
   private commandProcessor: OpenStudioCommandProcessor;
   private bclApiClient: BCLApiClient;
+  private modelImportExportService: ModelImportExportService;
 
   /**
    * Constructor
@@ -37,6 +46,7 @@ export class RequestHandler {
   constructor() {
     this.commandProcessor = new OpenStudioCommandProcessor();
     this.bclApiClient = new BCLApiClient(config.bcl.apiUrl);
+    this.modelImportExportService = new ModelImportExportService();
     this.registerDefaultHandlers();
   }
 
@@ -145,6 +155,42 @@ export class RequestHandler {
       this.handleMeasureWorkflowValidate.bind(this),
       getValidationSchema('openstudio.measure.workflow.validate') || {},
       'Validate a measure application workflow',
+    );
+
+    // Register model import/export handlers
+    this.registerHandler(
+      'openstudio.model.import',
+      this.handleModelImport.bind(this),
+      getValidationSchema('openstudio.model.import') || {},
+      'Import models from various formats (IDF, gbXML, IFC, SDD)',
+    );
+
+    this.registerHandler(
+      'openstudio.model.export',
+      this.handleModelExport.bind(this),
+      getValidationSchema('openstudio.model.export') || {},
+      'Export models to various formats (IDF, gbXML, JSON, CSV, PDF, HTML)',
+    );
+
+    this.registerHandler(
+      'openstudio.model.batch_operations',
+      this.handleBatchOperations.bind(this),
+      getValidationSchema('openstudio.model.batch_operations') || {},
+      'Perform batch import/export operations on multiple files',
+    );
+
+    this.registerHandler(
+      'openstudio.model.convert_format',
+      this.handleFormatConversion.bind(this),
+      getValidationSchema('openstudio.model.convert_format') || {},
+      'Convert between different model formats',
+    );
+
+    this.registerHandler(
+      'openstudio.model.format_capabilities',
+      this.handleFormatCapabilities.bind(this),
+      getValidationSchema('openstudio.model.format_capabilities') || {},
+      'Get information about supported file formats and their capabilities',
     );
 
     logger.info(`Registered ${this.handlers.size} request handlers`);
@@ -1249,6 +1295,251 @@ export class RequestHandler {
     } catch (error) {
       logger.error({ params, error }, 'Error creating measure workflow');
 
+      return {
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Handler for openstudio.model.import
+   * @param params Request parameters
+   * @returns Command result
+   */
+  async handleModelImport(params: Record<string, unknown>): Promise<CommandResult> {
+    try {
+      logger.info({ params }, 'Handling model import request');
+
+      const request = params as ModelImportMCPRequest;
+
+      if (!request.importRequest) {
+        return {
+          success: false,
+          output: '',
+          error: 'importRequest is required',
+        };
+      }
+
+      const result = await this.modelImportExportService.importModel(request.importRequest);
+
+      if (!result.success) {
+        return {
+          success: false,
+          output: '',
+          error: result.errors?.[0] || 'Model import failed',
+        };
+      }
+
+      const warningText = result.warnings?.length ? ` with ${result.warnings.length} warnings` : '';
+
+      const validationText = result.validation
+        ? ` (validation: ${result.validation.errors.length} errors, ${result.validation.warnings.length} warnings)`
+        : '';
+
+      return {
+        success: true,
+        output: `Successfully imported ${request.importRequest.format} model to ${result.importedModelPath} in ${result.metadata.processingTime}ms${warningText}${validationText}`,
+        data: result,
+      };
+    } catch (error) {
+      logger.error({ params, error }, 'Error handling model import request');
+      return {
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Handler for openstudio.model.export
+   * @param params Request parameters
+   * @returns Command result
+   */
+  async handleModelExport(params: Record<string, unknown>): Promise<CommandResult> {
+    try {
+      logger.info({ params }, 'Handling model export request');
+
+      const request = params as ModelExportMCPRequest;
+
+      if (!request.exportRequest) {
+        return {
+          success: false,
+          output: '',
+          error: 'exportRequest is required',
+        };
+      }
+
+      const result = await this.modelImportExportService.exportModel(request.exportRequest);
+
+      if (!result.success) {
+        return {
+          success: false,
+          output: '',
+          error: result.errors?.[0] || 'Model export failed',
+        };
+      }
+
+      const warningText = result.warnings?.length ? ` with ${result.warnings.length} warnings` : '';
+
+      const validationText = result.validation
+        ? ` (validation: ${result.validation.errors.length} errors, ${result.validation.warnings.length} warnings)`
+        : '';
+
+      const reportText = result.reportPath ? ` and report at ${result.reportPath}` : '';
+
+      return {
+        success: true,
+        output: `Successfully exported ${request.exportRequest.format} model to ${result.exportedFilePath} in ${result.metadata.processingTime}ms${warningText}${validationText}${reportText}`,
+        data: result,
+      };
+    } catch (error) {
+      logger.error({ params, error }, 'Error handling model export request');
+      return {
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Handler for openstudio.model.batch_operations
+   * @param params Request parameters
+   * @returns Command result
+   */
+  async handleBatchOperations(params: Record<string, unknown>): Promise<CommandResult> {
+    try {
+      logger.info({ params }, 'Handling batch operations request');
+
+      const request = params as BatchImportExportMCPRequest;
+
+      if (!request.batchRequest) {
+        return {
+          success: false,
+          output: '',
+          error: 'batchRequest is required',
+        };
+      }
+
+      if (!request.batchRequest.operations || request.batchRequest.operations.length === 0) {
+        return {
+          success: false,
+          output: '',
+          error: 'At least one operation is required',
+        };
+      }
+
+      const result = await this.modelImportExportService.batchOperation(request.batchRequest);
+
+      const successRate =
+        result.totalOperations > 0
+          ? ((result.successfulOperations / result.totalOperations) * 100).toFixed(1)
+          : '0';
+
+      const reportText = result.reportPath ? ` Report available at: ${result.reportPath}` : '';
+
+      return {
+        success: result.success,
+        output: `Batch operation completed: ${result.successfulOperations}/${result.totalOperations} operations successful (${successRate}%) in ${result.summary.totalProcessingTime}ms.${reportText}`,
+        data: result,
+      };
+    } catch (error) {
+      logger.error({ params, error }, 'Error handling batch operations request');
+      return {
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Handler for openstudio.model.convert_format
+   * @param params Request parameters
+   * @returns Command result
+   */
+  async handleFormatConversion(params: Record<string, unknown>): Promise<CommandResult> {
+    try {
+      logger.info({ params }, 'Handling format conversion request');
+
+      const request = params as FormatConversionMCPRequest;
+
+      if (!request.conversionRequest) {
+        return {
+          success: false,
+          output: '',
+          error: 'conversionRequest is required',
+        };
+      }
+
+      const result = await this.modelImportExportService.convertFormat(request.conversionRequest);
+
+      if (!result.success) {
+        return {
+          success: false,
+          output: '',
+          error: result.errors?.[0] || 'Format conversion failed',
+        };
+      }
+
+      const compressionText = result.metadata.compressionRatio
+        ? ` (compression ratio: ${result.metadata.compressionRatio.toFixed(2)})`
+        : '';
+
+      const validationText = result.validation
+        ? ` Validation: ${result.validation.errors.length} errors, ${result.validation.warnings.length} warnings.`
+        : '';
+
+      const mappingText = result.mappingReport
+        ? ` Mapped ${result.mappingReport.mappedElements} elements, skipped ${result.mappingReport.unmappedElements}.`
+        : '';
+
+      return {
+        success: true,
+        output: `Successfully converted ${request.conversionRequest.sourceFormat} to ${request.conversionRequest.targetFormat} in ${result.metadata.processingTime}ms${compressionText}. ${mappingText}${validationText}`,
+        data: result,
+      };
+    } catch (error) {
+      logger.error({ params, error }, 'Error handling format conversion request');
+      return {
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Handler for openstudio.model.format_capabilities
+   * @param params Request parameters
+   * @returns Command result
+   */
+  async handleFormatCapabilities(params: Record<string, unknown>): Promise<CommandResult> {
+    try {
+      logger.info({ params }, 'Handling format capabilities request');
+
+      const request = params as GetFormatCapabilitiesMCPRequest;
+
+      const capabilities = this.modelImportExportService.getFormatCapabilities(request.format);
+
+      if (Array.isArray(capabilities)) {
+        return {
+          success: true,
+          output: `Retrieved capabilities for ${capabilities.length} supported formats`,
+          data: { formats: capabilities },
+        };
+      } else {
+        return {
+          success: true,
+          output: `Retrieved capabilities for ${capabilities.format} format`,
+          data: { format: capabilities },
+        };
+      }
+    } catch (error) {
+      logger.error({ params, error }, 'Error handling format capabilities request');
       return {
         success: false,
         output: '',
