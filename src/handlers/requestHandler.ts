@@ -1512,7 +1512,7 @@ export class RequestHandler {
 
         // Add custom steps if provided
         if (params.steps && Array.isArray(params.steps)) {
-          const createParams = params as WorkflowCreateRequest;
+          const createParams = params as unknown as WorkflowCreateRequest;
           workflow.steps = createParams.steps!.map((step) => ({
             measure_dir_name: step.measureDirName,
             arguments: step.arguments || {},
