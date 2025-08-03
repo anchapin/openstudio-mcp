@@ -514,6 +514,136 @@ export class MCPServer implements MCPServerInterface {
       },
     });
 
+    // Register workflow capabilities
+    this.capabilities.push({
+      name: 'openstudio.workflow.run',
+      description: 'Execute an OpenStudio Workflow (OSW) file',
+      parameters: {
+        workflow: {
+          type: 'string',
+          description: 'Path to OSW file or workflow object as JSON string',
+          required: true,
+        },
+        options: {
+          type: 'object',
+          description: 'Workflow execution options',
+          required: false,
+          properties: {
+            debug: {
+              type: 'boolean',
+              description: 'Enable debug mode',
+              required: false,
+            },
+            measuresOnly: {
+              type: 'boolean',
+              description: 'Run measures only (skip simulation)',
+              required: false,
+            },
+            postProcessOnly: {
+              type: 'boolean',
+              description: 'Run reporting measures only',
+              required: false,
+            },
+            preserveRunDir: {
+              type: 'boolean',
+              description: 'Preserve run directory after execution',
+              required: false,
+            },
+            outputDirectory: {
+              type: 'string',
+              description: 'Output directory for results',
+              required: false,
+            },
+          },
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.workflow.validate',
+      description: 'Validate an OpenStudio Workflow (OSW) file',
+      parameters: {
+        workflow: {
+          type: 'string',
+          description: 'Path to OSW file or workflow object as JSON string',
+          required: true,
+        },
+        baseDirectory: {
+          type: 'string',
+          description: 'Base directory for resolving relative paths',
+          required: false,
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.workflow.create',
+      description: 'Create an OpenStudio Workflow (OSW) file',
+      parameters: {
+        templateName: {
+          type: 'string',
+          description: 'Template name (basic_analysis, calibration, hvac_analysis)',
+          enum: ['basic_analysis', 'calibration', 'hvac_analysis', 'custom'],
+          required: false,
+        },
+        name: {
+          type: 'string',
+          description: 'Workflow name',
+          required: false,
+        },
+        description: {
+          type: 'string',
+          description: 'Workflow description',
+          required: false,
+        },
+        seedFile: {
+          type: 'string',
+          description: 'Path to seed model file',
+          required: true,
+        },
+        weatherFile: {
+          type: 'string',
+          description: 'Path to weather file',
+          required: false,
+        },
+        steps: {
+          type: 'array',
+          description: 'Custom workflow steps',
+          required: false,
+          items: {
+            type: 'object',
+            properties: {
+              measureDirName: {
+                type: 'string',
+                description: 'Measure directory name',
+                required: true,
+              },
+              arguments: {
+                type: 'object',
+                description: 'Measure arguments',
+                required: false,
+              },
+              name: {
+                type: 'string',
+                description: 'Step name',
+                required: false,
+              },
+              description: {
+                type: 'string',
+                description: 'Step description',
+                required: false,
+              },
+            },
+          },
+        },
+        outputPath: {
+          type: 'string',
+          description: 'Output path for the workflow file',
+          required: false,
+        },
+      },
+    });
+
     logger.info(`Initialized ${this.capabilities.length} capabilities`);
   }
 
