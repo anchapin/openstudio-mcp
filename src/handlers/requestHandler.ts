@@ -1543,7 +1543,7 @@ export class RequestHandler {
 
         // Add custom steps if provided
         if (params.steps && Array.isArray(params.steps)) {
-          const createParams = params as WorkflowCreateRequest;
+          const createParams = params as unknown as WorkflowCreateRequest;
           workflow.steps = createParams.steps!.map((step) => ({
             measure_dir_name: step.measureDirName,
             arguments: step.arguments || {},
@@ -1595,7 +1595,7 @@ export class RequestHandler {
     try {
       logger.info({ params }, 'Handling measure update request');
 
-      const request = params as MeasureUpdateRequest;
+      const request = params as unknown as MeasureUpdateRequest;
 
       if (request.updateAll) {
         // Update all measures
@@ -1655,7 +1655,7 @@ export class RequestHandler {
     try {
       logger.info({ params }, 'Handling measure arguments computation request');
 
-      const request = params as MeasureArgumentComputationRequest;
+      const request = params as unknown as MeasureArgumentComputationRequest;
 
       if (!request.measureId) {
         return {
@@ -1698,7 +1698,7 @@ export class RequestHandler {
     try {
       logger.info({ params }, 'Handling measure test request');
 
-      const request = params as MeasureTestRequest;
+      const request = params as unknown as MeasureTestRequest;
 
       if (!request.measureId) {
         return {
