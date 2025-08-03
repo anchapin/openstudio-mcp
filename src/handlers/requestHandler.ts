@@ -1312,7 +1312,7 @@ export class RequestHandler {
     try {
       logger.info({ params }, 'Handling model import request');
 
-      const request = params as ModelImportMCPRequest;
+      const request = params as unknown as ModelImportMCPRequest;
 
       if (!request.importRequest) {
         return {
@@ -1362,7 +1362,7 @@ export class RequestHandler {
     try {
       logger.info({ params }, 'Handling model export request');
 
-      const request = params as ModelExportMCPRequest;
+      const request = params as unknown as ModelExportMCPRequest;
 
       if (!request.exportRequest) {
         return {
@@ -1414,7 +1414,7 @@ export class RequestHandler {
     try {
       logger.info({ params }, 'Handling batch operations request');
 
-      const request = params as BatchImportExportMCPRequest;
+      const request = params as unknown as BatchImportExportMCPRequest;
 
       if (!request.batchRequest) {
         return {
@@ -1465,7 +1465,7 @@ export class RequestHandler {
     try {
       logger.info({ params }, 'Handling format conversion request');
 
-      const request = params as FormatConversionMCPRequest;
+      const request = params as unknown as FormatConversionMCPRequest;
 
       if (!request.conversionRequest) {
         return {
@@ -1521,7 +1521,7 @@ export class RequestHandler {
     try {
       logger.info({ params }, 'Handling format capabilities request');
 
-      const request = params as GetFormatCapabilitiesMCPRequest;
+      const request = params as unknown as GetFormatCapabilitiesMCPRequest;
 
       const capabilities = this.modelImportExportService.getFormatCapabilities(request.format);
 

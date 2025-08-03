@@ -653,9 +653,7 @@ export class ModelImportExportService {
       `"model = OpenStudio::Model::load('${request.filePath}'); model.get.save('${targetPath}', true)"`,
     ].join(' ');
 
-    const result = await this.commandProcessor.executeCommand(command, {
-      timeout: this.config.timeoutDuration,
-    });
+    const result = await this.commandProcessor.executeOpenStudioCommand(command, []);
 
     if (result.success) {
       return {
@@ -686,9 +684,7 @@ export class ModelImportExportService {
       "`,
     ].join(' ');
 
-    const result = await this.commandProcessor.executeCommand(command, {
-      timeout: this.config.timeoutDuration,
-    });
+    const result = await this.commandProcessor.executeOpenStudioCommand(command, []);
 
     if (result.success) {
       return {
@@ -719,9 +715,7 @@ export class ModelImportExportService {
       "`,
     ].join(' ');
 
-    const result = await this.commandProcessor.executeCommand(command, {
-      timeout: this.config.timeoutDuration,
-    });
+    const result = await this.commandProcessor.executeOpenStudioCommand(command, []);
 
     if (result.success) {
       return {
@@ -761,9 +755,7 @@ export class ModelImportExportService {
       "`,
     ].join(' ');
 
-    const result = await this.commandProcessor.executeCommand(command, {
-      timeout: this.config.timeoutDuration,
-    });
+    const result = await this.commandProcessor.executeOpenStudioCommand(command, []);
 
     if (result.success) {
       return {
@@ -809,9 +801,7 @@ export class ModelImportExportService {
       "`,
     ].join(' ');
 
-    const result = await this.commandProcessor.executeCommand(command, {
-      timeout: this.config.timeoutDuration,
-    });
+    const result = await this.commandProcessor.executeOpenStudioCommand(command, []);
 
     if (result.success) {
       return {
@@ -842,9 +832,7 @@ export class ModelImportExportService {
       "`,
     ].join(' ');
 
-    const result = await this.commandProcessor.executeCommand(command, {
-      timeout: this.config.timeoutDuration,
-    });
+    const result = await this.commandProcessor.executeOpenStudioCommand(command, []);
 
     if (result.success) {
       return {
@@ -883,9 +871,7 @@ export class ModelImportExportService {
       "`,
     ].join(' ');
 
-    const result = await this.commandProcessor.executeCommand(command, {
-      timeout: this.config.timeoutDuration,
-    });
+    const result = await this.commandProcessor.executeOpenStudioCommand(command, []);
 
     if (result.success) {
       return {
@@ -916,9 +902,7 @@ export class ModelImportExportService {
       "`,
     ].join(' ');
 
-    const result = await this.commandProcessor.executeCommand(command, {
-      timeout: this.config.timeoutDuration,
-    });
+    const result = await this.commandProcessor.executeOpenStudioCommand(command, []);
 
     if (result.success) {
       return {
@@ -1061,7 +1045,7 @@ export class ModelImportExportService {
 
   private async getOpenStudioVersion(): Promise<string> {
     try {
-      const result = await this.commandProcessor.executeCommand('openstudio_cli --version');
+      const result = await this.commandProcessor.executeOpenStudioCommand('openstudio_cli --version');
       return result.output.trim();
     } catch {
       return 'Unknown';
@@ -1116,8 +1100,7 @@ export class ModelImportExportService {
         filePath: request.targetFilePath,
         format: request.targetFormat,
         exportOptions: {
-          preserveMetadata: request.conversionOptions?.preserveMetadata,
-          optimizeOutput: request.conversionOptions?.optimizeOutput,
+          includeMetadata: request.conversionOptions?.preserveMetadata,
         },
       };
 
