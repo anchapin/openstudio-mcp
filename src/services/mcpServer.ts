@@ -279,6 +279,521 @@ export class MCPServer implements MCPServerInterface {
       },
     });
 
+    // Register workflow capabilities
+    this.capabilities.push({
+      name: 'openstudio.workflow.run',
+      description: 'Execute an OpenStudio Workflow (OSW) file',
+      parameters: {
+        workflow: {
+          type: 'string',
+          description: 'Path to OSW file or workflow object as JSON string',
+          required: true,
+        },
+        options: {
+          type: 'object',
+          description: 'Workflow execution options',
+          required: false,
+          properties: {
+            debug: {
+              type: 'boolean',
+              description: 'Enable debug mode',
+              required: false,
+            },
+            measuresOnly: {
+              type: 'boolean',
+              description: 'Run measures only (skip simulation)',
+              required: false,
+            },
+            postProcessOnly: {
+              type: 'boolean',
+              description: 'Run reporting measures only',
+              required: false,
+            },
+            preserveRunDir: {
+              type: 'boolean',
+              description: 'Preserve run directory after execution',
+              required: false,
+            },
+            outputDirectory: {
+              type: 'string',
+              description: 'Output directory for results',
+              required: false,
+            },
+          },
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.workflow.validate',
+      description: 'Validate an OpenStudio Workflow (OSW) file',
+      parameters: {
+        workflow: {
+          type: 'string',
+          description: 'Path to OSW file or workflow object as JSON string',
+          required: true,
+        },
+        baseDirectory: {
+          type: 'string',
+          description: 'Base directory for resolving relative paths',
+          required: false,
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.workflow.create',
+      description: 'Create an OpenStudio Workflow (OSW) file',
+      parameters: {
+        templateName: {
+          type: 'string',
+          description: 'Template name (basic_analysis, calibration, hvac_analysis)',
+          enum: ['basic_analysis', 'calibration', 'hvac_analysis', 'custom'],
+          required: false,
+        },
+        name: {
+          type: 'string',
+          description: 'Workflow name',
+          required: false,
+        },
+        description: {
+          type: 'string',
+          description: 'Workflow description',
+          required: false,
+        },
+        seedFile: {
+          type: 'string',
+          description: 'Path to seed model file',
+          required: true,
+        },
+        weatherFile: {
+          type: 'string',
+          description: 'Path to weather file',
+          required: false,
+        },
+        steps: {
+          type: 'array',
+          description: 'Custom workflow steps',
+          required: false,
+          items: {
+            type: 'object',
+            properties: {
+              measureDirName: {
+                type: 'string',
+                description: 'Measure directory name',
+                required: true,
+              },
+              arguments: {
+                type: 'object',
+                description: 'Measure arguments',
+                required: false,
+              },
+              name: {
+                type: 'string',
+                description: 'Step name',
+                required: false,
+              },
+              description: {
+                type: 'string',
+                description: 'Step description',
+                required: false,
+              },
+            },
+          },
+        },
+        outputPath: {
+          type: 'string',
+          description: 'Output path for the workflow file',
+          required: false,
+        },
+      },
+    });
+
+    // Register enhanced measure management capabilities
+    this.capabilities.push({
+      name: 'openstudio.measure.update',
+      description: 'Update measure metadata and files',
+      parameters: {
+        measureId: {
+          type: 'string',
+          description: 'Measure ID to update (required for single measure update)',
+          required: false,
+        },
+        updateAll: {
+          type: 'boolean',
+          description: 'Whether to update all measures in the measures directory',
+          required: false,
+        },
+        options: {
+          type: 'object',
+          description: 'Update options',
+          required: false,
+          properties: {
+            force: {
+              type: 'boolean',
+              description: 'Force update even if no changes detected',
+              required: false,
+            },
+            updateReadme: {
+              type: 'boolean',
+              description: 'Update README.md.erb files',
+              required: false,
+            },
+            updateXml: {
+              type: 'boolean',
+              description: 'Update measure.xml files',
+              required: false,
+            },
+            measuresDir: {
+              type: 'string',
+              description: 'Custom measures directory',
+              required: false,
+            },
+          },
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.measure.arguments.compute',
+      description: 'Compute measure arguments dynamically based on model context',
+      parameters: {
+        measureId: {
+          type: 'string',
+          description: 'Measure ID to compute arguments for',
+          required: true,
+        },
+        options: {
+          type: 'object',
+          description: 'Computation options',
+          required: false,
+          properties: {
+            modelPath: {
+              type: 'string',
+              description: 'Path to model file for context-aware argument computation',
+              required: false,
+            },
+            measuresDir: {
+              type: 'string',
+              description: 'Custom measures directory',
+              required: false,
+            },
+            includeEnergyPlusMeasures: {
+              type: 'boolean',
+              description: 'Include EnergyPlus measure arguments',
+              required: false,
+            },
+          },
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.measure.test',
+      description: 'Run measure tests and generate reports',
+      parameters: {
+        measureId: {
+          type: 'string',
+          description: 'Measure ID to test',
+          required: true,
+        },
+        options: {
+          type: 'object',
+          description: 'Test options',
+          required: false,
+          properties: {
+            measuresDir: {
+              type: 'string',
+              description: 'Custom measures directory',
+              required: false,
+            },
+            generateDashboard: {
+              type: 'boolean',
+              description: 'Generate test dashboard HTML report',
+              required: false,
+            },
+            testFiles: {
+              type: 'array',
+              description: 'Specific test files to run',
+              required: false,
+              items: {
+                type: 'string',
+              },
+            },
+            timeout: {
+              type: 'number',
+              description: 'Test execution timeout in seconds',
+              required: false,
+            },
+          },
+        },
+      },
+    });
+
+    // Register advanced BCL capabilities
+    this.capabilities.push({
+      name: 'openstudio.bcl.advanced_search',
+      description: 'Perform advanced search with enhanced filtering and sorting',
+      parameters: {
+        searchRequest: {
+          type: 'object',
+          description: 'Advanced search request',
+          required: true,
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Search query string',
+              required: false,
+            },
+            filters: {
+              type: 'object',
+              description: 'Advanced search filters',
+              required: false,
+              properties: {
+                buildingTypes: {
+                  type: 'array',
+                  description: 'Building types to filter by',
+                  required: false,
+                  items: { type: 'string' },
+                },
+                categories: {
+                  type: 'array',
+                  description: 'Measure categories to filter by',
+                  required: false,
+                  items: { type: 'string' },
+                },
+                minEnergySavings: {
+                  type: 'number',
+                  description: 'Minimum energy savings percentage',
+                  required: false,
+                },
+                maxPaybackPeriod: {
+                  type: 'number',
+                  description: 'Maximum payback period in years',
+                  required: false,
+                },
+                minRating: {
+                  type: 'number',
+                  description: 'Minimum measure rating (1-5)',
+                  required: false,
+                },
+                location: {
+                  type: 'object',
+                  description: 'Geographic location for filtering',
+                  required: false,
+                  properties: {
+                    latitude: { type: 'number', required: true },
+                    longitude: { type: 'number', required: true },
+                    climateZone: { type: 'string', required: false },
+                  },
+                },
+                searchRadius: {
+                  type: 'number',
+                  description: 'Search radius in kilometers',
+                  required: false,
+                },
+              },
+            },
+            sortOptions: {
+              type: 'object',
+              description: 'Sort options',
+              required: false,
+              properties: {
+                field: {
+                  type: 'string',
+                  description: 'Primary sort field',
+                  enum: ['relevance', 'name', 'rating', 'downloads', 'date', 'savings', 'payback'],
+                  required: true,
+                },
+                direction: {
+                  type: 'string',
+                  description: 'Sort direction',
+                  enum: ['asc', 'desc'],
+                  required: true,
+                },
+              },
+            },
+            limit: {
+              type: 'number',
+              description: 'Maximum number of results',
+              required: false,
+            },
+            offset: {
+              type: 'number',
+              description: 'Offset for pagination',
+              required: false,
+            },
+          },
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.bcl.geospatial_search',
+      description: 'Perform location-based search for measures with geographic clustering',
+      parameters: {
+        searchRequest: {
+          type: 'object',
+          description: 'Geospatial search request',
+          required: true,
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Search query string',
+              required: false,
+            },
+            location: {
+              type: 'object',
+              description: 'Center location for search',
+              required: true,
+              properties: {
+                latitude: { type: 'number', required: true },
+                longitude: { type: 'number', required: true },
+                climateZone: { type: 'string', required: false },
+                countryCode: { type: 'string', required: false },
+              },
+            },
+            radius: {
+              type: 'number',
+              description: 'Search radius in kilometers',
+              required: true,
+            },
+            clusterResults: {
+              type: 'boolean',
+              description: 'Whether to cluster results by location',
+              required: false,
+            },
+            maxClusters: {
+              type: 'number',
+              description: 'Maximum number of clusters',
+              required: false,
+            },
+            limit: {
+              type: 'number',
+              description: 'Maximum number of results',
+              required: false,
+            },
+          },
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.bcl.compare_measures',
+      description: 'Compare multiple measures side-by-side with detailed analysis',
+      parameters: {
+        comparisonRequest: {
+          type: 'object',
+          description: 'Measure comparison request',
+          required: true,
+          properties: {
+            measureIds: {
+              type: 'array',
+              description: 'Array of measure IDs to compare (2-10 measures)',
+              required: true,
+              items: { type: 'string' },
+              minItems: 2,
+              maxItems: 10,
+            },
+            criteria: {
+              type: 'object',
+              description: 'Comparison criteria',
+              required: false,
+              properties: {
+                includePerformance: {
+                  type: 'boolean',
+                  description: 'Include performance comparison',
+                  required: false,
+                },
+                includeCost: {
+                  type: 'boolean',
+                  description: 'Include cost comparison',
+                  required: false,
+                },
+                includeCompatibility: {
+                  type: 'boolean',
+                  description: 'Include compatibility comparison',
+                  required: false,
+                },
+                includeArguments: {
+                  type: 'boolean',
+                  description: 'Include argument comparison',
+                  required: false,
+                },
+                includeRatings: {
+                  type: 'boolean',
+                  description: 'Include rating comparison',
+                  required: false,
+                },
+              },
+            },
+            modelPath: {
+              type: 'string',
+              description: 'Model context for comparison',
+              required: false,
+            },
+          },
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.bcl.analytics',
+      description: 'Generate analytics and insights for BCL measures',
+      parameters: {
+        analyticsType: {
+          type: 'string',
+          description: 'Type of analytics to generate',
+          enum: ['performance', 'popularity', 'trends', 'geographic', 'compatibility'],
+          required: true,
+        },
+        parameters: {
+          type: 'object',
+          description: 'Analytics parameters',
+          required: false,
+          properties: {
+            timePeriod: {
+              type: 'object',
+              description: 'Time period for analysis',
+              required: false,
+              properties: {
+                startDate: { type: 'string', required: true },
+                endDate: { type: 'string', required: true },
+              },
+            },
+            geographicScope: {
+              type: 'object',
+              description: 'Geographic scope for analysis',
+              required: false,
+              properties: {
+                latitude: { type: 'number', required: true },
+                longitude: { type: 'number', required: true },
+                radius: { type: 'number', required: false },
+              },
+            },
+            categories: {
+              type: 'array',
+              description: 'Measure categories to analyze',
+              required: false,
+              items: { type: 'string' },
+            },
+            buildingTypes: {
+              type: 'array',
+              description: 'Building types to analyze',
+              required: false,
+              items: { type: 'string' },
+            },
+            measureIds: {
+              type: 'array',
+              description: 'Specific measures to analyze',
+              required: false,
+              items: { type: 'string' },
+            },
+          },
+        },
+      },
+    });
+
     logger.info(`Initialized ${this.capabilities.length} capabilities`);
   }
 
