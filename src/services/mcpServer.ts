@@ -513,7 +513,6 @@ export class MCPServer implements MCPServerInterface {
         },
       },
     });
-
     // Register workflow capabilities
     this.capabilities.push({
       name: 'openstudio.workflow.run',
@@ -764,7 +763,6 @@ export class MCPServer implements MCPServerInterface {
         },
       },
     });
-
     logger.info(`Initialized ${this.capabilities.length} capabilities`);
   }
 

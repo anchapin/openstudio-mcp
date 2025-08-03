@@ -202,7 +202,6 @@ export class RequestHandler {
       getValidationSchema('openstudio.model.format_capabilities') || {},
       'Get information about supported file formats and their capabilities',
     );
-
     // Register OpenStudio Workflow (OSW) handlers
     this.registerHandler(
       'openstudio.workflow.run',
@@ -246,7 +245,6 @@ export class RequestHandler {
       getValidationSchema('openstudio.measure.test') || {},
       'Run measure tests and generate reports',
     );
-
     logger.info(`Registered ${this.handlers.size} request handlers`);
   }
 
@@ -1876,6 +1874,7 @@ export class RequestHandler {
       };
     }
   }
+<<<<<<< HEAD
 
   /**
    * Handle measure update request
