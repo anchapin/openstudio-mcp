@@ -1874,7 +1874,6 @@ export class RequestHandler {
       };
     }
   }
-<<<<<<< HEAD
 
   /**
    * Handle measure update request
