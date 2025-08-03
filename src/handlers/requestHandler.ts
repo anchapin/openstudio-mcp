@@ -1,11 +1,12 @@
 /**
  * Request handler for MCP requests
  */
-import { MCPRequest, MCPResponse, CommandResult } from '../interfaces';
+import { MCPRequest, MCPResponse, CommandResult, WorkflowCreateRequest } from '../interfaces';
 import { logger, openStudioCommands } from '../utils';
 import { validateRequest, getValidationSchema } from '../utils/validation';
 import { OpenStudioCommandProcessor } from '../services/commandProcessor';
 import { BCLApiClient } from '../services/bclApiClient';
+import { OpenStudioWorkflow } from '../services/workflowService';
 import config from '../config';
 import path from 'path';
 
@@ -145,6 +146,28 @@ export class RequestHandler {
       this.handleMeasureWorkflowValidate.bind(this),
       getValidationSchema('openstudio.measure.workflow.validate') || {},
       'Validate a measure application workflow',
+    );
+
+    // Register OpenStudio Workflow (OSW) handlers
+    this.registerHandler(
+      'openstudio.workflow.run',
+      this.handleWorkflowRun.bind(this),
+      getValidationSchema('openstudio.workflow.run') || {},
+      'Execute an OpenStudio Workflow (OSW) file',
+    );
+
+    this.registerHandler(
+      'openstudio.workflow.validate',
+      this.handleWorkflowValidate.bind(this),
+      getValidationSchema('openstudio.workflow.validate') || {},
+      'Validate an OpenStudio Workflow (OSW) file',
+    );
+
+    this.registerHandler(
+      'openstudio.workflow.create',
+      this.handleWorkflowCreate.bind(this),
+      getValidationSchema('openstudio.workflow.create') || {},
+      'Create an OpenStudio Workflow (OSW) file',
     );
 
     logger.info(`Registered ${this.handlers.size} request handlers`);
@@ -1248,6 +1271,281 @@ export class RequestHandler {
       }
     } catch (error) {
       logger.error({ params, error }, 'Error creating measure workflow');
+
+      return {
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Handler for openstudio.workflow.run
+   * @param params Request parameters
+   * @returns Command result
+   */
+  private async handleWorkflowRun(params: Record<string, unknown>): Promise<CommandResult> {
+    logger.info({ params }, 'Workflow run request received');
+
+    try {
+      // Validate required parameters
+      if (!params.workflow) {
+        return {
+          success: false,
+          output: '',
+          error: 'Missing required parameter: workflow is required',
+        };
+      }
+
+      // Import the workflow service
+      const workflowService = (await import('../services/workflowService')).default;
+
+      let workflowResult;
+      const options = (params.options as Record<string, unknown>) || {};
+
+      // Handle workflow parameter (path or object)
+      if (typeof params.workflow === 'string') {
+        // Workflow is a file path
+        if (params.workflow.endsWith('.osw')) {
+          // Execute workflow file directly
+          workflowResult = await workflowService.executeWorkflowFile(params.workflow as string, {
+            debug: options.debug as boolean,
+            measuresOnly: options.measuresOnly as boolean,
+            postProcessOnly: options.postProcessOnly as boolean,
+            preserveRunDir: options.preserveRunDir as boolean,
+            outputDirectory: options.outputDirectory as string,
+          });
+        } else {
+          // Try to parse as JSON workflow object
+          try {
+            const workflowObj = JSON.parse(params.workflow as string);
+            workflowResult = await workflowService.executeWorkflow(workflowObj, {
+              debug: options.debug as boolean,
+              measuresOnly: options.measuresOnly as boolean,
+              postProcessOnly: options.postProcessOnly as boolean,
+              preserveRunDir: options.preserveRunDir as boolean,
+              outputDirectory: options.outputDirectory as string,
+            });
+          } catch (parseError) {
+            return {
+              success: false,
+              output: '',
+              error: `Invalid workflow parameter: must be a valid OSW file path or JSON workflow object`,
+            };
+          }
+        }
+      } else if (typeof params.workflow === 'object') {
+        // Workflow is an object
+        workflowResult = await workflowService.executeWorkflow(
+          params.workflow as OpenStudioWorkflow,
+          {
+            debug: options.debug as boolean,
+            measuresOnly: options.measuresOnly as boolean,
+            postProcessOnly: options.postProcessOnly as boolean,
+            preserveRunDir: options.preserveRunDir as boolean,
+            outputDirectory: options.outputDirectory as string,
+          },
+        );
+      } else {
+        return {
+          success: false,
+          output: '',
+          error: 'Invalid workflow parameter: must be a file path or workflow object',
+        };
+      }
+
+      return {
+        success: workflowResult.success,
+        output: workflowResult.success
+          ? `Successfully executed workflow${workflowResult.stepResults?.length ? ` with ${workflowResult.stepResults.length} steps` : ''}`
+          : `Workflow execution failed: ${workflowResult.error}`,
+        error: workflowResult.error,
+        data: {
+          duration: workflowResult.duration,
+          outputDirectory: workflowResult.outputDirectory,
+          stepResults: workflowResult.stepResults,
+          finalModelPath: workflowResult.finalModelPath,
+          simulationResults: workflowResult.simulationResults,
+        },
+      };
+    } catch (error) {
+      logger.error({ params, error }, 'Error executing workflow');
+
+      return {
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Handler for openstudio.workflow.validate
+   * @param params Request parameters
+   * @returns Command result
+   */
+  private async handleWorkflowValidate(params: Record<string, unknown>): Promise<CommandResult> {
+    logger.info({ params }, 'Workflow validate request received');
+
+    try {
+      // Validate required parameters
+      if (!params.workflow) {
+        return {
+          success: false,
+          output: '',
+          error: 'Missing required parameter: workflow is required',
+        };
+      }
+
+      // Import the workflow service
+      const workflowService = (await import('../services/workflowService')).default;
+
+      let workflowObj;
+      let baseDirectory = params.baseDirectory as string | undefined;
+
+      // Handle workflow parameter (path or object)
+      if (typeof params.workflow === 'string') {
+        if (params.workflow.endsWith('.osw')) {
+          // Parse workflow file
+          workflowObj = await workflowService.parseWorkflowFile(params.workflow as string);
+
+          // Set base directory to workflow file directory if not specified
+          if (!baseDirectory) {
+            const path = await import('path');
+            baseDirectory = path.dirname(params.workflow as string);
+          }
+        } else {
+          // Try to parse as JSON workflow object
+          try {
+            workflowObj = JSON.parse(params.workflow as string);
+          } catch (parseError) {
+            return {
+              success: false,
+              output: '',
+              error: `Invalid workflow parameter: must be a valid OSW file path or JSON workflow object`,
+            };
+          }
+        }
+      } else if (typeof params.workflow === 'object') {
+        // Workflow is an object
+        workflowObj = params.workflow;
+      } else {
+        return {
+          success: false,
+          output: '',
+          error: 'Invalid workflow parameter: must be a file path or workflow object',
+        };
+      }
+
+      // Validate the workflow
+      const validationResult = await workflowService.validateWorkflow(workflowObj, baseDirectory);
+
+      return {
+        success: validationResult.valid,
+        output: validationResult.valid
+          ? `Workflow validation passed${validationResult.warnings.length > 0 ? ` with ${validationResult.warnings.length} warnings` : ''}`
+          : `Workflow validation failed with ${validationResult.errors.length} errors`,
+        error: validationResult.valid ? undefined : validationResult.errors.join(', '),
+        data: {
+          valid: validationResult.valid,
+          errors: validationResult.errors,
+          warnings: validationResult.warnings,
+          missingFiles: validationResult.missingFiles,
+          invalidMeasures: validationResult.invalidMeasures,
+        },
+      };
+    } catch (error) {
+      logger.error({ params, error }, 'Error validating workflow');
+
+      return {
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Handler for openstudio.workflow.create
+   * @param params Request parameters
+   * @returns Command result
+   */
+  private async handleWorkflowCreate(params: Record<string, unknown>): Promise<CommandResult> {
+    logger.info({ params }, 'Workflow create request received');
+
+    try {
+      // Validate required parameters
+      if (!params.seedFile) {
+        return {
+          success: false,
+          output: '',
+          error: 'Missing required parameter: seedFile is required',
+        };
+      }
+
+      // Import the workflow service
+      const workflowService = (await import('../services/workflowService')).default;
+
+      let workflow;
+
+      if (params.templateName && params.templateName !== 'custom') {
+        // Create workflow from template
+        workflow = workflowService.createWorkflowFromTemplate(
+          params.templateName as string,
+          params.seedFile as string,
+          params.weatherFile as string | undefined,
+        );
+      } else {
+        // Create custom workflow
+        workflow = {
+          version: '3.8.0',
+          seed_file: params.seedFile as string,
+          weather_file: params.weatherFile as string | undefined,
+          steps: [],
+          created_at: new Date().toISOString(),
+          run_options: {
+            debug: false,
+            cleanup: true,
+          },
+        };
+
+        // Add custom steps if provided
+        if (params.steps && Array.isArray(params.steps)) {
+          const createParams = params as unknown as WorkflowCreateRequest;
+          workflow.steps = createParams.steps!.map((step) => ({
+            measure_dir_name: step.measureDirName,
+            arguments: step.arguments || {},
+            name: step.name,
+            description: step.description,
+          }));
+        }
+      }
+
+      // Set name and description if provided
+      if (params.name) {
+        workflow.name = params.name as string;
+      }
+
+      if (params.description) {
+        workflow.description = params.description as string;
+      }
+
+      // Save workflow if output path is provided
+      if (params.outputPath) {
+        await workflowService.saveWorkflow(workflow, params.outputPath as string);
+      }
+
+      return {
+        success: true,
+        output: `Successfully created workflow${params.templateName ? ` from template: ${params.templateName}` : ''} with ${workflow.steps.length} steps`,
+        data: {
+          workflow,
+          savedTo: params.outputPath || null,
+        },
+      };
+    } catch (error) {
+      logger.error({ params, error }, 'Error creating workflow');
 
       return {
         success: false,
