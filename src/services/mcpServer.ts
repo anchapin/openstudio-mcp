@@ -530,6 +530,270 @@ export class MCPServer implements MCPServerInterface {
       },
     });
 
+    // Register advanced BCL capabilities
+    this.capabilities.push({
+      name: 'openstudio.bcl.advanced_search',
+      description: 'Perform advanced search with enhanced filtering and sorting',
+      parameters: {
+        searchRequest: {
+          type: 'object',
+          description: 'Advanced search request',
+          required: true,
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Search query string',
+              required: false,
+            },
+            filters: {
+              type: 'object',
+              description: 'Advanced search filters',
+              required: false,
+              properties: {
+                buildingTypes: {
+                  type: 'array',
+                  description: 'Building types to filter by',
+                  required: false,
+                  items: { type: 'string' },
+                },
+                categories: {
+                  type: 'array',
+                  description: 'Measure categories to filter by',
+                  required: false,
+                  items: { type: 'string' },
+                },
+                minEnergySavings: {
+                  type: 'number',
+                  description: 'Minimum energy savings percentage',
+                  required: false,
+                },
+                maxPaybackPeriod: {
+                  type: 'number',
+                  description: 'Maximum payback period in years',
+                  required: false,
+                },
+                minRating: {
+                  type: 'number',
+                  description: 'Minimum measure rating (1-5)',
+                  required: false,
+                },
+                location: {
+                  type: 'object',
+                  description: 'Geographic location for filtering',
+                  required: false,
+                  properties: {
+                    latitude: { type: 'number', required: true },
+                    longitude: { type: 'number', required: true },
+                    climateZone: { type: 'string', required: false },
+                  },
+                },
+                searchRadius: {
+                  type: 'number',
+                  description: 'Search radius in kilometers',
+                  required: false,
+                },
+              },
+            },
+            sortOptions: {
+              type: 'object',
+              description: 'Sort options',
+              required: false,
+              properties: {
+                field: {
+                  type: 'string',
+                  description: 'Primary sort field',
+                  enum: ['relevance', 'name', 'rating', 'downloads', 'date', 'savings', 'payback'],
+                  required: true,
+                },
+                direction: {
+                  type: 'string',
+                  description: 'Sort direction',
+                  enum: ['asc', 'desc'],
+                  required: true,
+                },
+              },
+            },
+            limit: {
+              type: 'number',
+              description: 'Maximum number of results',
+              required: false,
+            },
+            offset: {
+              type: 'number',
+              description: 'Offset for pagination',
+              required: false,
+            },
+          },
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.bcl.geospatial_search',
+      description: 'Perform location-based search for measures with geographic clustering',
+      parameters: {
+        searchRequest: {
+          type: 'object',
+          description: 'Geospatial search request',
+          required: true,
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Search query string',
+              required: false,
+            },
+            location: {
+              type: 'object',
+              description: 'Center location for search',
+              required: true,
+              properties: {
+                latitude: { type: 'number', required: true },
+                longitude: { type: 'number', required: true },
+                climateZone: { type: 'string', required: false },
+                countryCode: { type: 'string', required: false },
+              },
+            },
+            radius: {
+              type: 'number',
+              description: 'Search radius in kilometers',
+              required: true,
+            },
+            clusterResults: {
+              type: 'boolean',
+              description: 'Whether to cluster results by location',
+              required: false,
+            },
+            maxClusters: {
+              type: 'number',
+              description: 'Maximum number of clusters',
+              required: false,
+            },
+            limit: {
+              type: 'number',
+              description: 'Maximum number of results',
+              required: false,
+            },
+          },
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.bcl.compare_measures',
+      description: 'Compare multiple measures side-by-side with detailed analysis',
+      parameters: {
+        comparisonRequest: {
+          type: 'object',
+          description: 'Measure comparison request',
+          required: true,
+          properties: {
+            measureIds: {
+              type: 'array',
+              description: 'Array of measure IDs to compare (2-10 measures)',
+              required: true,
+              items: { type: 'string' },
+              minItems: 2,
+              maxItems: 10,
+            },
+            criteria: {
+              type: 'object',
+              description: 'Comparison criteria',
+              required: false,
+              properties: {
+                includePerformance: {
+                  type: 'boolean',
+                  description: 'Include performance comparison',
+                  required: false,
+                },
+                includeCost: {
+                  type: 'boolean',
+                  description: 'Include cost comparison',
+                  required: false,
+                },
+                includeCompatibility: {
+                  type: 'boolean',
+                  description: 'Include compatibility comparison',
+                  required: false,
+                },
+                includeArguments: {
+                  type: 'boolean',
+                  description: 'Include argument comparison',
+                  required: false,
+                },
+                includeRatings: {
+                  type: 'boolean',
+                  description: 'Include rating comparison',
+                  required: false,
+                },
+              },
+            },
+            modelPath: {
+              type: 'string',
+              description: 'Model context for comparison',
+              required: false,
+            },
+          },
+        },
+      },
+    });
+
+    this.capabilities.push({
+      name: 'openstudio.bcl.analytics',
+      description: 'Generate analytics and insights for BCL measures',
+      parameters: {
+        analyticsType: {
+          type: 'string',
+          description: 'Type of analytics to generate',
+          enum: ['performance', 'popularity', 'trends', 'geographic', 'compatibility'],
+          required: true,
+        },
+        parameters: {
+          type: 'object',
+          description: 'Analytics parameters',
+          required: false,
+          properties: {
+            timePeriod: {
+              type: 'object',
+              description: 'Time period for analysis',
+              required: false,
+              properties: {
+                startDate: { type: 'string', required: true },
+                endDate: { type: 'string', required: true },
+              },
+            },
+            geographicScope: {
+              type: 'object',
+              description: 'Geographic scope for analysis',
+              required: false,
+              properties: {
+                latitude: { type: 'number', required: true },
+                longitude: { type: 'number', required: true },
+                radius: { type: 'number', required: false },
+              },
+            },
+            categories: {
+              type: 'array',
+              description: 'Measure categories to analyze',
+              required: false,
+              items: { type: 'string' },
+            },
+            buildingTypes: {
+              type: 'array',
+              description: 'Building types to analyze',
+              required: false,
+              items: { type: 'string' },
+            },
+            measureIds: {
+              type: 'array',
+              description: 'Specific measures to analyze',
+              required: false,
+              items: { type: 'string' },
+            },
+          },
+        },
+      },
+    });
+
     logger.info(`Initialized ${this.capabilities.length} capabilities`);
   }
 

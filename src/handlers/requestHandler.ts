@@ -10,10 +10,17 @@ import {
   MeasureArgumentComputationRequest,
   MeasureTestRequest,
 } from '../interfaces';
+import {
+  AdvancedBclSearchRequest,
+  GeospatialBclSearchRequest,
+  BclMeasureComparisonRequest,
+  BclAnalyticsRequest,
+} from '../interfaces/advancedBcl';
 import { logger, openStudioCommands } from '../utils';
 import { validateRequest, getValidationSchema } from '../utils/validation';
 import { OpenStudioCommandProcessor } from '../services/commandProcessor';
 import { BCLApiClient } from '../services/bclApiClient';
+import { AdvancedBclService } from '../services/advancedBclService';
 import { OpenStudioWorkflow } from '../services/workflowService';
 import enhancedMeasureService from '../services/enhancedMeasureService';
 import config from '../config';
@@ -40,6 +47,7 @@ export class RequestHandler {
   private handlers: Map<string, HandlerMetadata> = new Map();
   private commandProcessor: OpenStudioCommandProcessor;
   private bclApiClient: BCLApiClient;
+  private advancedBclService: AdvancedBclService;
 
   /**
    * Constructor
@@ -47,6 +55,7 @@ export class RequestHandler {
   constructor() {
     this.commandProcessor = new OpenStudioCommandProcessor();
     this.bclApiClient = new BCLApiClient(config.bcl.apiUrl);
+    this.advancedBclService = new AdvancedBclService();
     this.registerDefaultHandlers();
   }
 
@@ -199,6 +208,35 @@ export class RequestHandler {
       this.handleMeasureTest.bind(this),
       getValidationSchema('openstudio.measure.test') || {},
       'Run measure tests and generate reports',
+    );
+
+    // Register advanced BCL handlers
+    this.registerHandler(
+      'openstudio.bcl.advanced_search',
+      this.handleAdvancedBclSearch.bind(this),
+      getValidationSchema('openstudio.bcl.advanced_search') || {},
+      'Perform advanced search with enhanced filtering and sorting',
+    );
+
+    this.registerHandler(
+      'openstudio.bcl.geospatial_search',
+      this.handleGeospatialBclSearch.bind(this),
+      getValidationSchema('openstudio.bcl.geospatial_search') || {},
+      'Perform location-based search for measures with geographic clustering',
+    );
+
+    this.registerHandler(
+      'openstudio.bcl.compare_measures',
+      this.handleBclMeasureComparison.bind(this),
+      getValidationSchema('openstudio.bcl.compare_measures') || {},
+      'Compare multiple measures side-by-side with detailed analysis',
+    );
+
+    this.registerHandler(
+      'openstudio.bcl.analytics',
+      this.handleBclAnalytics.bind(this),
+      getValidationSchema('openstudio.bcl.analytics') || {},
+      'Generate analytics and insights for BCL measures',
     );
 
     logger.info(`Registered ${this.handlers.size} request handlers`);
@@ -1724,6 +1762,206 @@ export class RequestHandler {
     } catch (error) {
       logger.error({ params, error }, 'Error handling measure test request');
 
+      return {
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Handler for openstudio.bcl.advanced_search
+   * @param params Request parameters
+   * @returns Command result
+   */
+  async handleAdvancedBclSearch(params: Record<string, unknown>): Promise<CommandResult> {
+    try {
+      logger.info({ params }, 'Handling advanced BCL search request');
+
+      const request = params as AdvancedBclSearchRequest;
+
+      if (!request.searchRequest) {
+        return {
+          success: false,
+          output: '',
+          error: 'searchRequest is required',
+        };
+      }
+
+      const result = await this.advancedBclService.advancedSearch(request.searchRequest);
+
+      return {
+        success: true,
+        output: `Found ${result.totalCount} measures (showing ${result.measures.length}) in ${result.executionTime}ms`,
+        data: result,
+      };
+    } catch (error) {
+      logger.error({ params, error }, 'Error handling advanced BCL search request');
+      return {
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Handler for openstudio.bcl.geospatial_search
+   * @param params Request parameters
+   * @returns Command result
+   */
+  async handleGeospatialBclSearch(params: Record<string, unknown>): Promise<CommandResult> {
+    try {
+      logger.info({ params }, 'Handling geospatial BCL search request');
+
+      const request = params as GeospatialBclSearchRequest;
+
+      if (!request.searchRequest) {
+        return {
+          success: false,
+          output: '',
+          error: 'searchRequest is required',
+        };
+      }
+
+      if (!request.searchRequest.location || !request.searchRequest.radius) {
+        return {
+          success: false,
+          output: '',
+          error: 'location and radius are required for geospatial search',
+        };
+      }
+
+      const result = await this.advancedBclService.geospatialSearch(request.searchRequest);
+
+      const clustersInfo = result.geographicClusters
+        ? `, ${result.geographicClusters.length} geographic clusters`
+        : '';
+
+      return {
+        success: true,
+        output: `Found ${result.totalCount} measures within ${request.searchRequest.radius}km of location${clustersInfo} in ${result.executionTime}ms`,
+        data: result,
+      };
+    } catch (error) {
+      logger.error({ params, error }, 'Error handling geospatial BCL search request');
+      return {
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Handler for openstudio.bcl.compare_measures
+   * @param params Request parameters
+   * @returns Command result
+   */
+  async handleBclMeasureComparison(params: Record<string, unknown>): Promise<CommandResult> {
+    try {
+      logger.info({ params }, 'Handling BCL measure comparison request');
+
+      const request = params as BclMeasureComparisonRequest;
+
+      if (!request.comparisonRequest) {
+        return {
+          success: false,
+          output: '',
+          error: 'comparisonRequest is required',
+        };
+      }
+
+      if (
+        !request.comparisonRequest.measureIds ||
+        request.comparisonRequest.measureIds.length < 2
+      ) {
+        return {
+          success: false,
+          output: '',
+          error: 'At least 2 measure IDs are required for comparison',
+        };
+      }
+
+      if (request.comparisonRequest.measureIds.length > 10) {
+        return {
+          success: false,
+          output: '',
+          error: 'Maximum of 10 measures can be compared at once',
+        };
+      }
+
+      const result = await this.advancedBclService.compareMeasures(request.comparisonRequest);
+
+      if (!result.success) {
+        return {
+          success: false,
+          output: '',
+          error: result.error || 'Measure comparison failed',
+        };
+      }
+
+      return {
+        success: true,
+        output: `Successfully compared ${result.measures.length} measures with ${result.comparison.features.length} feature comparisons`,
+        data: result,
+      };
+    } catch (error) {
+      logger.error({ params, error }, 'Error handling BCL measure comparison request');
+      return {
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Handler for openstudio.bcl.analytics
+   * @param params Request parameters
+   * @returns Command result
+   */
+  async handleBclAnalytics(params: Record<string, unknown>): Promise<CommandResult> {
+    try {
+      logger.info({ params }, 'Handling BCL analytics request');
+
+      const request = params as BclAnalyticsRequest;
+
+      if (!request.analyticsType) {
+        return {
+          success: false,
+          output: '',
+          error: 'analyticsType is required',
+        };
+      }
+
+      const validTypes = ['performance', 'popularity', 'trends', 'geographic', 'compatibility'];
+      if (!validTypes.includes(request.analyticsType)) {
+        return {
+          success: false,
+          output: '',
+          error: `Invalid analytics type. Must be one of: ${validTypes.join(', ')}`,
+        };
+      }
+
+      const result = await this.advancedBclService.generateAnalytics(request);
+
+      if (!result.success) {
+        return {
+          success: false,
+          output: '',
+          error: result.error || 'Analytics generation failed',
+        };
+      }
+
+      return {
+        success: true,
+        output: `Generated ${request.analyticsType} analytics with ${result.results.data.length} data points and ${result.results.insights.length} insights in ${result.metadata.executionTime}ms`,
+        data: result,
+      };
+    } catch (error) {
+      logger.error({ params, error }, 'Error handling BCL analytics request');
       return {
         success: false,
         output: '',
