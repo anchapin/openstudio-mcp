@@ -200,7 +200,6 @@ export class RequestHandler {
       getValidationSchema('openstudio.measure.test') || {},
       'Run measure tests and generate reports',
     );
-
     logger.info(`Registered ${this.handlers.size} request handlers`);
   }
 
