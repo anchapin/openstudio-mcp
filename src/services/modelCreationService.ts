@@ -8,6 +8,7 @@ import path from 'path';
 import { logger, modelTemplates, fileOperations } from '../utils';
 import { ModelTemplateOptions, TemplateType } from '../utils/modelTemplates';
 import config from '../config';
+import bclTemplateService from './bclTemplateService';
 
 /**
  * Model initialization options
@@ -23,6 +24,8 @@ export interface ModelInitOptions {
   modelName?: string;
   /** Whether to include default measures */
   includeDefaultMeasures?: boolean;
+  /** BCL template ID (optional, for BCL templates) */
+  bclTemplateId?: string;
 }
 
 /**
@@ -60,7 +63,30 @@ export class ModelCreationService {
       // Ensure output directory exists
       await fileOperations.ensureDirectory(outputDirectory);
 
-      // Create model from template
+      // Create model from BCL template if specified
+      if (options.bclTemplateId) {
+        const result = await bclTemplateService.createModelFromBCLTemplate({
+          templateId: options.bclTemplateId,
+          outputPath,
+          templateOptions: options.templateOptions,
+          applyDefaultMeasures: options.includeDefaultMeasures,
+        });
+
+        if (!result.success) {
+          return {
+            success: false,
+            error: result.error || 'Failed to create model from BCL template',
+          };
+        }
+
+        return {
+          success: true,
+          modelPath: outputPath,
+          data: result.data,
+        };
+      }
+
+      // Create model from standard template
       const result = await modelTemplates.createModelFromTemplate(
         options.templateType,
         outputPath,
@@ -101,13 +127,26 @@ export class ModelCreationService {
    * @returns Promise that resolves when measures are applied
    */
   private async applyDefaultMeasures(modelPath: string, templateType: TemplateType): Promise<void> {
-    // This is a placeholder for future implementation
-    // In a real implementation, we would apply default measures based on the template type
-    logger.info({ modelPath, templateType }, 'Applying default measures to model');
+    try {
+      logger.info({ modelPath, templateType }, 'Applying default measures to model');
 
-    // For now, we'll just log that this would apply measures
-    // In the future, this would use the measure application functionality
-    // that will be implemented in task 6.3
+      // Get recommended measures for this template type
+      // const context = `default measures for ${templateType} building`;
+      // In a real implementation, this would use the BCL client to get recommendations
+      // and apply them using the measure application service
+      logger.info(
+        { modelPath, templateType },
+        'Would apply default measures using BCL recommendations (implementation pending)',
+      );
+
+      // Note: Actual implementation would use measureApplicationService.applyMeasuresInSequence
+      // This requires integration with the full measure application workflow
+    } catch (error) {
+      logger.warn(
+        { modelPath, templateType, error: error instanceof Error ? error.message : String(error) },
+        'Warning: Failed to apply default measures',
+      );
+    }
   }
 
   /**

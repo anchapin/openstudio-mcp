@@ -11,6 +11,7 @@ import {
   ModelFormat,
   ModelImportRequest,
   ModelExportRequest,
+  OperationType,
   BatchImportExportRequest,
   FormatConversionRequest,
   ImportResult,
@@ -18,12 +19,32 @@ import {
   BatchOperationResult,
   ConversionResult,
   ValidationResult,
-  ValidationIssue,
   FormatCapabilities,
-  PerformanceMetrics,
   ImportExportConfig,
-  QualityAssuranceSettings,
 } from '../interfaces/modelImportExport';
+
+/**
+ * Result of import/export operations
+ */
+interface ImportExportOperationResult {
+  importedModelPath?: string;
+  exportedFilePath?: string;
+  importedElements?: number;
+  exportedElements?: number;
+  warnings?: string[];
+  errors?: string[];
+  conversionLog?: string[];
+  reportPath?: string;
+}
+
+/**
+ * Batch operation item
+ */
+type BatchOperation = {
+  operation: OperationType;
+  request: ModelImportRequest | ModelExportRequest;
+  priority?: number;
+};
 
 /**
  * Model Import/Export Service implementation
@@ -136,7 +157,7 @@ export class ModelImportExportService {
       await this.validateFileExists(request.sourceModelPath);
 
       // Get source file statistics
-      const sourceStats = await fs.stat(request.sourceModelPath);
+      await fs.stat(request.sourceModelPath);
 
       // Perform format-specific export
       const exportResult = await this.performExport(request);
@@ -646,7 +667,10 @@ export class ModelImportExportService {
   /**
    * Import OpenStudio Model (.osm) files
    */
-  private async importOSM(request: ModelImportRequest, targetPath: string): Promise<any> {
+  private async importOSM(
+    request: ModelImportRequest,
+    targetPath: string,
+  ): Promise<ImportExportOperationResult> {
     const command = [
       'openstudio_cli',
       '-e',
@@ -669,7 +693,10 @@ export class ModelImportExportService {
   /**
    * Import EnergyPlus IDF files
    */
-  private async importIDF(request: ModelImportRequest, targetPath: string): Promise<any> {
+  private async importIDF(
+    request: ModelImportRequest,
+    targetPath: string,
+  ): Promise<ImportExportOperationResult> {
     const command = [
       'openstudio_cli',
       '-e',
@@ -700,7 +727,10 @@ export class ModelImportExportService {
   /**
    * Import gbXML files
    */
-  private async importGbXML(request: ModelImportRequest, targetPath: string): Promise<any> {
+  private async importGbXML(
+    request: ModelImportRequest,
+    targetPath: string,
+  ): Promise<ImportExportOperationResult> {
     const command = [
       'openstudio_cli',
       '-e',
@@ -731,7 +761,10 @@ export class ModelImportExportService {
   /**
    * Import IFC files
    */
-  private async importIFC(request: ModelImportRequest, targetPath: string): Promise<any> {
+  private async importIFC(
+    _request: ModelImportRequest,
+    _targetPath: string,
+  ): Promise<ImportExportOperationResult> {
     // IFC import would require specialized libraries or converters
     // This is a placeholder implementation
     throw new Error('IFC import is not yet implemented');
@@ -740,7 +773,10 @@ export class ModelImportExportService {
   /**
    * Import SDD files (ASHRAE 90.1)
    */
-  private async importSDD(request: ModelImportRequest, targetPath: string): Promise<any> {
+  private async importSDD(
+    request: ModelImportRequest,
+    targetPath: string,
+  ): Promise<ImportExportOperationResult> {
     const command = [
       'openstudio_cli',
       '-e',
@@ -771,7 +807,7 @@ export class ModelImportExportService {
   /**
    * Export to OpenStudio Model (.osm) format
    */
-  private async exportOSM(request: ModelExportRequest): Promise<any> {
+  private async exportOSM(request: ModelExportRequest): Promise<ImportExportOperationResult> {
     // Simple copy operation for OSM to OSM
     await fs.copyFile(request.sourceModelPath, request.filePath);
 
@@ -785,7 +821,7 @@ export class ModelImportExportService {
   /**
    * Export to EnergyPlus IDF format
    */
-  private async exportIDF(request: ModelExportRequest): Promise<any> {
+  private async exportIDF(request: ModelExportRequest): Promise<ImportExportOperationResult> {
     const command = [
       'openstudio_cli',
       '-e',
@@ -817,7 +853,7 @@ export class ModelImportExportService {
   /**
    * Export to gbXML format
    */
-  private async exportGbXML(request: ModelExportRequest): Promise<any> {
+  private async exportGbXML(request: ModelExportRequest): Promise<ImportExportOperationResult> {
     const command = [
       'openstudio_cli',
       '-e',
@@ -848,7 +884,7 @@ export class ModelImportExportService {
   /**
    * Export to IFC format
    */
-  private async exportIFC(request: ModelExportRequest): Promise<any> {
+  private async exportIFC(_request: ModelExportRequest): Promise<ImportExportOperationResult> {
     // IFC export would require specialized libraries or converters
     throw new Error('IFC export is not yet implemented');
   }
@@ -856,7 +892,7 @@ export class ModelImportExportService {
   /**
    * Export to SDD format
    */
-  private async exportSDD(request: ModelExportRequest): Promise<any> {
+  private async exportSDD(request: ModelExportRequest): Promise<ImportExportOperationResult> {
     const command = [
       'openstudio_cli',
       '-e',
@@ -887,7 +923,7 @@ export class ModelImportExportService {
   /**
    * Export to JSON format
    */
-  private async exportJSON(request: ModelExportRequest): Promise<any> {
+  private async exportJSON(request: ModelExportRequest): Promise<ImportExportOperationResult> {
     const command = [
       'openstudio_cli',
       '-e',
@@ -918,7 +954,7 @@ export class ModelImportExportService {
   /**
    * Export to CSV format
    */
-  private async exportCSV(request: ModelExportRequest): Promise<any> {
+  private async exportCSV(request: ModelExportRequest): Promise<ImportExportOperationResult> {
     // This would export model data as CSV tables
     const modelData = await this.extractModelDataForCSV(request.sourceModelPath);
     const csvContent = this.convertToCSV(modelData);
@@ -934,7 +970,7 @@ export class ModelImportExportService {
   /**
    * Export to PDF format
    */
-  private async exportPDF(request: ModelExportRequest): Promise<any> {
+  private async exportPDF(request: ModelExportRequest): Promise<ImportExportOperationResult> {
     // This would generate a PDF report from the model
     const reportPath = await this.generatePDFReport(request.sourceModelPath, request.filePath);
 
@@ -948,7 +984,7 @@ export class ModelImportExportService {
   /**
    * Export to HTML format
    */
-  private async exportHTML(request: ModelExportRequest): Promise<any> {
+  private async exportHTML(request: ModelExportRequest): Promise<ImportExportOperationResult> {
     // This would generate an HTML report from the model
     const reportPath = await this.generateHTMLReport(request.sourceModelPath, request.filePath);
 
@@ -962,22 +998,22 @@ export class ModelImportExportService {
   /**
    * Helper methods for counting elements in different formats
    */
-  private async countModelElements(modelPath: string): Promise<number> {
+  private async countModelElements(_modelPath: string): Promise<number> {
     // Implementation would count OpenStudio model elements
     return 0; // Placeholder
   }
 
-  private async countIDFObjects(idfPath: string): Promise<number> {
+  private async countIDFObjects(_idfPath: string): Promise<number> {
     // Implementation would count IDF objects
     return 0; // Placeholder
   }
 
-  private async countXMLElements(xmlPath: string): Promise<number> {
+  private async countXMLElements(_xmlPath: string): Promise<number> {
     // Implementation would count XML elements
     return 0; // Placeholder
   }
 
-  private async countJSONObjects(jsonPath: string): Promise<number> {
+  private async countJSONObjects(_jsonPath: string): Promise<number> {
     // Implementation would count JSON objects
     return 0; // Placeholder
   }
@@ -991,7 +1027,7 @@ export class ModelImportExportService {
     logger.info({ originalPath: filePath, backupPath }, 'Backup created');
   }
 
-  private async validateModel(modelPath: string, level: string): Promise<ValidationResult> {
+  private async validateModel(_modelPath: string, _level: string): Promise<ValidationResult> {
     // Implementation would validate the model
     return {
       isValid: true,
@@ -1008,8 +1044,8 @@ export class ModelImportExportService {
   }
 
   private async validateExportedFile(
-    filePath: string,
-    format: ModelFormat,
+    _filePath: string,
+    _format: ModelFormat,
   ): Promise<ValidationResult> {
     // Implementation would validate the exported file
     return {
@@ -1026,7 +1062,19 @@ export class ModelImportExportService {
     };
   }
 
-  private async gatherModelStatistics(modelPath: string): Promise<any> {
+  private async gatherModelStatistics(_modelPath: string): Promise<{
+    geometryElements: number;
+    thermalZones: number;
+    spaces: number;
+    surfaces: number;
+    subsurfaces: number;
+    materials: number;
+    constructions: number;
+    loads: number;
+    schedules: number;
+    hvacSystems: number;
+    plantLoops: number;
+  }> {
     // Implementation would gather detailed model statistics
     return {
       geometryElements: 0,
@@ -1045,14 +1093,22 @@ export class ModelImportExportService {
 
   private async getOpenStudioVersion(): Promise<string> {
     try {
-      const result = await this.commandProcessor.executeOpenStudioCommand('openstudio_cli --version');
+      const result = await this.commandProcessor.executeOpenStudioCommand(
+        'openstudio_cli --version',
+      );
       return result.output.trim();
     } catch {
       return 'Unknown';
     }
   }
 
-  private async processSingleOperation(operation: any): Promise<any> {
+  private async processSingleOperation(operation: BatchOperation): Promise<{
+    operation: OperationType;
+    format: ModelFormat;
+    filePath: string;
+    success: boolean;
+    result: ImportResult | ExportResult;
+  }> {
     if (operation.operation === 'import') {
       const result = await this.importModel(operation.request);
       return {
@@ -1074,7 +1130,9 @@ export class ModelImportExportService {
     }
   }
 
-  private async performFormatConversion(request: FormatConversionRequest): Promise<any> {
+  private async performFormatConversion(
+    request: FormatConversionRequest,
+  ): Promise<ConversionResult> {
     try {
       // First import the source file to an intermediate OSM model
       const tempOsmPath = request.targetFilePath.replace(
@@ -1146,29 +1204,32 @@ export class ModelImportExportService {
     return chunks;
   }
 
-  private async generateBatchReport(results: any[], summary: any): Promise<string> {
+  private async generateBatchReport(
+    _results: BatchOperationResult[],
+    _summary: Record<string, unknown>,
+  ): Promise<string> {
     // Implementation would generate a comprehensive batch report
     const reportPath = path.join(this.config.backupDirectory, `batch_report_${Date.now()}.html`);
     // Generate HTML report content
     return reportPath;
   }
 
-  private async extractModelDataForCSV(modelPath: string): Promise<any[]> {
+  private async extractModelDataForCSV(_modelPath: string): Promise<Record<string, unknown>[]> {
     // Implementation would extract model data for CSV export
     return [];
   }
 
-  private convertToCSV(data: any[]): string {
+  private convertToCSV(_data: Record<string, unknown>[]): string {
     // Implementation would convert data to CSV format
     return '';
   }
 
-  private async generatePDFReport(modelPath: string, outputPath: string): Promise<string> {
+  private async generatePDFReport(_modelPath: string, outputPath: string): Promise<string> {
     // Implementation would generate PDF report
     return outputPath;
   }
 
-  private async generateHTMLReport(modelPath: string, outputPath: string): Promise<string> {
+  private async generateHTMLReport(_modelPath: string, outputPath: string): Promise<string> {
     // Implementation would generate HTML report
     return outputPath;
   }

@@ -54,6 +54,61 @@ export interface EnergyUseBreakdown {
 }
 
 /**
+ * Time series chart data
+ */
+export interface TimeSeriesChartData {
+  /** Timestamps for the x-axis */
+  labels: string[];
+  /** Series data for the chart */
+  datasets: {
+    /** Name of the series */
+    label: string;
+    /** Values for the series */
+    data: number[];
+    /** Color for the series */
+    borderColor: string;
+    /** Fill color for the series */
+    backgroundColor: string;
+  }[];
+}
+
+/**
+ * Scatter plot data
+ */
+export interface ScatterPlotData {
+  /** Data points */
+  datasets: {
+    /** Name of the dataset */
+    label: string;
+    /** Data points */
+    data: { x: number; y: number }[];
+    /** Point color */
+    borderColor: string;
+    /** Point background color */
+    backgroundColor: string;
+  }[];
+}
+
+/**
+ * Comparison chart data
+ */
+export interface ComparisonChartData {
+  /** Labels for the chart */
+  labels: string[];
+  /** Datasets for comparison */
+  datasets: {
+    /** Name of the dataset */
+    label: string;
+    /** Values for the dataset */
+    data: number[];
+    /** Color for the dataset */
+    backgroundColor: string;
+    /** Border color for the dataset */
+    borderColor: string;
+  }[];
+}
+
+/**
  * Simulation summary
  */
 export interface SimulationSummary {
@@ -137,6 +192,137 @@ export function formatEnergyConsumptionByFuelType(
 }
 
 /**
+ * Format energy end use breakdown for visualization
+ * @param simulationResult Simulation result
+ * @returns Energy end use breakdown formatted for visualization
+ */
+export function formatEnergyEndUseBreakdown(
+  simulationResult: SimulationResult,
+): EnergyUseBreakdown | null {
+  if (!simulationResult.endUseBreakdown) {
+    return null;
+  }
+
+  return {
+    labels: simulationResult.endUseBreakdown.labels,
+    values: simulationResult.endUseBreakdown.values,
+    units: simulationResult.endUseBreakdown.units,
+    colors: simulationResult.endUseBreakdown.colors,
+  };
+}
+
+/**
+ * Format time series data for line chart visualization
+ * @param simulationResult Simulation result
+ * @returns Time series chart data
+ */
+export function formatTimeSeriesData(
+  simulationResult: SimulationResult,
+): TimeSeriesChartData | null {
+  if (!simulationResult.timeSeriesData) {
+    return null;
+  }
+
+  // Color palette for time series
+  const colorPalette = [
+    '#4e79a7', // Blue
+    '#f28e2c', // Orange
+    '#e15759', // Red
+    '#76b7b2', // Teal
+    '#59a14f', // Green
+    '#edc949', // Yellow
+    '#af7aa1', // Purple
+    '#ff9da7', // Pink
+    '#9c755f', // Brown
+    '#bab0ab', // Gray
+  ];
+
+  const datasets = simulationResult.timeSeriesData.series.map((series, index) => {
+    const color = colorPalette[index % colorPalette.length];
+    return {
+      label: series.name,
+      data: series.values,
+      borderColor: color,
+      backgroundColor: color.replace(')', ', 0.1)').replace('rgb', 'rgba'),
+    };
+  });
+
+  return {
+    labels: simulationResult.timeSeriesData.timestamps,
+    datasets,
+  };
+}
+
+/**
+ * Format data for scatter plot visualization
+ * @param simulationResult Simulation result
+ * @returns Scatter plot data
+ */
+export function formatScatterPlotData(simulationResult: SimulationResult): ScatterPlotData | null {
+  // For demonstration purposes, we'll create a scatter plot of energy consumption vs EUI
+  if (simulationResult.eui === undefined || simulationResult.totalSiteEnergy === undefined) {
+    return null;
+  }
+
+  return {
+    datasets: [
+      {
+        label: 'Energy Performance',
+        data: [
+          {
+            x: simulationResult.eui,
+            y: simulationResult.totalSiteEnergy,
+          },
+        ],
+        borderColor: '#4e79a7',
+        backgroundColor: 'rgba(78, 121, 167, 0.5)',
+      },
+    ],
+  };
+}
+
+/**
+ * Format data for comparison chart visualization
+ * @param simulationResults Array of simulation results for comparison
+ * @returns Comparison chart data
+ */
+export function formatComparisonChartData(
+  simulationResults: SimulationResult[],
+): ComparisonChartData {
+  // Extract labels from simulation IDs or a default naming scheme
+  const labels = simulationResults.map((result, index) => result.id || `Simulation ${index + 1}`);
+
+  // Create datasets for different metrics
+  const electricityData = simulationResults.map((result) => result.electricityConsumption || 0);
+  const gasData = simulationResults.map((result) => result.naturalGasConsumption || 0);
+  const euiData = simulationResults.map((result) => result.eui || 0);
+
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Electricity (kWh)',
+        data: electricityData,
+        backgroundColor: '#4e79a7',
+        borderColor: '#4e79a7',
+      },
+      {
+        label: 'Natural Gas (GJ)',
+        data: gasData,
+        backgroundColor: '#f28e2c',
+        borderColor: '#f28e2c',
+      },
+      {
+        label: 'EUI (kWh/m²/year)',
+        data: euiData,
+        backgroundColor: '#e15759',
+        borderColor: '#e15759',
+      },
+    ],
+  };
+}
+
+/**
  * Format simulation summary for visualization
  * @param simulationResult Simulation result
  * @returns Simulation summary formatted for visualization
@@ -166,6 +352,9 @@ export function formatSimulationSummary(simulationResult: SimulationResult): Sim
 export function generateSimulationDashboardHTML(simulationResult: SimulationResult): string {
   const summary = formatSimulationSummary(simulationResult);
   const energyByFuelType = formatEnergyConsumptionByFuelType(simulationResult);
+  // const endUseBreakdown = formatEnergyEndUseBreakdown(simulationResult);
+  // const timeSeriesData = formatTimeSeriesData(simulationResult);
+  // const scatterPlotData = formatScatterPlotData(simulationResult);
 
   // Create a simple HTML dashboard
   return `
@@ -413,11 +602,63 @@ export function generateSimulationDashboardHTML(simulationResult: SimulationResu
 }
 
 /**
+ * Formatted simulation result for API response
+ */
+export interface FormattedSimulationResult {
+  /** Simulation ID */
+  id: string;
+  /** Simulation status */
+  status: string;
+  /** Simulation duration in milliseconds */
+  duration?: number;
+  /** Simulation start time */
+  startTime: Date;
+  /** Simulation end time */
+  endTime?: Date;
+  /** Summary of simulation results */
+  summary: {
+    /** Energy use intensity (EUI) in kWh/m²/year */
+    eui?: number;
+    /** Total site energy in GJ */
+    totalSiteEnergy?: number;
+    /** Total source energy in GJ */
+    totalSourceEnergy?: number;
+    /** Annual electricity consumption in kWh */
+    electricityConsumption?: number;
+    /** Annual natural gas consumption in GJ */
+    naturalGasConsumption?: number;
+    /** Annual district heating consumption in GJ */
+    districtHeatingConsumption?: number;
+    /** Annual district cooling consumption in GJ */
+    districtCoolingConsumption?: number;
+    /** Number of warnings */
+    warningCount: number;
+    /** Number of errors */
+    errorCount: number;
+  };
+  /** Energy consumption by fuel type */
+  energyByFuelType: {
+    /** Labels for the chart (fuel types) */
+    labels: string[];
+    /** Values for the chart (energy consumption) */
+    values: number[];
+    /** Units for the values */
+    units: string[];
+  };
+  /** Simulation warnings */
+  warnings: string[];
+  /** Simulation errors */
+  errors: string[];
+}
+
+/**
  * Format simulation results as JSON for API responses
  * @param simulationResult Simulation result
  * @returns Formatted simulation result for API response
  */
-export function formatSimulationResultForAPI(simulationResult: SimulationResult): any {
+export function formatSimulationResultForAPI(
+  simulationResult: SimulationResult,
+): FormattedSimulationResult {
   const summary = formatSimulationSummary(simulationResult);
   const energyByFuelType = formatEnergyConsumptionByFuelType(simulationResult);
 

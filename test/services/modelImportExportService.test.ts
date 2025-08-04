@@ -51,14 +51,14 @@ describe('ModelImportExportService', () => {
       size: 1024000,
       isFile: () => true,
       isDirectory: () => false,
-    } as any);
+    } as fs.Stats);
     vi.mocked(mockFs.access).mockResolvedValue(undefined);
     vi.mocked(mockFs.copyFile).mockResolvedValue(undefined);
     vi.mocked(mockFs.writeFile).mockResolvedValue(undefined);
 
     modelImportExportService = new ModelImportExportService();
     // Override the internal command processor with our mock
-    (modelImportExportService as any).commandProcessor = mockCommandProcessor;
+    Object.assign(modelImportExportService, { commandProcessor: mockCommandProcessor });
   });
 
   afterEach(() => {
@@ -183,7 +183,7 @@ describe('ModelImportExportService', () => {
         size: 200 * 1024 * 1024, // 200MB
         isFile: () => true,
         isDirectory: () => false,
-      } as any);
+      } as fs.Stats);
 
       const result = await modelImportExportService.importModel(request);
 

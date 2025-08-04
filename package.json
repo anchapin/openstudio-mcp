@@ -54,6 +54,7 @@
     "fastify-swagger": "^5.2.0",
     "pino": "^8.16.2",
     "pino-pretty": "^10.2.3",
+    "typescript-eslint": "8.38.0",
     "ws": "^8.14.2"
   },
   "devDependencies": {

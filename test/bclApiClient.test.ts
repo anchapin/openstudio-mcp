@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BCLApiClient } from '../src/services/bclApiClient';
 import { Measure } from '../src/interfaces/measure';
 import axios from 'axios';
-import testConfig from './testConfig';
 
 // Mock axios
 vi.mock('axios', () => {
@@ -48,7 +47,7 @@ vi.mock('../src/utils/logger', () => ({
 describe('BCLApiClient', () => {
   vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
   let bclApiClient: BCLApiClient;
-  let axiosInstance: any;
+  let axiosInstance: ReturnType<typeof axios.create>;
 
   beforeEach(() => {
     // Reset all mocks
@@ -65,7 +64,7 @@ describe('BCLApiClient', () => {
     };
 
     // Set up the axios mock
-    (axios.create as any).mockReturnValue(axiosInstance);
+    vi.mocked(axios.create).mockReturnValue(axiosInstance);
 
     // Create a new instance of BCLApiClient before each test
     bclApiClient = new BCLApiClient('https://test-bcl-api.com');
@@ -175,10 +174,10 @@ describe('BCLApiClient', () => {
       return;
       // Setup axios mock to simulate API unavailability
       const error = new Error('Network Error');
-      (error as any).code = 'ECONNABORTED';
+      Object.assign(error, { code: 'ECONNABORTED' });
 
       axiosInstance.get.mockRejectedValue(error);
-      (axios.isAxiosError as any).mockReturnValue(true);
+      vi.mocked(axios.isAxiosError).mockReturnValue(true);
 
       // Call the method
       const result = await bclApiClient.searchMeasures('test query');

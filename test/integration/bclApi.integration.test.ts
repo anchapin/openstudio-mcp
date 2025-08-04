@@ -1,11 +1,9 @@
 /**
  * BCL API integration tests
  */
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { BCLApiClient } from '../../src/services/bclApiClient';
 import testConfig from '../testConfig';
-import fs from 'fs';
-import path from 'path';
 
 // These tests interact with the real BCL API
 // They are integration tests that test the BCL API client functionality
@@ -56,7 +54,7 @@ describe('BCL API Integration', () => {
       }
     } catch (error) {
       // If API is unavailable, test should pass
-      console.warn('BCL API might be unavailable, skipping detailed assertions');
+      // BCL API might be unavailable, skipping detailed assertions
     }
   }, 15000); // Increase timeout for API call
 
@@ -82,7 +80,7 @@ describe('BCL API Integration', () => {
       }
     } catch (error) {
       // If API is unavailable, test should pass
-      console.warn('BCL API might be unavailable, skipping detailed assertions');
+      // BCL API might be unavailable, skipping detailed assertions
     }
   }, 15000); // Increase timeout for API call
 

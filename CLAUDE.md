@@ -2,108 +2,237 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Essential Commands
+## Project Overview
 
-### Development
-```bash
-npm run dev          # Start development server with hot reloading
-npm run build        # Build TypeScript to JavaScript
-npm start            # Start the production server
+This is an OpenStudio Model Context Protocol (MCP) server that provides AI assistants with access to OpenStudio building energy modeling capabilities. The server exposes OpenStudio functionality through a standardized MCP interface, allowing users to perform building energy modeling tasks through natural language requests.
+
+## Development Commands
+
+### Package Management
+- `npm install` - Install dependencies
+- `npm ci` - Install dependencies for CI/CD
+
+### Build Commands
+- `npm run build` - Build the project for production (TypeScript compilation)
+- `npm run dev` - Start development server with hot reloading
+- `npm start` - Start the production server
+
+### Testing Commands
+- `npm test` - Run all unit tests
+- `npm run test:all` - Run all tests including integration tests
+- `npm run test:coverage` - Run tests with coverage report
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:unit` - Run unit tests only
+
+### Code Quality Commands
+- `npm run lint` - Run ESLint for code linting
+- `npm run format` - Format code with Prettier
+
+### Packaging Commands
+- `npm run package` - Build and package the application
+- `npm run package:win` - Package for Windows
+- `npm run package:mac` - Package for macOS
+- `npm run package:linux` - Package for Linux
+- `npm run package:all` - Package for all platforms
+
+## Technology Stack
+
+### Core Technologies
+- **TypeScript** - Primary programming language
+- **Node.js** - Runtime environment (v18 or higher)
+- **Express.js** - Web application framework
+- **WebSocket** - Real-time communication protocol
+- **OpenStudio CLI** - Building energy modeling engine
+
+### Key Dependencies
+- **express** - Web server framework
+- **ws** - WebSocket library
+- **axios** - HTTP client
+- **ajv** - JSON schema validation
+- **pino** - Logging library
+- **adm-zip** - ZIP file handling
+- **dotenv** - Environment variable management
+
+### Development Tools
+- **TypeScript** - Static type checking
+- **ESLint** - Code linting
+- **Prettier** - Code formatting
+- **Vitest** - Test framework
+- **Husky** - Git hooks
+
+## Project Structure Guidelines
+
+### File Organization
+```
+src/
+├── config/          # Configuration files
+├── handlers/        # Request handlers and routing
+├── interfaces/      # TypeScript interfaces and types
+├── services/        # Business logic and services
+├── utils/           # Utility functions and helpers
+└── index.ts         # Application entry point
+test/
+├── handlers/        # Handler tests
+├── services/        # Service tests
+└── utils/           # Utility tests
+scripts/             # Utility scripts
+docs/                # Documentation files
 ```
 
-### Testing
-```bash
-npm test                                          # Run unit tests 
-npx vitest run path/to/test.test.ts --config vitest.unit.config.mts  # Run single test
-npm run test:watch                               # Run tests in watch mode
-npm run test:coverage                            # Run tests with coverage
-```
-
-### Code Quality
-```bash
-npm run lint         # Lint TypeScript files
-npm run lint -- --fix  # Fix linting issues automatically
-npm run format       # Format code with Prettier
-```
-
-### Packaging
-```bash
-npm run package:all  # Package for all platforms (Windows, macOS, Linux)
-npm run package:win  # Package for Windows only
-```
+### Naming Conventions
+- **Files**: Use kebab-case for file names (`model-import-service.ts`)
+- **Classes**: Use PascalCase for class names (`ModelImportService`)
+- **Functions**: Use camelCase for function names (`createModel`)
+- **Variables**: Use camelCase for variable names (`modelPath`)
+- **Constants**: Use UPPER_SNAKE_CASE for constants (`MAX_FILE_SIZE`)
+- **Interfaces**: Use PascalCase with descriptive names (`ModelImportRequest`)
 
 ## Architecture Overview
 
-### Request Flow
-The system processes MCP (Model Context Protocol) requests through a layered architecture:
-
-**MCPServer** → **RequestRouter** → **RequestHandler** → **Services/Utils** → **ResponseFormatter**
-
 ### Core Components
 
-**MCPServer** (`src/services/mcpServer.ts`)
-- WebSocket server handling client connections
-- Registers 9 core capabilities (model operations, simulation, BCL integration, measure workflows)
-- Entry point for all MCP requests
+1. **MCP Server (`src/services/mcpServer.ts`)**
+   - Main server implementation that handles WebSocket connections
+   - Registers and manages server capabilities
+   - Routes requests to appropriate handlers
+   - Implements the Model Context Protocol specification
 
-**RequestHandler** (`src/handlers/requestHandler.ts`) 
-- Core orchestration hub with 15+ handler methods
-- Integrates services for model creation, simulation, BCL operations, measure workflows
-- Validates requests and coordinates service calls
+2. **Request Handler (`src/handlers/requestHandler.ts`)**
+   - Central request processing component
+   - Maintains registry of all available handlers
+   - Validates incoming requests against JSON schemas
+   - Routes requests to specific handler functions
 
-**Key Services:**
-- **CommandProcessor**: Secure OpenStudio CLI command execution with validation
-- **BCLApiClient**: Building Component Library integration with intelligent measure recommendations
-- **MeasureApplicationService**: Complex multi-step measure application workflows
-- **ResponseFormatter**: Standardized response formatting with configurable metadata
+3. **Request Router (`src/handlers/requestRouter.ts`)**
+   - Simple routing layer that delegates to RequestHandler
+   - Handles request/response flow
 
-**OpenStudioCommands** (`src/utils/openStudioCommands.ts`)
-- Comprehensive OpenStudio CLI interface with 20+ typed commands
-- Parameter validation and output parsing for structured data
+4. **Services Layer (`src/services/`)**
+   - **commandProcessor.ts**: Executes OpenStudio CLI commands
+   - **modelCreationService.ts**: Creates new OpenStudio models
+   - **simulationService.ts**: Runs energy simulations
+   - **bclApiClient.ts**: Interacts with Building Component Library
+   - **measureApplicationService.ts**: Applies measures to models
+   - **modelImportExportService.ts**: Imports/exports models in various formats
+   - **workflowService.ts**: Executes OpenStudio Workflow (OSW) files
+   - **enhancedMeasureService.ts**: Advanced measure management features
 
-### MCP Capabilities
-The server exposes these primary capabilities:
-- Model operations (create, open, save, info)
-- Simulation execution and monitoring  
-- BCL search, download, and measure recommendations
-- Measure application with workflow templates
-- File operations with path validation
+5. **Utilities (`src/utils/`)**
+   - Helper functions for common operations
+   - Configuration management
+   - File operations
+   - Logging
+   - Validation
 
-## Development Guidelines
+### Key Capabilities
 
-### Code Style (from AGENTS.md)
-- TypeScript with strict null checks
-- 2-space indentation, 100-char line width
-- Single quotes, trailing commas, semicolons required
-- camelCase variables, PascalCase classes, UPPER_SNAKE_CASE constants
+The server exposes the following major capabilities through the MCP interface:
 
-### Error Handling Pattern
-- Always use try/catch blocks with structured error responses
-- Log errors with context using the logger utility
-- Return error responses with codes and details for debugging
-- Use specific error types rather than generic errors
+1. **Model Management**
+   - `openstudio.model.create` - Create new OpenStudio models
+   - `openstudio.model.open` - Open existing models
+   - `openstudio.model.info` - Get model information
 
-### Testing Approach
-- Vitest for unit and integration tests
-- Mock external dependencies with `vi.mock()`
-- Test both success and error cases
-- Use descriptive test names explaining expected behavior
-- Mock file system operations and external APIs
+2. **Model Import/Export**
+   - `openstudio.model.import` - Import models from IDF, gbXML, SDD formats
+   - `openstudio.model.export` - Export models to various formats
+   - `openstudio.model.batch_operations` - Batch import/export operations
+   - `openstudio.model.convert_format` - Convert between formats
+   - `openstudio.model.format_capabilities` - Get format capabilities
 
-### Important Notes
-- Integration tests are often skipped in CI - check test files for `.skip.ts` versions
-- The `ci-pass.test.ts` is used to ensure CI pipeline passes while other tests are being fixed
-- Path validation is critical for security - all file operations use path safety checks
-- OpenStudio CLI must be installed and available in PATH for full functionality
+3. **Simulation**
+   - `openstudio.simulation.run` - Run energy simulations
+   - `openstudio.simulation.status` - Get simulation status
+   - `openstudio.simulation.cancel` - Cancel running simulations
 
-### Test Configuration
-- Main config: `vitest.unit.config.mts` (30s timeout, excludes integration tests by default)
-- Coverage targets: 70% lines/functions, 60% branches, 70% statements
-- Test setup in `test/setup.ts`
+4. **Building Component Library (BCL)**
+   - `openstudio.bcl.search` - Search for measures
+   - `openstudio.bcl.download` - Download measures
+   - `openstudio.bcl.recommend` - Get measure recommendations
 
-### Key Patterns
-- Services use dependency injection through constructor parameters
-- Response formatting is centralized through `ResponseFormatter`
-- Command execution goes through `CommandProcessor` for security
-- BCL integration provides context-aware measure recommendations
-- Measure workflows support backup/recovery mechanisms
+5. **Measure Management**
+   - `openstudio.measure.apply` - Apply measures to models
+   - `openstudio.measure.update` - Update measure metadata
+   - `openstudio.measure.arguments.compute` - Compute measure arguments
+   - `openstudio.measure.test` - Run measure tests
+
+6. **Workflow Management**
+   - `openstudio.workflow.run` - Execute OSW workflow files
+   - `openstudio.workflow.validate` - Validate workflow files
+   - `openstudio.workflow.create` - Create new workflow files
+
+### Data Flow
+
+1. **WebSocket Connection**: Client connects to server via WebSocket
+2. **Capability Exchange**: Server sends available capabilities to client
+3. **Request Processing**: Client sends requests which are routed through:
+   - RequestRouter → RequestHandler → Specific handler function → Service
+4. **Response Formatting**: Results are formatted by ResponseFormatter and returned to client
+
+### Key Interfaces
+
+The system uses strongly-typed interfaces defined in `src/interfaces/` for:
+- MCP requests/responses
+- Command results
+- Model import/export structures
+- Workflow definitions
+- Measure operations
+
+## Development Workflow
+
+### Before Starting
+1. Ensure Node.js v18+ and OpenStudio CLI are installed
+2. Install dependencies with `npm install`
+3. Set up environment variables in `.env` file
+
+### During Development
+1. Use TypeScript for type safety
+2. Follow existing code patterns and conventions
+3. Write tests for new functionality
+4. Run linter frequently: `npm run lint`
+
+### Testing
+1. Unit tests are located in `test/` directory
+2. Use Vitest for testing framework
+3. Run tests: `npm test`
+4. Generate coverage: `npm run test:coverage`
+
+### Building
+1. Compile TypeScript: `npm run build`
+2. Start server: `npm start`
+3. Development mode: `npm run dev`
+
+## API Endpoints
+
+### HTTP Endpoints (for VS Code integration)
+- `POST /mcp/` - Main MCP endpoint for handling requests
+- `GET /mcp/tools/list` - List available tools
+- `POST /mcp/tools/call` - Call specific tools
+- `GET /capabilities` - Get server capabilities
+- `GET /health` - Health check endpoint
+
+### WebSocket Protocol
+- Standard WebSocket connection for full MCP functionality
+- JSON-RPC 2.0 message format
+- Real-time communication for long-running operations
+
+## Configuration
+
+The server is configured through:
+1. Environment variables (PORT, OPENSTUDIO_CLI_PATH, etc.)
+2. Configuration files in `src/config/`
+3. Command line arguments (--config, --generate-config)
+
+## Error Handling
+
+- All services return structured error responses
+- Logging is handled through pino logger
+- Validation errors are returned with detailed information
+- OpenStudio command errors are captured and formatted
+
+## Performance Considerations
+
+- Long-running operations (simulations) are handled asynchronously
+- Resource monitoring for memory and CPU usage
+- Timeout handling for operations
+- Caching mechanisms for repeated operations

@@ -169,6 +169,7 @@ const simulationRunSchema = {
       type: 'object',
       nullable: true,
       properties: {
+        // Existing options
         designDaysOnly: {
           type: 'boolean',
           nullable: true,
@@ -211,6 +212,254 @@ const simulationRunSchema = {
           nullable: true,
           minimum: 1024,
           description: 'Memory limit in MB',
+        },
+        // Enhanced detailed simulation parameters
+        runControl: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            runSimulation: {
+              type: 'boolean',
+              nullable: true,
+              description: 'Whether to run the main simulation (EnergyPlus)',
+            },
+            runReportingMeasures: {
+              type: 'boolean',
+              nullable: true,
+              description: 'Whether to run reporting measures',
+            },
+            runModelSimulation: {
+              type: 'boolean',
+              nullable: true,
+              description: 'Whether to run the model simulation',
+            },
+          },
+          additionalProperties: false,
+          description: 'Run control options',
+        },
+        simulationControl: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            doZoneSizingCalculation: {
+              type: 'boolean',
+              nullable: true,
+              description: 'Whether to perform zone sizing calculations',
+            },
+            doSystemSizingCalculation: {
+              type: 'boolean',
+              nullable: true,
+              description: 'Whether to perform system sizing calculations',
+            },
+            doPlantSizingCalculation: {
+              type: 'boolean',
+              nullable: true,
+              description: 'Whether to perform plant sizing calculations',
+            },
+            runForSizingPeriods: {
+              type: 'boolean',
+              nullable: true,
+              description: 'Whether to run for sizing periods',
+            },
+            runForWeatherFilePeriods: {
+              type: 'boolean',
+              nullable: true,
+              description: 'Whether to run for weather file periods',
+            },
+            maximumNumberofWarmupDays: {
+              type: 'number',
+              nullable: true,
+              minimum: 1,
+              description: 'Maximum number of warmup days',
+            },
+            minimumNumberofWarmupDays: {
+              type: 'number',
+              nullable: true,
+              minimum: 1,
+              description: 'Minimum number of warmup days',
+            },
+            loadComponentMoistureBalance: {
+              type: 'boolean',
+              nullable: true,
+              description: 'Whether to load component moisture balance',
+            },
+            doHVACSizingSimulationforSizingPeriods: {
+              type: 'boolean',
+              nullable: true,
+              description: 'Whether to do HVAC sizing simulation for sizing periods',
+            },
+            maximumNumberofHVACSizingSimulationPasses: {
+              type: 'number',
+              nullable: true,
+              minimum: 1,
+              description: 'Maximum number of HVAC sizing simulation passes',
+            },
+          },
+          additionalProperties: false,
+          description: 'Simulation control options',
+        },
+        sizingParameters: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            heatingSizingFactor: {
+              type: 'number',
+              nullable: true,
+              minimum: 0,
+              description: 'Heating sizing factor',
+            },
+            coolingSizingFactor: {
+              type: 'number',
+              nullable: true,
+              minimum: 0,
+              description: 'Cooling sizing factor',
+            },
+            designDayViMode: {
+              type: 'string',
+              nullable: true,
+              enum: ['Normal', 'ValidateDoas', 'ValidateIdealLoads'],
+              description: 'Design day ventilation infiltration mode',
+            },
+          },
+          additionalProperties: false,
+          description: 'Sizing parameters',
+        },
+        outputControl: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            tableStyle: {
+              type: 'string',
+              nullable: true,
+              enum: ['CommaAndHTML', 'TabAndHTML', 'CommaAndTabAndHTML', 'HTML', 'Tab', 'Comma'],
+              description: 'Output table style',
+            },
+            addOption: {
+              type: 'boolean',
+              nullable: true,
+              description: 'Whether to add option',
+            },
+          },
+          additionalProperties: false,
+          description: 'Output control options',
+        },
+        surfaceConvectionAlgorithm: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            insideAlgorithm: {
+              type: 'string',
+              nullable: true,
+              enum: ['SimpleCombined', 'TARP', 'DOE-2', 'MoWitt', 'AdaptiveConvectionAlgorithm'],
+              description: 'Inside surface convection algorithm',
+            },
+            outsideAlgorithm: {
+              type: 'string',
+              nullable: true,
+              enum: [
+                'SimpleCombined',
+                'DOE-2',
+                'MoWitt',
+                'AdaptiveConvectionAlgorithm',
+                'TarpWindwardProject',
+                'TarpLeewardProject',
+              ],
+              description: 'Outside surface convection algorithm',
+            },
+          },
+          additionalProperties: false,
+          description: 'Surface convection algorithms',
+        },
+        heatBalance: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            algorithm: {
+              type: 'string',
+              nullable: true,
+              enum: [
+                'ConductionTransferFunction',
+                'MoisturePenetrationDepthConductionTransferFunction',
+                'ConductionFiniteDifference',
+                'CombinedHeatAndMoistureFiniteElement',
+              ],
+              description: 'Heat balance algorithm',
+            },
+            surfaceTemperatureUpperLimit: {
+              type: 'number',
+              nullable: true,
+              description: 'Surface temperature upper limit (C)',
+            },
+            minimumSurfaceConvectionHeatTransferCoefficientValue: {
+              type: 'number',
+              nullable: true,
+              description: 'Minimum surface convection heat transfer coefficient value (W/m2-K)',
+            },
+            maximumSurfaceConvectionHeatTransferCoefficientValue: {
+              type: 'number',
+              nullable: true,
+              description: 'Maximum surface convection heat transfer coefficient value (W/m2-K)',
+            },
+          },
+          additionalProperties: false,
+          description: 'Heat balance settings',
+        },
+        zoneAirHeatBalance: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            algorithm: {
+              type: 'string',
+              nullable: true,
+              enum: ['ThirdOrderBackwardDifference', 'AnalyticalSolution', 'EulerMethod'],
+              description: 'Zone air heat balance algorithm',
+            },
+            includeZoneAirHeatBalance: {
+              type: 'boolean',
+              nullable: true,
+              description: 'Whether to include zone air heat balance',
+            },
+          },
+          additionalProperties: false,
+          description: 'Zone air heat balance settings',
+        },
+        zoneAirContaminantBalance: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            includeCO2: {
+              type: 'boolean',
+              nullable: true,
+              description: 'Whether to include CO2 simulation',
+            },
+            includeGenericContaminant: {
+              type: 'boolean',
+              nullable: true,
+              description: 'Whether to include generic contaminant simulation',
+            },
+          },
+          additionalProperties: false,
+          description: 'Zone air contaminant balance settings',
+        },
+        insideSurfaceShading: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            solarDistribution: {
+              type: 'string',
+              nullable: true,
+              enum: [
+                'MinimalShadowing',
+                'FullExterior',
+                'FullInteriorAndExterior',
+                'FullExteriorWithReflections',
+                'FullInteriorAndExteriorWithReflections',
+              ],
+              description: 'Solar distribution method',
+            },
+          },
+          additionalProperties: false,
+          description: 'Inside surface shading settings',
         },
       },
       additionalProperties: false,
@@ -386,9 +635,154 @@ const bclRecommendSchema = {
   additionalProperties: false,
 };
 
+/**
+ * Schema for openstudio.bcl.template.search request
+ */
+const bclTemplateSearchSchema = {
+  type: 'object',
+  properties: {
+    buildingType: {
+      type: 'string',
+      nullable: true,
+      description: 'Building type to search for',
+    },
+    climateZone: {
+      type: 'string',
+      nullable: true,
+      description: 'Climate zone to search for',
+    },
+    vintage: {
+      type: 'string',
+      nullable: true,
+      description: 'Building vintage to search for',
+    },
+    query: {
+      type: 'string',
+      nullable: true,
+      description: 'Search query',
+    },
+    limit: {
+      type: 'number',
+      nullable: true,
+      minimum: 1,
+      maximum: 100,
+      default: 20,
+      description: 'Maximum number of results to return (1-100)',
+    },
+  },
+  additionalProperties: false,
+};
+
+/**
+ * Schema for openstudio.bcl.template.create request
+ */
+const bclTemplateCreateSchema = {
+  type: 'object',
+  required: ['templateId', 'outputPath'],
+  properties: {
+    templateId: {
+      type: 'string',
+      description: 'Template ID from BCL',
+    },
+    outputPath: {
+      type: 'string',
+      format: 'file-path',
+      description: 'Output path for the model',
+    },
+    templateOptions: {
+      type: 'object',
+      nullable: true,
+      properties: {
+        buildingType: {
+          type: 'string',
+          nullable: true,
+          description: 'Building type',
+        },
+        buildingVintage: {
+          type: 'string',
+          nullable: true,
+          description: 'Building vintage',
+        },
+        climateZone: {
+          type: 'string',
+          nullable: true,
+          description: 'Climate zone',
+        },
+        weatherFilePath: {
+          type: 'string',
+          nullable: true,
+          format: 'file-path',
+          description: 'Weather file path',
+        },
+        floorArea: {
+          type: 'number',
+          nullable: true,
+          minimum: 1,
+          description: 'Floor area in square meters',
+        },
+        numStories: {
+          type: 'number',
+          nullable: true,
+          minimum: 1,
+          description: 'Number of stories',
+        },
+        aspectRatio: {
+          type: 'number',
+          nullable: true,
+          minimum: 0.1,
+          description: 'Aspect ratio (length/width)',
+        },
+        floorToFloorHeight: {
+          type: 'number',
+          nullable: true,
+          minimum: 1,
+          description: 'Floor to floor height in meters',
+        },
+        perimeterZoneDepth: {
+          type: 'number',
+          nullable: true,
+          minimum: 0,
+          description: 'Perimeter zone depth in meters',
+        },
+        includeHVAC: {
+          type: 'boolean',
+          nullable: true,
+          description: 'Whether to include HVAC systems',
+        },
+        includeSWH: {
+          type: 'boolean',
+          nullable: true,
+          description: 'Whether to include service water heating',
+        },
+        includeExteriorLighting: {
+          type: 'boolean',
+          nullable: true,
+          description: 'Whether to include exterior lighting',
+        },
+        includeInteriorLighting: {
+          type: 'boolean',
+          nullable: true,
+          description: 'Whether to include interior lighting',
+        },
+      },
+      additionalProperties: false,
+      description: 'Template options',
+    },
+    applyDefaultMeasures: {
+      type: 'boolean',
+      nullable: true,
+      default: false,
+      description: 'Whether to apply default measures',
+    },
+  },
+  additionalProperties: false,
+};
+
 // Compile additional schemas
 const validateModelInfo = ajv.compile(modelInfoSchema);
 const validateBclRecommend = ajv.compile(bclRecommendSchema);
+const validateBclTemplateSearch = ajv.compile(bclTemplateSearchSchema);
+const validateBclTemplateCreate = ajv.compile(bclTemplateCreateSchema);
 
 /**
  * Schema for openstudio.simulation.status request
@@ -744,6 +1138,8 @@ const requestValidators: Record<string, ReturnType<typeof ajv.compile>> = {
   'openstudio.bcl.search': validateBclSearch,
   'openstudio.bcl.download': validateBclDownload,
   'openstudio.bcl.recommend': validateBclRecommend,
+  'openstudio.bcl.template.search': validateBclTemplateSearch,
+  'openstudio.bcl.template.create': validateBclTemplateCreate,
   'openstudio.measure.apply': validateMeasureApply,
   'openstudio.measure.workflow.create': validateMeasureWorkflowCreate,
   'openstudio.measure.workflow.execute': validateMeasureWorkflowExecute,
@@ -885,7 +1281,10 @@ export function validateRequest(request: MCPRequest): ValidationResult {
         `${err.instancePath || ''} ${err.message || ''}`,
     ) || ['Invalid request format'];
 
-    logger.warn({ request, errors }, 'Invalid request format');
+    logger.warn(
+      { request, errors, ajvErrors: validateBaseRequest.errors },
+      'Invalid request format',
+    );
     return {
       valid: false,
       errors,
@@ -898,9 +1297,14 @@ export function validateRequest(request: MCPRequest): ValidationResult {
   }
 
   // Then validate the parameters based on the request type
+  // Then validate the parameters based on the request type
+  logger.info({ requestType: request.type }, 'Validating request parameters');
   const validator = requestValidators[request.type];
   if (!validator) {
-    logger.warn({ request }, `Unknown request type: ${request.type}`);
+    logger.warn(
+      { request, availableTypes: Object.keys(requestValidators) },
+      `Unknown request type: ${request.type}`,
+    );
     return {
       valid: false,
       errors: [`Unknown request type: ${request.type}`],
@@ -918,7 +1322,7 @@ export function validateRequest(request: MCPRequest): ValidationResult {
         `params${err.instancePath || ''} ${err.message || ''}`,
     ) || ['Invalid parameters'];
 
-    logger.warn({ request, errors }, 'Invalid request parameters');
+    logger.warn({ request, errors, ajvErrors: validator.errors }, 'Invalid request parameters');
     return {
       valid: false,
       errors,
@@ -1012,6 +1416,10 @@ export function getValidationSchema(requestType: string): object | undefined {
       return bclDownloadSchema;
     case 'openstudio.bcl.recommend':
       return bclRecommendSchema;
+    case 'openstudio.bcl.template.search':
+      return bclTemplateSearchSchema;
+    case 'openstudio.bcl.template.create':
+      return bclTemplateCreateSchema;
     case 'openstudio.measure.apply':
       return measureApplySchema;
     case 'openstudio.measure.workflow.create':

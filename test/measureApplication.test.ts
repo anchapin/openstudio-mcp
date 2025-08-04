@@ -2,7 +2,6 @@
  * Measure Application tests
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import path from 'path';
 
 // Import after mocking
 import * as measureApplicationService from '../src/services/measureApplicationService';

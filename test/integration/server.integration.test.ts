@@ -5,7 +5,6 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import http from 'http';
 import WebSocket from 'ws';
 import { startServer } from '../../src/server';
-import testConfig from '../testConfig';
 
 // These tests require a running server
 // They are integration tests that test the full server functionality

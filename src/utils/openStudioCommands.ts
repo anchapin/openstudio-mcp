@@ -16,6 +16,398 @@ import { logger } from './index';
 import { isPathSafe } from './validation';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
+
+/**
+ * Detailed simulation parameters
+ */
+export interface DetailedSimulationParameters {
+  /** Path to the model file */
+  modelPath: string;
+  /** Path to the weather file (optional) */
+  weatherFile?: string;
+  /** Directory to save simulation results (optional) */
+  outputDirectory?: string;
+  /** Execution options */
+  executionOptions?: {
+    /** Timeout in milliseconds */
+    timeout?: number;
+    /** Memory limit in MB */
+    memoryLimit?: number;
+  };
+  /** Run control options */
+  runControl?: {
+    /** Whether to run the main simulation (EnergyPlus) */
+    runSimulation?: boolean;
+    /** Whether to run reporting measures */
+    runReportingMeasures?: boolean;
+    /** Whether to run the model simulation */
+    runModelSimulation?: boolean;
+  };
+  /** Simulation control options */
+  simulationControl?: {
+    /** Whether to perform zone sizing calculations */
+    doZoneSizingCalculation?: boolean;
+    /** Whether to perform system sizing calculations */
+    doSystemSizingCalculation?: boolean;
+    /** Whether to perform plant sizing calculations */
+    doPlantSizingCalculation?: boolean;
+    /** Whether to run for sizing periods */
+    runForSizingPeriods?: boolean;
+    /** Whether to run for weather file periods */
+    runForWeatherFilePeriods?: boolean;
+    /** Maximum number of warmup days */
+    maximumNumberofWarmupDays?: number;
+    /** Minimum number of warmup days */
+    minimumNumberofWarmupDays?: number;
+    /** Whether to load component moisture balance */
+    loadComponentMoistureBalance?: boolean;
+    /** Whether to do HVAC sizing simulation for sizing periods */
+    doHVACSizingSimulationforSizingPeriods?: boolean;
+    /** Maximum number of HVAC sizing simulation passes */
+    maximumNumberofHVACSizingSimulationPasses?: number;
+  };
+  /** Sizing parameters */
+  sizingParameters?: {
+    /** Heating sizing factor */
+    heatingSizingFactor?: number;
+    /** Cooling sizing factor */
+    coolingSizingFactor?: number;
+    /** Design day ventilation infiltration mode */
+    designDayViMode?: 'Normal' | 'ValidateDoas' | 'ValidateIdealLoads';
+  };
+  /** Output control options */
+  outputControl?: {
+    /** Output table style */
+    tableStyle?: 'CommaAndHTML' | 'TabAndHTML' | 'CommaAndTabAndHTML' | 'HTML' | 'Tab' | 'Comma';
+    /** Whether to add option */
+    addOption?: boolean;
+  };
+  /** Surface convection algorithms */
+  surfaceConvectionAlgorithm?: {
+    /** Inside surface convection algorithm */
+    insideAlgorithm?:
+      | 'SimpleCombined'
+      | 'TARP'
+      | 'DOE-2'
+      | 'MoWitt'
+      | 'AdaptiveConvectionAlgorithm';
+    /** Outside surface convection algorithm */
+    outsideAlgorithm?:
+      | 'SimpleCombined'
+      | 'DOE-2'
+      | 'MoWitt'
+      | 'AdaptiveConvectionAlgorithm'
+      | 'TarpWindwardProject'
+      | 'TarpLeewardProject';
+  };
+  /** Heat balance settings */
+  heatBalance?: {
+    /** Heat balance algorithm */
+    algorithm?:
+      | 'ConductionTransferFunction'
+      | 'MoisturePenetrationDepthConductionTransferFunction'
+      | 'ConductionFiniteDifference'
+      | 'CombinedHeatAndMoistureFiniteElement';
+    /** Surface temperature upper limit (C) */
+    surfaceTemperatureUpperLimit?: number;
+    /** Minimum surface convection heat transfer coefficient value (W/m2-K) */
+    minimumSurfaceConvectionHeatTransferCoefficientValue?: number;
+    /** Maximum surface convection heat transfer coefficient value (W/m2-K) */
+    maximumSurfaceConvectionHeatTransferCoefficientValue?: number;
+  };
+  /** Zone air heat balance settings */
+  zoneAirHeatBalance?: {
+    /** Zone air heat balance algorithm */
+    algorithm?: 'ThirdOrderBackwardDifference' | 'AnalyticalSolution' | 'EulerMethod';
+    /** Whether to include zone air heat balance */
+    includeZoneAirHeatBalance?: boolean;
+  };
+  /** Zone air contaminant balance settings */
+  zoneAirContaminantBalance?: {
+    /** Whether to include CO2 simulation */
+    includeCO2?: boolean;
+    /** Whether to include generic contaminant simulation */
+    includeGenericContaminant?: boolean;
+  };
+  /** Inside surface shading settings */
+  insideSurfaceShading?: {
+    /** Solar distribution method */
+    solarDistribution?:
+      | 'MinimalShadowing'
+      | 'FullExterior'
+      | 'FullInteriorAndExterior'
+      | 'FullExteriorWithReflections'
+      | 'FullInteriorAndExteriorWithReflections';
+  };
+}
+
+/**
+ * Check if detailed simulation parameters are provided
+ * @param params Detailed simulation parameters
+ * @returns True if detailed parameters are provided, false otherwise
+ */
+function hasDetailedParameters(params: DetailedSimulationParameters): boolean {
+  return (
+    !!params.runControl ||
+    !!params.simulationControl ||
+    !!params.sizingParameters ||
+    !!params.outputControl ||
+    !!params.surfaceConvectionAlgorithm ||
+    !!params.heatBalance ||
+    !!params.zoneAirHeatBalance ||
+    !!params.zoneAirContaminantBalance ||
+    !!params.insideSurfaceShading
+  );
+}
+
+/**
+ * Create an OSW (OpenStudio Workflow) file with detailed simulation parameters
+ * @param params Detailed simulation parameters
+ * @returns Path to the created OSW file
+ */
+async function createOSWFile(params: DetailedSimulationParameters): Promise<string> {
+  // Create the OSW object with detailed parameters
+  const osw: {
+    seed_file: string;
+    weather_file?: string;
+    file_format_version: string;
+    run_options: {
+      skip_zip_results: boolean;
+    };
+    steps: {
+      name: string;
+      measure_dir_name: string;
+      arguments: Record<string, unknown>;
+    }[];
+  } = {
+    seed_file: params.modelPath,
+    weather_file: params.weatherFile,
+    file_format_version: '0.1.0',
+    run_options: {
+      skip_zip_results: false,
+    },
+    steps: [],
+  };
+
+  // Add steps for setting simulation parameters if provided
+  osw.steps = [];
+
+  // Add simulation control settings
+  if (params.simulationControl) {
+    osw.steps.push({
+      name: 'Set Simulation Control',
+      measure_dir_name: 'SetSimulationControl',
+      arguments: {
+        do_zone_sizing_calculation: params.simulationControl.doZoneSizingCalculation,
+        do_system_sizing_calculation: params.simulationControl.doSystemSizingCalculation,
+        do_plant_sizing_calculation: params.simulationControl.doPlantSizingCalculation,
+        run_for_sizing_periods: params.simulationControl.runForSizingPeriods,
+        run_for_weather_file_periods: params.simulationControl.runForWeatherFilePeriods,
+        maximum_number_of_warmup_days: params.simulationControl.maximumNumberofWarmupDays,
+        minimum_number_of_warmup_days: params.simulationControl.minimumNumberofWarmupDays,
+        load_component_moisture_balance: params.simulationControl.loadComponentMoistureBalance,
+        do_hvac_sizing_simulation_for_sizing_periods:
+          params.simulationControl.doHVACSizingSimulationforSizingPeriods,
+        maximum_number_of_hvac_sizing_simulation_passes:
+          params.simulationControl.maximumNumberofHVACSizingSimulationPasses,
+      },
+    });
+  }
+
+  // Add sizing parameters
+  if (params.sizingParameters) {
+    osw.steps.push({
+      name: 'Set Sizing Parameters',
+      measure_dir_name: 'SetSizingParameters',
+      arguments: {
+        heating_sizing_factor: params.sizingParameters.heatingSizingFactor,
+        cooling_sizing_factor: params.sizingParameters.coolingSizingFactor,
+        design_day_vi_mode: params.sizingParameters.designDayViMode,
+      },
+    });
+  }
+
+  // Add surface convection algorithms
+  if (params.surfaceConvectionAlgorithm) {
+    osw.steps.push({
+      name: 'Set Surface Convection Algorithm',
+      measure_dir_name: 'SetSurfaceConvectionAlgorithm',
+      arguments: {
+        inside_algorithm: params.surfaceConvectionAlgorithm.insideAlgorithm,
+        outside_algorithm: params.surfaceConvectionAlgorithm.outsideAlgorithm,
+      },
+    });
+  }
+
+  // Add heat balance settings
+  if (params.heatBalance) {
+    osw.steps.push({
+      name: 'Set Heat Balance',
+      measure_dir_name: 'SetHeatBalance',
+      arguments: {
+        algorithm: params.heatBalance.algorithm,
+        surface_temperature_upper_limit: params.heatBalance.surfaceTemperatureUpperLimit,
+        minimum_surface_convection_heat_transfer_coefficient_value:
+          params.heatBalance.minimumSurfaceConvectionHeatTransferCoefficientValue,
+        maximum_surface_convection_heat_transfer_coefficient_value:
+          params.heatBalance.maximumSurfaceConvectionHeatTransferCoefficientValue,
+      },
+    });
+  }
+
+  // Add zone air heat balance settings
+  if (params.zoneAirHeatBalance) {
+    osw.steps.push({
+      name: 'Set Zone Air Heat Balance',
+      measure_dir_name: 'SetZoneAirHeatBalance',
+      arguments: {
+        algorithm: params.zoneAirHeatBalance.algorithm,
+        include_zone_air_heat_balance: params.zoneAirHeatBalance.includeZoneAirHeatBalance,
+      },
+    });
+  }
+
+  // Add zone air contaminant balance settings
+  if (params.zoneAirContaminantBalance) {
+    osw.steps.push({
+      name: 'Set Zone Air Contaminant Balance',
+      measure_dir_name: 'SetZoneAirContaminantBalance',
+      arguments: {
+        include_co2: params.zoneAirContaminantBalance.includeCO2,
+        include_generic_contaminant: params.zoneAirContaminantBalance.includeGenericContaminant,
+      },
+    });
+  }
+
+  // Add inside surface shading settings
+  if (params.insideSurfaceShading) {
+    osw.steps.push({
+      name: 'Set Inside Surface Shading',
+      measure_dir_name: 'SetInsideSurfaceShading',
+      arguments: {
+        solar_distribution: params.insideSurfaceShading.solarDistribution,
+      },
+    });
+  }
+
+  // Add output control settings
+  if (params.outputControl) {
+    osw.steps.push({
+      name: 'Set Output Control',
+      measure_dir_name: 'SetOutputControl',
+      arguments: {
+        table_style: params.outputControl.tableStyle,
+        add_option: params.outputControl.addOption,
+      },
+    });
+  }
+
+  // Add run control settings
+  if (params.runControl) {
+    osw.steps.push({
+      name: 'Set Run Control',
+      measure_dir_name: 'SetRunControl',
+      arguments: {
+        run_simulation: params.runControl.runSimulation,
+        run_reporting_measures: params.runControl.runReportingMeasures,
+        run_model_simulation: params.runControl.runModelSimulation,
+      },
+    });
+  }
+
+  // Write the OSW file to a temporary location
+  const tempDir = os.tmpdir();
+  const oswPath = path.join(tempDir, `simulation_${Date.now()}.osw`);
+  fs.writeFileSync(oswPath, JSON.stringify(osw, null, 2));
+
+  return oswPath;
+}
+
+/**
+ * Parse simulation results from command execution
+ * @param result Command execution result
+ * @param outputDirectory Output directory
+ * @returns Parsed simulation results
+ */
+function parseSimulationResults(
+  result: { success: boolean; stdout?: string; error?: string },
+  outputDirectory: string,
+): OpenStudioCommandResult {
+  const simulationResults: {
+    success: boolean;
+    outputDirectory: string;
+    errors: string[];
+    warnings: string[];
+    eui?: number;
+    totalSiteEnergy?: number;
+    totalSourceEnergy?: number;
+    electricityConsumption?: number;
+    naturalGasConsumption?: number;
+  } = {
+    success: result.success,
+    outputDirectory: outputDirectory,
+    errors: [],
+    warnings: [],
+  };
+
+  if (result.stdout) {
+    // Extract errors
+    const errorMatches = result.stdout.match(/Error: ([^\n]+)/g);
+    if (errorMatches) {
+      simulationResults.errors = errorMatches.map((match: string) =>
+        match.replace('Error: ', '').trim(),
+      );
+    }
+
+    // Extract warnings
+    const warningMatches = result.stdout.match(/Warning: ([^\n]+)/g);
+    if (warningMatches) {
+      simulationResults.warnings = warningMatches.map((match: string) =>
+        match.replace('Warning: ', '').trim(),
+      );
+    }
+
+    // Extract EUI
+    const euiMatch = result.stdout.match(/EUI: ([\d.]+) kWh\/m²\/year/);
+    if (euiMatch) {
+      simulationResults.eui = parseFloat(euiMatch[1]);
+    }
+
+    // Extract total site energy
+    const totalSiteEnergyMatch = result.stdout.match(/Total Site Energy: ([\d.]+) GJ/);
+    if (totalSiteEnergyMatch) {
+      simulationResults.totalSiteEnergy = parseFloat(totalSiteEnergyMatch[1]);
+    }
+
+    // Extract total source energy
+    const totalSourceEnergyMatch = result.stdout.match(/Total Source Energy: ([\d.]+) GJ/);
+    if (totalSourceEnergyMatch) {
+      simulationResults.totalSourceEnergy = parseFloat(totalSourceEnergyMatch[1]);
+    }
+
+    // Extract electricity consumption
+    const electricityConsumptionMatch = result.stdout.match(
+      /Electricity Consumption: ([\d.]+) kWh/,
+    );
+    if (electricityConsumptionMatch) {
+      simulationResults.electricityConsumption = parseFloat(electricityConsumptionMatch[1]);
+    }
+
+    // Extract natural gas consumption
+    const naturalGasConsumptionMatch = result.stdout.match(/Natural Gas Consumption: ([\d.]+) GJ/);
+    if (naturalGasConsumptionMatch) {
+      simulationResults.naturalGasConsumption = parseFloat(naturalGasConsumptionMatch[1]);
+    }
+  }
+
+  return {
+    success: result.success,
+    output: result.stdout || '',
+    error: result.error || undefined,
+    data: simulationResults,
+  };
+}
 
 /**
  * OpenStudio command result
@@ -225,7 +617,7 @@ export async function createModel(
     }
 
     // Create the model based on the template type
-    let result;
+    let result: { success: boolean; stdout?: string; error?: string } | undefined;
 
     if (templateType === 'empty') {
       // Create an empty model
@@ -388,12 +780,14 @@ export async function getModelInfo(
  * @param modelPath Path to the model file
  * @param weatherFile Path to the weather file (optional)
  * @param outputDirectory Directory to save simulation results (optional)
+ * @param detailedParams Detailed simulation parameters (optional)
  * @returns Promise that resolves with the simulation results
  */
 export async function runSimulation(
   modelPath: string,
   weatherFile?: string,
   outputDirectory?: string,
+  detailedParams?: DetailedSimulationParameters,
 ): Promise<OpenStudioCommandResult> {
   // Validate parameters
   if (!modelPath || !isPathSafe(modelPath)) {
@@ -429,94 +823,129 @@ export async function runSimulation(
   }
 
   try {
+    // Use detailed parameters if provided, otherwise use the simple parameters
+    const params = detailedParams || {
+      modelPath,
+      weatherFile,
+      outputDirectory,
+    };
+
     // Ensure the output directory exists
-    if (outputDirectory && !fs.existsSync(outputDirectory)) {
-      fs.mkdirSync(outputDirectory, { recursive: true });
+    if (params.outputDirectory && !fs.existsSync(params.outputDirectory)) {
+      fs.mkdirSync(params.outputDirectory, { recursive: true });
     }
 
-    // Prepare simulation arguments
-    const args = ['--run'];
+    // If we have detailed simulation parameters, we need to create an OSW file
+    if (detailedParams && hasDetailedParameters(detailedParams)) {
+      // Create a temporary OSW file with the detailed parameters
+      const oswPath = await createOSWFile(params);
 
-    if (weatherFile) {
-      args.push('--weather', weatherFile);
-    }
+      // Run the simulation with the OSW file
+      const result = await executeOpenStudioCommand('run', [oswPath], {
+        timeout: params.executionOptions?.timeout || 600000, // 10 minutes default
+        memoryLimit: params.executionOptions?.memoryLimit || 4096, // 4GB default
+      });
 
-    if (outputDirectory) {
-      args.push('--output', outputDirectory);
-    }
-
-    args.push(modelPath);
-
-    // Run the simulation
-    const result = await executeOpenStudioCommand('energyplus', args, {
-      timeout: 600000, // 10 minutes
-      memoryLimit: 4096, // 4GB
-    });
-
-    // Parse the simulation results
-    const simulationResults: OpenStudioSimulationResults = {
-      success: result.success,
-      outputDirectory: outputDirectory || path.dirname(modelPath),
-      errors: [],
-      warnings: [],
-    };
-
-    if (result.stdout) {
-      // Extract errors
-      const errorMatches = result.stdout.match(/Error: ([^\n]+)/g);
-      if (errorMatches) {
-        simulationResults.errors = errorMatches.map((match) => match.replace('Error: ', '').trim());
+      // Clean up the temporary OSW file
+      try {
+        fs.unlinkSync(oswPath);
+      } catch (cleanupError) {
+        logger.warn({ oswPath, error: cleanupError }, 'Failed to clean up temporary OSW file');
       }
 
-      // Extract warnings
-      const warningMatches = result.stdout.match(/Warning: ([^\n]+)/g);
-      if (warningMatches) {
-        simulationResults.warnings = warningMatches.map((match) =>
-          match.replace('Warning: ', '').trim(),
+      // Parse and return the results
+      return parseSimulationResults(
+        result,
+        params.outputDirectory || path.dirname(params.modelPath),
+      );
+    } else {
+      // Use the simple approach for basic parameters
+      // Prepare simulation arguments
+      const args = ['--run'];
+
+      if (params.weatherFile) {
+        args.push('--weather', params.weatherFile);
+      }
+
+      if (params.outputDirectory) {
+        args.push('--output', params.outputDirectory);
+      }
+
+      args.push(params.modelPath);
+
+      // Run the simulation
+      const result = await executeOpenStudioCommand('energyplus', args, {
+        timeout: 600000, // 10 minutes
+        memoryLimit: 4096, // 4GB
+      });
+
+      // Parse the simulation results
+      const simulationResults: OpenStudioSimulationResults = {
+        success: result.success,
+        outputDirectory: outputDirectory || path.dirname(modelPath),
+        errors: [],
+        warnings: [],
+      };
+
+      if (result.stdout) {
+        // Extract errors
+        const errorMatches = result.stdout.match(/Error: ([^\n]+)/g);
+        if (errorMatches) {
+          simulationResults.errors = errorMatches.map((match) =>
+            match.replace('Error: ', '').trim(),
+          );
+        }
+
+        // Extract warnings
+        const warningMatches = result.stdout.match(/Warning: ([^\n]+)/g);
+        if (warningMatches) {
+          simulationResults.warnings = warningMatches.map((match) =>
+            match.replace('Warning: ', '').trim(),
+          );
+        }
+
+        // Extract EUI
+        const euiMatch = result.stdout.match(/EUI: ([\d.]+) kWh\/m²\/year/);
+        if (euiMatch) {
+          simulationResults.eui = parseFloat(euiMatch[1]);
+        }
+
+        // Extract total site energy
+        const totalSiteEnergyMatch = result.stdout.match(/Total Site Energy: ([\d.]+) GJ/);
+        if (totalSiteEnergyMatch) {
+          simulationResults.totalSiteEnergy = parseFloat(totalSiteEnergyMatch[1]);
+        }
+
+        // Extract total source energy
+        const totalSourceEnergyMatch = result.stdout.match(/Total Source Energy: ([\d.]+) GJ/);
+        if (totalSourceEnergyMatch) {
+          simulationResults.totalSourceEnergy = parseFloat(totalSourceEnergyMatch[1]);
+        }
+
+        // Extract electricity consumption
+        const electricityConsumptionMatch = result.stdout.match(
+          /Electricity Consumption: ([\d.]+) kWh/,
         );
+        if (electricityConsumptionMatch) {
+          simulationResults.electricityConsumption = parseFloat(electricityConsumptionMatch[1]);
+        }
+
+        // Extract natural gas consumption
+        const naturalGasConsumptionMatch = result.stdout.match(
+          /Natural Gas Consumption: ([\d.]+) GJ/,
+        );
+        if (naturalGasConsumptionMatch) {
+          simulationResults.naturalGasConsumption = parseFloat(naturalGasConsumptionMatch[1]);
+        }
       }
 
-      // Extract EUI
-      const euiMatch = result.stdout.match(/EUI: ([\d.]+) kWh\/m²\/year/);
-      if (euiMatch) {
-        simulationResults.eui = parseFloat(euiMatch[1]);
-      }
-
-      // Extract total site energy
-      const totalSiteEnergyMatch = result.stdout.match(/Total Site Energy: ([\d.]+) GJ/);
-      if (totalSiteEnergyMatch) {
-        simulationResults.totalSiteEnergy = parseFloat(totalSiteEnergyMatch[1]);
-      }
-
-      // Extract total source energy
-      const totalSourceEnergyMatch = result.stdout.match(/Total Source Energy: ([\d.]+) GJ/);
-      if (totalSourceEnergyMatch) {
-        simulationResults.totalSourceEnergy = parseFloat(totalSourceEnergyMatch[1]);
-      }
-
-      // Extract electricity consumption
-      const electricityConsumptionMatch = result.stdout.match(
-        /Electricity Consumption: ([\d.]+) kWh/,
-      );
-      if (electricityConsumptionMatch) {
-        simulationResults.electricityConsumption = parseFloat(electricityConsumptionMatch[1]);
-      }
-
-      // Extract natural gas consumption
-      const naturalGasConsumptionMatch = result.stdout.match(
-        /Natural Gas Consumption: ([\d.]+) GJ/,
-      );
-      if (naturalGasConsumptionMatch) {
-        simulationResults.naturalGasConsumption = parseFloat(naturalGasConsumptionMatch[1]);
-      }
+      return {
+        success: result.success,
+        output: result.stdout,
+        error: result.error,
+        data: simulationResults,
+      };
     }
-
-    return {
-      success: result.success,
-      output: result.stdout,
-      error: result.error,
-      data: simulationResults,
-    };
   } catch (error) {
     logger.error(
       { modelPath, weatherFile, outputDirectory, error },

@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import path from 'path';
 import * as measureApplicationWorkflow from '../src/services/measureApplicationWorkflow';
 import * as measureApplicationService from '../src/services/measureApplicationService';
-import { BCLApiClient } from '../src/services/bclApiClient';
 import measureManager from '../src/utils/measureManager';
 import fileOperations from '../src/utils/fileOperations';
 

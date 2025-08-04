@@ -120,8 +120,6 @@ vi.mock('../src/config', () => ({
 // Import after mocking
 import { WebSocket, WebSocketServer } from 'ws';
 import { MCPServer } from '../src/services/mcpServer';
-import { MCPRequest } from '../src/interfaces';
-import { validateRequest } from '../src/utils/validation';
 import { RequestHandler } from '../src/handlers/requestHandler';
 import logger from '../src/utils/logger';
 
@@ -216,7 +214,7 @@ describe('MCPServer', () => {
 
     it('should handle errors when starting the server', async () => {
       return;
-      (mockHttpServer.listen as any).mockImplementation(() => {
+      vi.mocked(mockHttpServer.listen).mockImplementation(() => {
         throw new Error('Failed to start server');
       });
 

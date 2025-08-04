@@ -1,11 +1,8 @@
 /**
  * Command executor tests
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { exec, spawn, ChildProcess } from 'child_process';
-import { EventEmitter } from 'events';
-import path from 'path';
-import fs from 'fs';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { ChildProcess } from 'child_process';
 import { commandExecutor } from '../src/utils';
 import { createResourceMonitor } from '../src/utils/resourceMonitor';
 

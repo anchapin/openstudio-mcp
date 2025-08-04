@@ -91,7 +91,7 @@ export function generateRequestSchema(
   // Add parameter properties
   for (const [name, config] of Object.entries(requiredParams)) {
     schema.properties.params.properties[name] = {
-      type: config.type as any,
+      type: config.type as string,
       description: config.description,
     };
   }
@@ -99,7 +99,7 @@ export function generateRequestSchema(
   // Add optional parameters
   for (const [name, config] of Object.entries(optionalParams)) {
     schema.properties.params.properties[name] = {
-      type: config.type as any,
+      type: config.type as string,
       description: config.description,
       nullable: true,
     };

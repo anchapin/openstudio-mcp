@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import path from 'path';
 import fs from 'fs';
 import AdmZip from 'adm-zip';
 import axios from 'axios';
@@ -483,7 +482,7 @@ describe('Measure Manager', () => {
       const readdirMock = vi.fn().mockResolvedValue(['measure1', 'measure2', 'not-a-measure']);
       fs.promises.readdir = readdirMock;
 
-      const statMock = vi.fn().mockImplementation((path) => {
+      const statMock = vi.fn().mockImplementation((_path) => {
         return Promise.resolve({
           isDirectory: () => true,
         });

@@ -26,6 +26,7 @@ import { OpenStudioWorkflow } from '../services/workflowService';
 import enhancedMeasureService from '../services/enhancedMeasureService';
 import config from '../config';
 import path from 'path';
+import bclTemplateService from '../services/bclTemplateService';
 
 /**
  * Handler function type
@@ -135,6 +136,21 @@ export class RequestHandler {
       this.handleBclRecommend.bind(this),
       getValidationSchema('openstudio.bcl.recommend') || {},
       'Get measure recommendations based on context',
+    );
+
+    // Register BCL template handlers
+    this.registerHandler(
+      'openstudio.bcl.template.search',
+      this.handleBclTemplateSearch.bind(this),
+      getValidationSchema('openstudio.bcl.template.search') || {},
+      'Search for templates in the Building Component Library',
+    );
+
+    this.registerHandler(
+      'openstudio.bcl.template.create',
+      this.handleBclTemplateCreate.bind(this),
+      getValidationSchema('openstudio.bcl.template.create') || {},
+      'Create a model from a BCL template',
     );
 
     // Register measure handlers
@@ -572,13 +588,60 @@ export class RequestHandler {
             ...params.options,
           };
         }
+
+        // Add detailed simulation parameters if provided
+        if (params.runControl) {
+          simulationParams.runControl = params.runControl;
+        }
+
+        if (params.simulationControl) {
+          simulationParams.simulationControl = params.simulationControl;
+        }
+
+        if (params.sizingParameters) {
+          simulationParams.sizingParameters = params.sizingParameters;
+        }
+
+        if (params.outputControl) {
+          simulationParams.outputControl = params.outputControl;
+        }
+
+        if (params.surfaceConvectionAlgorithm) {
+          simulationParams.surfaceConvectionAlgorithm = params.surfaceConvectionAlgorithm;
+        }
+
+        if (params.heatBalance) {
+          simulationParams.heatBalance = params.heatBalance;
+        }
+
+        if (params.zoneAirHeatBalance) {
+          simulationParams.zoneAirHeatBalance = params.zoneAirHeatBalance;
+        }
+
+        if (params.zoneAirContaminantBalance) {
+          simulationParams.zoneAirContaminantBalance = params.zoneAirContaminantBalance;
+        }
+
+        if (params.insideSurfaceShading) {
+          simulationParams.insideSurfaceShading = params.insideSurfaceShading;
+        }
       } else {
-        // Use provided parameters
+        // Use provided parameters including detailed simulation parameters
         simulationParams = {
           modelPath: params.modelPath,
           weatherFile: params.weatherFile,
           outputDirectory: params.outputDirectory,
           options: params.options,
+          // Include detailed simulation parameters
+          runControl: params.runControl,
+          simulationControl: params.simulationControl,
+          sizingParameters: params.sizingParameters,
+          outputControl: params.outputControl,
+          surfaceConvectionAlgorithm: params.surfaceConvectionAlgorithm,
+          heatBalance: params.heatBalance,
+          zoneAirHeatBalance: params.zoneAirHeatBalance,
+          zoneAirContaminantBalance: params.zoneAirContaminantBalance,
+          insideSurfaceShading: params.insideSurfaceShading,
         };
       }
 
@@ -2011,6 +2074,103 @@ export class RequestHandler {
       };
     } catch (error) {
       logger.error({ params, error }, 'Error handling measure test request');
+      return {
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Handler for openstudio.bcl.template.search
+   * @param params Request parameters
+   * @returns Command result
+   */
+  private async handleBclTemplateSearch(params: Record<string, unknown>): Promise<CommandResult> {
+    logger.info({ params }, 'BCL template search request received');
+
+    try {
+      // Search for templates using the BCL template service
+      const templates = await bclTemplateService.searchTemplates({
+        buildingType: params.buildingType as string,
+        climateZone: params.climateZone as string,
+        vintage: params.vintage as string,
+        query: params.query as string,
+        limit: params.limit ? parseInt(params.limit as string, 10) : undefined,
+      });
+
+      return {
+        success: true,
+        output: `Found ${templates.length} BCL templates`,
+        data: {
+          templates,
+          totalFound: templates.length,
+        },
+      };
+    } catch (error) {
+      logger.error({ params, error }, 'Error searching BCL templates');
+      return {
+        success: false,
+        output: '',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /**
+   * Handler for openstudio.bcl.template.create
+   * @param params Request parameters
+   * @returns Command result
+   */
+  private async handleBclTemplateCreate(params: Record<string, unknown>): Promise<CommandResult> {
+    logger.info({ params }, 'BCL template create request received');
+
+    try {
+      // Validate required parameters
+      if (!params.templateId) {
+        return {
+          success: false,
+          output: '',
+          error: 'Missing required parameter: templateId is required',
+        };
+      }
+
+      if (!params.outputPath) {
+        return {
+          success: false,
+          output: '',
+          error: 'Missing required parameter: outputPath is required',
+        };
+      }
+
+      // Create model from BCL template using the BCL template service
+      const result = await bclTemplateService.createModelFromBCLTemplate({
+        templateId: params.templateId as string,
+        outputPath: params.outputPath as string,
+        templateOptions: params.templateOptions as Record<string, unknown>,
+        applyDefaultMeasures: params.applyDefaultMeasures as boolean,
+      });
+
+      if (!result.success) {
+        return {
+          success: false,
+          output: '',
+          error: result.error || 'Failed to create model from BCL template',
+        };
+      }
+
+      return {
+        success: true,
+        output: `Successfully created model from BCL template ${params.templateId} at ${params.outputPath}`,
+        data: {
+          modelPath: params.outputPath,
+          templateId: params.templateId,
+          ...(result.data as Record<string, unknown>),
+        },
+      };
+    } catch (error) {
+      logger.error({ params, error }, 'Error creating model from BCL template');
       return {
         success: false,
         output: '',

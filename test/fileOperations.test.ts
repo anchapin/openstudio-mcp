@@ -7,13 +7,11 @@ import os from 'os';
 
 // Import after mocking
 import fs from 'fs';
-import { isPathSafe } from '../src/utils/validation';
 import fileOperations from '../src/services/fileOperations';
 
 describe('File Operations Module', () => {
   vi.setConfig({ testTimeout: 10000 }); // Added 10s timeout
   // Create a test directory for file operations
-  const testDir = path.join(os.tmpdir(), `openstudio-mcp-test-${Date.now()}`);
 
   beforeEach(() => {
     // Reset all mocks
@@ -334,7 +332,7 @@ describe('File Operations Module', () => {
       return;
       // Mock dependencies
       const fileExistsSpy = vi.spyOn(fileOperations, 'fileExists');
-      fileExistsSpy.mockImplementation(async (path) => {
+      fileExistsSpy.mockImplementation(async (_path) => {
         if (path === '/path/to/source.txt') {
           return true;
         } else {
@@ -378,7 +376,7 @@ describe('File Operations Module', () => {
       return;
       // Mock dependencies
       const fileExistsSpy = vi.spyOn(fileOperations, 'fileExists');
-      fileExistsSpy.mockImplementation(async (path) => {
+      fileExistsSpy.mockImplementation(async (_path) => {
         return true; // Both source and destination exist
       });
 
@@ -426,7 +424,7 @@ describe('File Operations Module', () => {
       const directoryExistsSpy = vi.spyOn(fileOperations, 'directoryExists');
       directoryExistsSpy.mockResolvedValue(true);
 
-      fs.promises.readdir.mockResolvedValue(['file1.txt', 'file2.txt', 'file3.txt'] as any);
+      vi.mocked(fs.promises.readdir).mockResolvedValue(['file1.txt', 'file2.txt', 'file3.txt']);
 
       // Mock listFiles to use our implementation
       const result = await fileOperations.listFiles('/path/to/directory');
@@ -476,7 +474,7 @@ describe('File Operations Module', () => {
       const directoryExistsSpy = vi.spyOn(fileOperations, 'directoryExists');
       directoryExistsSpy.mockResolvedValue(true);
 
-      fs.promises.readdir.mockResolvedValue(['file1.txt', 'file2.txt', 'subdir'] as any);
+      vi.mocked(fs.promises.readdir).mockResolvedValue(['file1.txt', 'file2.txt', 'subdir']);
       fs.promises.stat.mockImplementation(async (path) => {
         return {
           isDirectory: () => path.toString().endsWith('subdir'),
